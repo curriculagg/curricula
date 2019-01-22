@@ -6,17 +6,18 @@ from typing import Optional, Tuple
 class Runtime:
     """Runtime data extracted from running an external process."""
 
-    hang: bool
-    timeout: float
-
+    timeout: Optional[float]  # Populated if timed out
     code: Optional[int]
     stdout: Optional[str]
     stderr: Optional[str]
     elapsed: Optional[float]
 
-    def __init__(self, hang: bool, timeout: float,
-                 code: int = None, stdout: str = None, stderr: str = None, elapsed: float = None):
-        self.hang = hang
+    def __init__(self, *,
+                 timeout: float = None,
+                 code: int = None,
+                 stdout: str = None,
+                 stderr: str = None,
+                 elapsed: float = None):
         self.timeout = timeout
         self.code = code
         self.stdout = stdout
@@ -24,7 +25,7 @@ class Runtime:
         self.elapsed = elapsed
 
 
-def run(*args: str, timeout: float = None) -> Runtime:
+def run(*args: str, timeout: float) -> Runtime:
     """Run an executable with a list of command line arguments.
 
     The provided path must be absolute in order to properly execute
@@ -41,10 +42,10 @@ def run(*args: str, timeout: float = None) -> Runtime:
         stdout, stderr = process.communicate(timeout=timeout)
     except subprocess.TimeoutExpired:
         process.kill()
-        return Runtime(True, timeout)
+        return Runtime(timeout=timeout)
     elapsed = timeit.default_timer() - start
 
-    return Runtime(False, timeout, process.returncode, stdout.decode(), stderr.decode(), elapsed)
+    return Runtime(code=process.returncode, stdout=stdout.decode(), stderr=stderr.decode(), elapsed=elapsed)
 
 
 class Target:
@@ -61,7 +62,7 @@ class Target:
 
         self.executable = tuple(executable)
 
-    def run(self, *args: str, timeout: float = None) -> Runtime:
+    def run(self, *args: str, timeout: float) -> Runtime:
         """Run the target with command line arguments."""
 
         return run(*self.executable, *args, timeout=timeout)

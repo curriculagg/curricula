@@ -17,6 +17,8 @@ class Result:
         self.passing = passing
 
     def __str__(self):
+        if self.runtime.timeout is not None:
+            return "timed out in {} seconds".format(self.runtime.timeout)
         return "{} in {} seconds".format(
             "passed" if self.passing else "failed",
             round(self.runtime.elapsed, 2))
