@@ -1,0 +1,6 @@
+[{*.cpp, *.hpp}]
+indent_size = 2
+indent_style = space
+
+[makefile]
+indent_style = tab
