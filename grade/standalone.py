@@ -3,7 +3,7 @@
 import argparse
 import ctypes
 
-from .testing import tests
+from grade.test.testing import tests
 
 
 def main():

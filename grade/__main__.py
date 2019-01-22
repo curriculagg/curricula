@@ -14,7 +14,7 @@ import argparse
 import ctypes
 import importlib.util
 
-from .testing import tests
+from grade.test.testing import tests
 
 
 def load_module(path):

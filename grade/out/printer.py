@@ -9,7 +9,6 @@ class Printer:
     """Intended for use as an instance."""
 
     _indent: int = 0
-    _lineno: int = None
     _ended: bool = True
 
     def indent(self, size=2):
@@ -23,23 +22,16 @@ class Printer:
     def reset(self):
         self._indent = 0
 
-    def __pos__(self):
-        self.indent()
-
-    def __neg__(self):
-        self.dedent()
-
-    def __invert__(self):
-        self.reset()
-
     def __call__(self, line: str, end: bool = True):
         """Print a line to standard out."""
 
         if self._ended:
             line = " " * self._indent + line
-            if self._lineno is not None:
-                line = "{:-3}. " + line
-
         print(line, end="\n" if end else "")
-
         self._ended = end
+
+
+class AsyncPrinter(Printer):
+    """A printer that consumes calls until run."""
+
+

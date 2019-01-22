@@ -6,5 +6,4 @@ output of the code under various conditions, measuring its runtime
 performance and memory usage, and running style checks.
 """
 
-from grade.legacy.capture import capture
-from .testing import tests, Result
+from grade.test.testing import tests, Result
