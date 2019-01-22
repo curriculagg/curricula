@@ -1,7 +1,6 @@
 """A lightweight unit test framework."""
 
-import timeit
-from typing import Callable, List, Iterator, Dict
+from typing import Callable, Optional, Dict
 
 from .runtime import Target, Runtime
 
@@ -16,8 +15,13 @@ class Result:
         self.runtime = runtime
         self.passing = passing
 
+    def __str__(self):
+        return "{} in {} seconds".format(
+            "passed" if self.passing else "failed",
+            round(self.runtime.elapsed, 2))
 
-Testable = Callable[[Target], Iterator[Result, None]]
+
+Testable = Callable[[Target], Result]
 
 
 class Test:
@@ -30,47 +34,40 @@ class Test:
         """Initialize the test and look for registration details."""
 
         self.run = run
-        assert "name" in details, "test must be registered with name"
         self.name = details["name"]
 
 
 class Tests:
     """A test case container."""
 
-    name: str
+    tests: Dict[Test, Optional[Result]] = {}
 
-    tests: Dict[str, List[Test]] = {}
-    current: List[Test] = None
-
-    def __init__(self, name: str):
-        self.name = name
-
-    def file(self, file: str):
-        """Indicate that tests for a new file are being registered."""
-
-        new = []
-        self.tests[file] = new
-        self.current = new
-
-    def register(self, **details) -> Callable[[Testable], Testable]:
+    def register(self, **details):
         """Register a new test with the container."""
 
-        assert self.current is not None, "tests are not registered to a file"
+        assert "name" in details, "test must be registered with name"
 
-        def decorator(run: Testable) -> Testable:
-            self.current.append(Test(run, **details))
-            return run
+        def decorator(run: Testable):
+            """Put the function in a test object.
+
+            We don't return the test function here because it should
+            not be used outside of the tests manager.
+            """
+
+            def decorated(target: Target) -> Result:
+                """The actual test to be run."""
+
+                print("Running {}".format(details["name"]))
+                result = run(target)
+                print(result, "***" if not result.passing else "")
+                return result
+
+            self.tests[Test(decorated, **details)] = None
 
         return decorator
 
     def run(self, target: Target):
         """Run all the tests registered with the container."""
 
-        for path in self.tests:
-            for test in self.tests[path]:
-                generator = test.run(target)
-                result = next(generator)
-                next(generator, None)
-
-
-tests: Tests = Tests("all tests")
+        for test in self.tests:
+            self.tests[test] = test.run(target)

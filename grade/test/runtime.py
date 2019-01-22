@@ -10,12 +10,12 @@ class Runtime:
     timeout: float
 
     code: Optional[int]
-    stdout: Optional[bytes]
-    stderr: Optional[bytes]
+    stdout: Optional[str]
+    stderr: Optional[str]
     elapsed: Optional[float]
 
     def __init__(self, hang: bool, timeout: float,
-                 code: int = None, stdout: bytes = None, stderr: bytes = None, elapsed: float = None):
+                 code: int = None, stdout: str = None, stderr: str = None, elapsed: float = None):
         self.hang = hang
         self.timeout = timeout
         self.code = code
@@ -38,13 +38,13 @@ def run(*args: str, timeout: float = None) -> Runtime:
     # Wait for the process to finish with timeout
     start = timeit.default_timer()
     try:
-        stdout, stderr = process.wait(timeout=timeout)
+        stdout, stderr = process.communicate(timeout=timeout)
     except subprocess.TimeoutExpired:
         process.kill()
         return Runtime(True, timeout)
     elapsed = timeit.default_timer() - start
 
-    return Runtime(False, timeout, process.returncode, stdout, stderr, elapsed)
+    return Runtime(False, timeout, process.returncode, stdout.decode(), stderr.decode(), elapsed)
 
 
 class Target:
