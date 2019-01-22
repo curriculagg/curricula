@@ -3,13 +3,17 @@ import sys
 
 sys.path.append(dirname(dirname(abspath(__file__))))
 from grade.test import Target, Result, register
+from grade.test.middleware import iterated
 
 
-@register(name="pass")
+@register(middleware=iterated)
 def test_pass(target: Target):
+    """Basic pass."""
+
     runtime = target.run("pass")
     passing = runtime.stdout.strip() == "pass"
-    return Result(runtime, passing)
+    yield Result(runtime, passing)
+    print("  yeet")
 
 
 if __name__ == "__main__":
