@@ -1,7 +1,7 @@
 from os.path import dirname, abspath
 import sys
 
-sys.path.append(dirname(dirname(abspath(__file__))))
+sys.path.append(dirname(dirname(dirname(abspath(__file__)))))
 from grade.test import Target, Result, register
 from grade.test.middleware import iterated
 
@@ -10,7 +10,8 @@ def i(size: int):
     return " " * (size - 1)
 
 
-@register(middleware=iterated)
+@register()
+@iterated(with_context=False)
 def test_pass(target: Target):
     """Basic pass."""
 
@@ -19,7 +20,8 @@ def test_pass(target: Target):
     yield Result(runtime, passing)
 
 
-@register(middleware=iterated)
+@register()
+@iterated(with_context=False)
 def test_fail(target: Target):
     """Basic pass with fail."""
 
@@ -30,7 +32,8 @@ def test_fail(target: Target):
         print(i(2), "expected pass, got", runtime.stdout.strip())
 
 
-@register(middleware=iterated)
+@register()
+@iterated(with_context=False)
 def test_error(target: Target):
     """Basic pass with error handling."""
 
@@ -46,7 +49,8 @@ def test_error(target: Target):
     print(i(2), "expected pass, got fail")
 
 
-@register(middleware=iterated)
+@register()
+@iterated(with_context=False)
 def test_fault(target: Target):
     """Basic pass with fault detection."""
 
@@ -64,7 +68,8 @@ def test_fault(target: Target):
     print(i(2), "expected pass, got fail")
 
 
-@register(middleware=iterated)
+@register()
+@iterated(with_context=False)
 def test_timeout(target: Target):
     """Basic pass with timeout."""
 

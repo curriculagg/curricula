@@ -1,4 +1,5 @@
-from .test import Tests, Testable, Target, Result
+from .runtime import Target, Runtime
+from .test import Result, Testable, Test, Tests
 
 tests = Tests()
 register = tests.register

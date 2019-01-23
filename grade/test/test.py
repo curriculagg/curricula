@@ -21,23 +21,30 @@ class Result:
             return "timed out in {} seconds".format(self.runtime.timeout)
         return "{} in {} seconds".format(
             "passed" if self.passing else "failed",
-            round(self.runtime.elapsed, 2))
+            round(self.runtime.elapsed, 5))
 
 
-Testable = Callable[[Target], Result]
+Testable = Callable[["Test", Target], Result]
 
 
 class Test:
     """A wrapper for a single test case."""
 
-    run: Testable
+    _test: Testable
     name: str
+    details: dict
 
     def __init__(self, test: Testable, name: str, **details):
         """Initialize the test and look for registration details."""
 
-        self.run = test
+        self._test = test
         self.name = name
+        self.details = details
+
+    def run(self, target: Target) -> Result:
+        """Run the test with context and target."""
+
+        return self._test(self, target)
 
 
 class Tests:
@@ -45,7 +52,7 @@ class Tests:
 
     tests: Dict[Test, Optional[Result]] = {}
 
-    def register(self, middleware: Callable[[Callable], Testable] = None, **details):
+    def register(self, **details):
         """Register a new test with the container.
 
         To be quite honest, the reason we're using middleware instead
@@ -53,17 +60,14 @@ class Tests:
         unappealing.
         """
 
-        def decorator(test: Callable):
+        def decorator(test: Testable) -> Testable:
             """Put the function in a test object."""
 
-            # Name will always be in details
-            details["name"] = details.get("name", name_from_doc(test))
+            name = details.pop("name", name_from_doc(test))
+            assert name is not None, "name must be provided in registration or docstring"
 
-            # Apply middleware
-            if middleware is not None:
-                test = middleware(test, **details)
-
-            self.tests[Test(test, **details)] = None
+            self.tests[Test(test, name, **details)] = None
+            return test
 
         return decorator
 

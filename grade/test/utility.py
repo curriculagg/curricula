@@ -9,4 +9,6 @@ def name_from_doc(test: Callable):
     """
 
     d = test.__doc__
-    return d[:min(d.find("."), d.find("\n"))]
+    if d is not None:
+        return d[:min(d.find("."), d.find("\n"))]
+    return None
