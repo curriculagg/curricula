@@ -3,10 +3,10 @@
 import argparse
 import os
 
-from grade.test import Target, run
+from grade.test import Target
 
 
-def main():
+def main(run):
     """Run all tests in the current file against a library."""
 
     parser = argparse.ArgumentParser(description="the command line interface for a standalone test file")

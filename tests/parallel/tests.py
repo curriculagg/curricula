@@ -2,8 +2,9 @@ from os.path import dirname, abspath
 import sys
 
 sys.path.append(dirname(dirname(dirname(abspath(__file__)))))
-from grade.test import Target, Result, register
-from grade.test.middleware import iterated
+from grade.test import Manager, Runner, Target, Result, Messenger, pipeline
+
+register, run = pipeline(Manager, Runner)
 
 
 def i(size: int):
@@ -13,12 +14,12 @@ def i(size: int):
 @register(name="Parallel 3")
 @register(name="Parallel 2")
 @register(name="Parallel 1")
-@iterated(with_context=False)
-def test(target: Target):
+def test(target: Target, message: Messenger):
     runtime = target.run("2", timeout=3.0)
-    yield Result(runtime, runtime.code == 0)
+    message("Written after finish")
+    return Result(runtime, runtime.code == 0)
 
 
 if __name__ == "__main__":
-    from grade.standalone import main
-    main()
+    from grade.shell import main
+    main(run)

@@ -2,7 +2,7 @@ from os.path import dirname, abspath
 import sys
 
 sys.path.append(dirname(dirname(dirname(abspath(__file__)))))
-from grade.test import Target, Result, register
+from grade.test import Target, Result
 from grade.test.middleware import iterated
 
 
@@ -27,7 +27,8 @@ def test_fail(target: Target):
 
     runtime = target.run("fail", timeout=1)
     passing = runtime.stdout.strip() == "pass"
-    yield Result(runtime, passing)
+    result = Result(runtime, passing)
+    print(result)
     if not passing:
         print(i(2), "expected pass, got", runtime.stdout.strip())
 
