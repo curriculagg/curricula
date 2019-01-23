@@ -39,10 +39,11 @@ class ParallelRunner(Runner):
         if self._pool is not None and not self._leave_open:
             self._pool.join()
 
-    @timed(name="Parallel runner")
+    @timed(name="Parallel tests")
     def run(self, target: Target, workers: int = None) -> Dict[Target, Result]:
         """Run all tests on the target in multiple processes."""
 
+        print("Starting tests in parallel...")
         workers = min(workers or multiprocessing.cpu_count(), len(self.tests))
         self._open_pool(workers=workers)
         values = self._pool.starmap(worker, ((test, target, self._output) for test in self.tests))

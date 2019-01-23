@@ -13,10 +13,10 @@ class Messenger:
     def __init__(self):
         self.messages = deque()
 
-    def __call__(self, message: str):
+    def __call__(self, *message, sep=" "):
         """Place a message on the queue."""
 
-        self.messages.append(message)
+        self.messages.append(sep.join(map(str, message)))
 
     def sneak(self, message: str):
         """Sneak in a message at the head."""

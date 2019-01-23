@@ -19,10 +19,11 @@ class Runner:
 
         self.tests = tests.copy()
 
-    @timed(name="Standard runner")
+    @timed(name="Tests")
     def run(self, target: Target) -> Dict[Test, Result]:
         """Run all tests on a target."""
 
+        print("Starting tests...")
         results = {}
         message = Messenger()
         for test in self.tests:
