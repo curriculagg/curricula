@@ -14,4 +14,4 @@ def main(run):
     result = parser.parse_args()
 
     target = Target(os.path.abspath(result.binary))
-    run(target)
+    return run(target)

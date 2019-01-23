@@ -1,7 +1,7 @@
 from typing import List
 
 from .test import Test, Testable
-from .reflection import name_from_doc
+from .utility import name_from_doc
 
 
 class Manager:

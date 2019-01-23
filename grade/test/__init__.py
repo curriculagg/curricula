@@ -19,6 +19,6 @@ def pipeline(manager_type, runner_type) -> Tuple[Callable, Callable]:
 
     def run(target: Target):
         runner.load(manager.tests)
-        runner.run(target)
+        return runner.run(target)
 
     return manager.register, run

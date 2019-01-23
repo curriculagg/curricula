@@ -21,6 +21,9 @@ class Result:
             "passed" if self.passing else "failed",
             round(self.runtime.elapsed, 5))
 
+    def __repr__(self):
+        return str(self)
+
 
 Testable = Callable[[Target, Messenger], Result]
 
@@ -41,6 +44,9 @@ class Test:
 
     def __str__(self):
         return self.name
+
+    def __repr__(self):
+        return str(self)
 
     def run(self, target: Target, message: Messenger) -> Result:
         """Run the test with context and target."""

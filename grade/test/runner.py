@@ -1,29 +1,33 @@
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 from .runtime import Target
 from .test import Test, Result
 from .message import Messenger
+from .utility import timed
 
 
 class Runner:
     """A linear test runner."""
 
-    results: Dict[Test, Optional[Result]]
+    tests: List[Test]
 
     def __init__(self):
-        self.results = {}
+        self.tests = []
 
     def load(self, tests: List[Test]):
         """Load all test cases into the system."""
 
-        for test in tests:
-            self.results[test] = None
+        self.tests = tests.copy()
 
-    def run(self, target: Target):
+    @timed(name="Standard runner")
+    def run(self, target: Target) -> Dict[Test, Result]:
         """Run all tests on a target."""
 
+        results = {}
         message = Messenger()
-        for test in self.results:
+        for test in self.tests:
             result = test.run(target, message)
-            print(test, result)
-            message.print(prefix=" " * 2)
+            message.sneak("{} {}".format(test, result))
+            print(message.build())
+
+        return results

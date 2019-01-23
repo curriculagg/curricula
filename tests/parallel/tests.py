@@ -2,13 +2,10 @@ from os.path import dirname, abspath
 import sys
 
 sys.path.append(dirname(dirname(dirname(abspath(__file__)))))
-from grade.test import Manager, Runner, Target, Result, Messenger, pipeline
+from grade.test import Manager, Target, Runner, Result, Messenger, pipeline
+from grade.test.extension.parallel import ParallelRunner
 
 register, run = pipeline(Manager, Runner)
-
-
-def i(size: int):
-    return " " * (size - 1)
 
 
 @register(name="Parallel 3")
@@ -16,7 +13,7 @@ def i(size: int):
 @register(name="Parallel 1")
 def test(target: Target, message: Messenger):
     runtime = target.run("2", timeout=3.0)
-    message("Written after finish")
+    message("  Written after finish")
     return Result(runtime, runtime.code == 0)
 
 
