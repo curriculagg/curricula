@@ -29,6 +29,6 @@ class Runner:
         for test in self.tests:
             result = test.run(target, message)
             message.sneak("{} {}".format(test, result))
-            print(message.build())
+            print(message.build(prefix=" " * 2))
 
         return results

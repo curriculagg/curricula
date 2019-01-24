@@ -12,7 +12,7 @@ def worker(test: Test, target: Target, output: multiprocessing.Queue):
     message = Messenger()
     result = test.run(target, message)
     message.sneak("{} {}".format(test, result))
-    output.put(message.build())
+    output.put(message.build(prefix=" " * 2))
     return test, result
 
 

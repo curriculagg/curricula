@@ -28,7 +28,7 @@ def test_fail(target: Target, message: Messenger):
     passing = runtime.stdout.strip() == "pass"
     result = Result(runtime, passing)
     if not passing:
-        message(i(2), "expected pass, got", runtime.stdout.strip())
+        message("  expected pass, got", runtime.stdout.strip())
     return result
 
 
@@ -38,13 +38,13 @@ def test_error(target: Target, message: Messenger):
 
     runtime = target.run("error", timeout=1.0)
     if runtime.code != 0:
-        message(i(2), "received return code", runtime.code)
+        message("  received return code", runtime.code)
         for line in filter(None, runtime.stderr.split("\n")):
-            message(i(4), line)
+            message(" ", line)
         return Result(runtime, False)
 
     passing = runtime.stdout.strip() == "pass"
-    message(i(2), "expected pass, got fail")
+    message("  expected pass, got fail")
     return Result(runtime, passing)
 
 
@@ -54,15 +54,15 @@ def test_fault(target: Target, message: Messenger):
 
     runtime = target.run("fault", timeout=1.0)
     if runtime.code != 0:
-        message(i(2), "received return code", runtime.code)
+        message("  received return code", runtime.code)
         for line in filter(None, runtime.stderr.split("\n")):
-            message(i(4), line)
+            message(" ", line)
         if runtime.code == -11:
-            message(i(4), "segmentation fault")
+            message("  segmentation fault")
         return Result(runtime, False)
 
     passing = runtime.stdout.strip() == "pass"
-    message(i(2), "expected pass, got fail")
+    message("expected pass, got fail")
     return Result(runtime, passing)
 
 
@@ -76,15 +76,15 @@ def test_timeout(target: Target, message: Messenger):
         return Result(runtime, False)
 
     if runtime.code != 0:
-        message(i(2), "received return code", runtime.code)
+        message("received return code", runtime.code)
         for line in filter(None, runtime.stderr.split("\n")):
-            message(i(4), line)
+            message(" ", line)
         if runtime.code == -11:
-            message(i(4), "segmentation fault")
+            message("  segmentation fault")
         return Result(runtime, False)
 
     passing = runtime.stdout.strip() == "pass"
-    message(i(2), "expected pass, got fail")
+    message("expected pass, got fail")
     return Result(runtime, passing)
 
 

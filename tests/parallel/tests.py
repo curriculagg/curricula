@@ -12,7 +12,7 @@ tests = Manager()
 @tests.register(name="Parallel 1")
 def test(target: Target, message: Messenger):
     runtime = target.run("2", timeout=3.0)
-    message("  Written after finish")
+    message("written after finish")
     return Result(runtime, runtime.code == 0)
 
 

@@ -2,7 +2,7 @@ build:
 	g++ -Wall -o program program.cpp
 
 test:
-	python3 tests.py program
+	python3 tests.py program -m linear
 
 clean:
 	rm -f program
