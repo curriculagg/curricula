@@ -6,6 +6,8 @@ from typing import Optional, Tuple
 class Runtime:
     """Runtime data extracted from running an external process."""
 
+    __slots__ = ("timeout", "code", "stdout", "stderr", "elapsed")
+
     timeout: Optional[float]  # Populated if timed out
     code: Optional[int]
     stdout: Optional[str]
@@ -42,27 +44,28 @@ def run(*args: str, timeout: float) -> Runtime:
         stdout, stderr = process.communicate(timeout=timeout)
     except subprocess.TimeoutExpired:
         process.kill()
+        # TODO: include any stdout and stderr that made it into the buffer
         return Runtime(timeout=timeout)
     elapsed = timeit.default_timer() - start
 
     return Runtime(code=process.returncode, stdout=stdout.decode(), stderr=stderr.decode(), elapsed=elapsed)
 
 
-class Target:
+class Executable:
     """A runnable testing target program."""
 
-    executable: Tuple[str]
+    args: Tuple[str]
 
-    def __init__(self, *executable: str):
+    def __init__(self, *args: str):
         """Initialize a target with commands to run the target.
 
         Any paths invoked in the executable command must be absolute; relative
         requires subprocess configuration that is unsafe.
         """
 
-        self.executable = tuple(executable)
+        self.args = tuple(args)
 
     def run(self, *args: str, timeout: float) -> Runtime:
         """Run the target with command line arguments."""
 
-        return run(*self.executable, *args, timeout=timeout)
+        return run(*self.args, *args, timeout=timeout)

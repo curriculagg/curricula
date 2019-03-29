@@ -2,92 +2,89 @@ from os.path import dirname, abspath
 import sys
 
 sys.path.append(dirname(dirname(dirname(abspath(__file__)))))
-from grade.test import Target, Result, Manager, Messenger
+from grade import Manager, Executable, Messenger
+from grade.correctness import Correctness
 
-tests = Manager()
-
-
-def i(size: int):
-    return " " * (size - 1)
+test = Manager()
 
 
-@tests.register()
-def test_pass(target: Target, message: Messenger):
+@test.correctness(target="program")
+def test_pass(executable: Executable, message: Messenger):
     """Basic pass."""
 
-    runtime = target.run("pass", timeout=1)
+    runtime = executable.run("pass", timeout=1)
     passing = runtime.stdout.strip() == "pass"
-    return Result(runtime, passing)
+    return Correctness(passing, runtime)
 
 
-@tests.register()
-def test_fail(target: Target, message: Messenger):
+@test.correctness(target="program")
+def test_fail(target: Executable, message: Messenger):
     """Basic pass with fail."""
 
     runtime = target.run("fail", timeout=1)
     passing = runtime.stdout.strip() == "pass"
-    result = Result(runtime, passing)
+    result = Correctness(passing, runtime)
     if not passing:
-        message("  expected pass, got", runtime.stdout.strip())
+        message[2]("Expected pass, got", runtime.stdout.strip())
     return result
 
 
-@tests.register()
-def test_error(target: Target, message: Messenger):
+@test.correctness(target="program")
+def test_error(target: Executable, message: Messenger):
     """Basic pass with error handling."""
 
     runtime = target.run("error", timeout=1.0)
     if runtime.code != 0:
-        message("  received return code", runtime.code)
+        message[2]("Received return code", runtime.code)
         for line in filter(None, runtime.stderr.split("\n")):
-            message(" ", line)
-        return Result(runtime, False)
+            message[2](line)
+        return Correctness(False, runtime)
 
     passing = runtime.stdout.strip() == "pass"
-    message("  expected pass, got fail")
-    return Result(runtime, passing)
+    message[2]("Expected pass, got fail")
+    return Correctness(passing, runtime)
 
 
-@tests.register()
-def test_fault(target: Target, message: Messenger):
+@test.correctness(target="program")
+def test_fault(target: Executable, message: Messenger):
     """Basic pass with fault detection."""
 
     runtime = target.run("fault", timeout=1.0)
     if runtime.code != 0:
-        message("  received return code", runtime.code)
+        message[2]("Received return code", runtime.code)
         for line in filter(None, runtime.stderr.split("\n")):
-            message(" ", line)
+            message[2](line)
         if runtime.code == -11:
-            message("  segmentation fault")
-        return Result(runtime, False)
+            message[2]("Segmentation fault")
+        return Correctness(False, runtime)
 
     passing = runtime.stdout.strip() == "pass"
-    message("expected pass, got fail")
-    return Result(runtime, passing)
+    message("Expected pass, got fail")
+    return Correctness(passing, runtime)
 
 
-@tests.register()
-def test_timeout(target: Target, message: Messenger):
+@test.correctness(target="program")
+def test_timeout(target: Executable, message: Messenger):
     """Basic pass with timeout."""
 
     runtime = target.run("hang", timeout=1.0)
 
-    if runtime.timeout is not None:
-        return Result(runtime, False)
+    if runtime.timeout:
+        return Correctness(False, runtime)
 
     if runtime.code != 0:
         message("received return code", runtime.code)
         for line in filter(None, runtime.stderr.split("\n")):
-            message(" ", line)
+            message[2](line)
         if runtime.code == -11:
-            message("  segmentation fault")
-        return Result(runtime, False)
+            message[2]("segmentation fault")
+        return Correctness(False, runtime)
 
     passing = runtime.stdout.strip() == "pass"
     message("expected pass, got fail")
-    return Result(runtime, passing)
+    return Correctness(passing, runtime)
 
 
 if __name__ == "__main__":
     from grade.shell import main
-    main(tests)
+    main(test)

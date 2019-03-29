@@ -2,7 +2,7 @@ from os.path import dirname, abspath
 import sys
 
 sys.path.append(dirname(dirname(dirname(abspath(__file__)))))
-from grade.test import Manager, Target, Result, Messenger
+from grade.correctness import Manager, Target, Result, Messenger
 
 tests = Manager()
 

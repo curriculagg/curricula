@@ -1,14 +1,14 @@
 import multiprocessing
 from typing import Dict
 
-from ..runner import Runner
-from ..test import Test, Result
-from ..runtime import Target
-from ..message import Messenger
-from ..utility import timed
+from grade.runner import Runner
+from grade.correctness.test import Test, Result
+from grade.library.runtime import Executable
+from grade.library.message import Messenger
+from grade.library.utility import timed
 
 
-def worker(test: Test, target: Target, output: multiprocessing.Queue):
+def worker(test: Test, target: Executable, output: multiprocessing.Queue):
     message = Messenger()
     result = test.run(target, message)
     message.sneak("{} {}".format(test, result))
@@ -40,7 +40,7 @@ class ParallelRunner(Runner):
             self._pool.join()
 
     @timed(name="Parallel tests")
-    def run(self, target: Target, workers: int = None) -> Dict[Target, Result]:
+    def run(self, target: Executable, workers: int = None) -> Dict[Executable, Result]:
         """Run all tests on the target in multiple processes."""
 
         print("Starting tests in parallel...")
