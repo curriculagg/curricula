@@ -3,7 +3,7 @@ from typing import Dict
 
 from grade.runner import Runner
 from grade.correctness.test import Test, Result
-from grade.library.runtime import Executable
+from grade.resource import Executable
 from grade.library.message import Messenger
 from grade.library.utility import timed
 

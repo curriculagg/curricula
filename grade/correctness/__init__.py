@@ -1,7 +1,7 @@
 from typing import Callable
 
 from ..test import Result, Test
-from grade.library.runtime import Executable, Runtime
+from grade.resource import Executable, Runtime
 from grade.library.message import Messenger
 
 

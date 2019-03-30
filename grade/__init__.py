@@ -8,5 +8,5 @@ performance and memory usage, and running style checks.
 
 from .manager import Manager
 
-from .library.runtime import Executable
+from grade.resource import Executable
 from .library.message import Messenger

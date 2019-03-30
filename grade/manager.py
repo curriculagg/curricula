@@ -2,7 +2,7 @@ from typing import Dict, List, Callable
 
 from grade.test import Result, Test, Runnable
 from grade.correctness import CorrectnessTest
-from grade.library.runtime import Executable
+from grade.resource import Executable
 from grade.library.message import Messenger
 from grade.library.utility import name_from_doc, timed
 
@@ -19,6 +19,11 @@ def create_registrar(self: "Manager", test: type, **details):
         return runnable
 
     return decorator
+
+
+# Correctness requires an executable
+# Complexity requires an executable
+# Style requires a file path
 
 
 class Manager:
