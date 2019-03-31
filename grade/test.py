@@ -1,5 +1,7 @@
 from typing import Callable
 
+from .resource import *
+
 
 class Result:
     """The result of a test."""
@@ -16,7 +18,7 @@ class Result:
         return "Result[{}]".format(str(self))
 
 
-Runnable = Callable[[...], Result]
+Runnable = Callable[..., Result]
 
 
 class Test:
@@ -28,7 +30,7 @@ class Test:
     """
 
     name: str
-    runnable: Callable[[...], Result]
+    runnable: Runnable
     details: dict
 
     def __init__(self, name: str, runnable: Runnable, **details):
@@ -42,5 +44,7 @@ class Test:
     def __repr__(self):
         return "Test[{}]".format(str(self))
 
-    def run(self, *args, **kwargs) -> Result:
-        return self.runnable(*args, **kwargs)
+    def run(self, **resources: Resource) -> Result:
+        """Do the dependency injection for the runnable."""
+
+        return self.runnable(**resources)

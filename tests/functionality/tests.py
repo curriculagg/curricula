@@ -2,35 +2,36 @@ from os.path import dirname, abspath, join
 import sys
 
 sys.path.append(dirname(dirname(dirname(abspath(__file__)))))
-from grade import Manager, Executable, Messenger
+from grade import Manager, Executable, Logger
 from grade.correctness import Correctness
 
 
 test = Manager()
 
-root = dirname(__file__)
-Program = Executable(join(root, "program"))
+root = dirname(abspath(__file__))
+program = Executable(join(root, "program"))
 
 
 @test.correctness()
-def test_pass(program: Program):
+def test_pass(target: Executable = program):
     """Basic pass."""
 
-    runtime = program.run("pass", timeout=1)
+    runtime = target.run("pass", timeout=1)
     passing = runtime.stdout.strip() == "pass"
     return Correctness(passing, runtime)
 
 
-# @test.correctness()
-# def test_fail(target: Executable, out: Messenger):
-#     """Basic pass with fail."""
-#
-#     runtime = target.run("fail", timeout=1)
-#     passing = runtime.stdout.strip() == "pass"
-#     result = Correctness(passing, runtime)
-#     if not passing:
-#         out[2]("Expected pass, got", runtime.stdout.strip())
-#     return result
+@test.correctness()
+def test_fail(log: Logger, target: Executable = program):
+    """Basic pass with fail."""
+
+    runtime = target.run("fail", timeout=1)
+    passing = runtime.stdout.strip() == "pass"
+    result = Correctness(passing, runtime)
+    if not passing:
+        log[2]("Expected pass, got", runtime.stdout.strip())
+    return result
+
 #
 #
 # @test.correctness(target="program")
