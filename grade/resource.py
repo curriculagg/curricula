@@ -8,7 +8,7 @@ class Resource:
     """A resource required for a test."""
 
 
-class Logger:
+class Logger(Resource):
     """A mutable message recipient.
 
     This is used in tests so that when multiprocessing output is
@@ -20,6 +20,9 @@ class Logger:
 
     def __init__(self):
         self.messages = deque()
+
+    def __repr__(self):
+        return "Logger()".format()
 
     def __call__(self, *message, sep: str = " ", end: str = "\n"):
         """Place a message on the queue."""
@@ -58,7 +61,7 @@ class File(Resource):
         self.path = path
 
     def __repr__(self):
-        return "File[{}]".format(self.path)
+        return "File({})".format(self.path)
 
 
 class Executable(Resource):
@@ -81,4 +84,4 @@ class Executable(Resource):
         return run(*self.args, *args, timeout=timeout)
 
     def __repr__(self):
-        return "Executable[{}]".format(" ".join(self.args))
+        return "Executable({})".format(" ".join(self.args))

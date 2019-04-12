@@ -7,15 +7,17 @@ class Result:
     """The result of a test."""
 
     passing: bool
+    details: dict
 
-    def __init__(self, passing: bool):
+    def __init__(self, passing: bool, **details):
         self.passing = passing
+        self.details = details
 
     def __str__(self):
         return "passed" if self.passing else "failed"
 
     def __repr__(self):
-        return "Result[{}]".format(str(self))
+        return "Result({})".format(str(self))
 
 
 Runnable = Callable[..., Result]
@@ -42,7 +44,7 @@ class Test:
         return self.name
 
     def __repr__(self):
-        return "Test[{}]".format(str(self))
+        return "Test({})".format(str(self))
 
     def run(self, **resources: Resource) -> Result:
         """Do the dependency injection for the runnable."""

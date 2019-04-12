@@ -7,4 +7,3 @@ performance and memory usage, and running style checks.
 """
 
 from .manager import Manager
-from .resource import Logger, File, Executable
