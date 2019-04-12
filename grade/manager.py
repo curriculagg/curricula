@@ -19,11 +19,6 @@ def create_registrar(self: "Manager", test: type, **details):
     return decorator
 
 
-# Correctness requires an executable
-# Complexity requires an executable
-# Style requires a file path
-
-
 class Manager:
     """An overarching manager for test registrars."""
 
