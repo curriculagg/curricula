@@ -29,7 +29,7 @@ def test_fail(log: Logger, target: Executable = program):
     passing = runtime.stdout.strip() == "pass"
     result = Correctness(passing, runtime)
     if not passing:
-        log[2]("Expected pass, got", runtime.stdout.strip())
+        log[2]("expected pass, got", runtime.stdout.strip())
     return result
 
 
@@ -39,13 +39,13 @@ def test_error(out: Logger, target: Executable = program):
 
     runtime = target.run("error", timeout=1.0)
     if runtime.code != 0:
-        out[2]("Received return code", runtime.code)
+        out[2]("received return code", runtime.code)
         for line in filter(None, runtime.stderr.split("\n")):
             out[4](line)
         return Correctness(False, runtime)
 
     passing = runtime.stdout.strip() == "pass"
-    out[2]("Expected pass, got fail")
+    out[2]("expected pass, got fail")
     return Correctness(passing, runtime)
 
 
@@ -55,7 +55,7 @@ def test_fault(out: Logger, target: Executable = program):
 
     runtime = target.run("fault", timeout=1.0)
     if runtime.code != 0:
-        out[2]("Received return code", runtime.code)
+        out[2]("received return code", runtime.code)
         for line in filter(None, runtime.stderr.split("\n")):
             out[2](line)
         if runtime.code == -11:
@@ -63,7 +63,7 @@ def test_fault(out: Logger, target: Executable = program):
         return Correctness(False, runtime)
 
     passing = runtime.stdout.strip() == "pass"
-    out("Expected pass, got fail")
+    out("expected pass, got fail")
     return Correctness(passing, runtime)
 
 
