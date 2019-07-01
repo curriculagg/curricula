@@ -2,6 +2,7 @@ from typing import List, Callable
 
 from grade.test import Test, Runnable
 from grade.correctness import CorrectnessTest
+from grade.complexity import ComplexityTest
 from grade.library.utility import name_from_doc
 
 
@@ -31,3 +32,8 @@ class Manager:
         """Register a new correctness test with the container."""
 
         return create_registrar(self, CorrectnessTest, **details)
+
+    def complexity(self, **details) -> Callable:
+        """Register a new correctness test with the container."""
+
+        return create_registrar(self, ComplexityTest, **details)

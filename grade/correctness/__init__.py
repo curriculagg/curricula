@@ -4,24 +4,26 @@ from ..test import Result, Test
 from grade.library.process import Runtime
 
 
-class Correctness(Result):
+class CorrectnessResult(Result):
     """The result of a correctness case."""
 
     runtime: Runtime
+    correct: bool
 
-    def __init__(self, passing: bool, runtime: Runtime):
-        super().__init__(passing)
+    def __init__(self, correct: bool, runtime: Runtime):
+        super().__init__()
+        self.correct = correct
         self.runtime = runtime
 
     def __str__(self):
         if self.runtime.timeout is not None:
             return "timed out in {} seconds".format(self.runtime.timeout)
         return "{} in {} seconds".format(
-            "passed" if self.passing else "failed",
+            "passed" if self.correct else "failed",
             round(self.runtime.elapsed, 5))
 
 
-CorrectnessRunnable = Callable[..., Correctness]
+CorrectnessRunnable = Callable[..., CorrectnessResult]
 
 
 class CorrectnessTest(Test):

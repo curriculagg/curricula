@@ -6,15 +6,10 @@ from .resource import *
 class Result:
     """The result of a test."""
 
-    passing: bool
     details: dict
 
-    def __init__(self, passing: bool, **details):
-        self.passing = passing
+    def __init__(self, **details):
         self.details = details
-
-    def __str__(self):
-        return "passed" if self.passing else "failed"
 
     def __repr__(self):
         return "Result({})".format(str(self))

@@ -1,7 +1,8 @@
 from collections import deque
 from typing import Deque, Optional, Tuple
 
-from .library.process import Runtime, run
+from .library import callgrind
+from .library import process
 
 
 class Resource:
@@ -78,10 +79,15 @@ class Executable(Resource):
 
         self.args = tuple(args)
 
-    def run(self, *args: str, timeout: float) -> Runtime:
+    def execute(self, *args: str, timeout: float) -> process.Runtime:
         """Run the target with command line arguments."""
 
-        return run(*self.args, *args, timeout=timeout)
+        return process.run(*self.args, *args, timeout=timeout)
+
+    def count(self, *args: str, timeout: float) -> int:
+        """Count the instructions executed during runtime."""
+
+        return callgrind.run(*self.args, *args, timeout=timeout)
 
     def __repr__(self):
         return "Executable({})".format(" ".join(self.args))

@@ -1,19 +1,25 @@
-from os.path import dirname, abspath
+from os.path import dirname, abspath, join
 import sys
 
 sys.path.append(dirname(dirname(dirname(abspath(__file__)))))
-from grade.correctness import Manager, Target, Result, Messenger
+from grade import Manager
+from grade.resource import Executable, Logger
+from grade.correctness import CorrectnessResult
 
 tests = Manager()
+root = dirname(abspath(__file__))
+program = Executable(join(root, "program"))
 
 
-@tests.register(name="Parallel 3")
-@tests.register(name="Parallel 2")
-@tests.register(name="Parallel 1")
-def test(target: Target, message: Messenger):
-    runtime = target.run("2", timeout=3.0)
-    message("written after finish")
-    return Result(runtime, runtime.code == 0)
+@tests.correctness(name="Parallel 3")
+@tests.correctness(name="Parallel 2")
+@tests.correctness(name="Parallel 1")
+def test(log: Logger, target: Executable = program):
+    """Run the test with a program that sleeps."""
+
+    runtime = target.execute("2", timeout=3.0)
+    log("written after finish")
+    return CorrectnessResult(runtime.code == 0, runtime)
 
 
 if __name__ == "__main__":
