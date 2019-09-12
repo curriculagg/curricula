@@ -2,17 +2,16 @@ import multiprocessing
 from typing import Dict
 
 from grade.runner import Runner
-from grade.correctness.test import Test, Result
-from grade.resource import Executable
-from grade.message import Messenger
+from grade.test import Test
+from grade.resource import Executable, Logger
 from grade.library.utility import timed
 
 
-def worker(test: Test, target: Executable, output: multiprocessing.Queue):
-    message = Messenger()
-    result = test.run(target, message)
-    message.sneak("{} {}".format(test, result))
-    output.put(message.build(prefix=" " * 2))
+def worker(test: Test, resources: dict, output: multiprocessing.Queue):
+    log = Logger()
+    result = test.run(**resources)
+    log.sneak("{} {}".format(test, result))
+    output.put(log.build(prefix=" " * 2))
     return test, result
 
 
@@ -40,13 +39,13 @@ class ParallelRunner(Runner):
             self._pool.join()
 
     @timed(name="Parallel tests")
-    def run(self, target: Executable, workers: int = None) -> Dict[Executable, Result]:
+    def run(self, workers: int = None, **resources) -> Dict[Executable, ]:
         """Run all tests on the target in multiple processes."""
 
         print("Starting tests in parallel...")
         workers = min(workers or multiprocessing.cpu_count(), len(self.tests))
         self._open_pool(workers=workers)
-        values = self._pool.starmap(worker, ((test, target, self._output) for test in self.tests))
+        values = self._pool.starmap(worker, ((test, resources, self._output) for test in self.tests))
 
         for i in range(len(self.tests)):
             print(self._output.get())
