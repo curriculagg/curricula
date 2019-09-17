@@ -12,8 +12,8 @@ from grade.correctness import CorrectnessResult
 # root = dirname(abspath(__file__))
 # program = Executable(join(root, "program"))
 
-valgrind.run("./program", timeout=1.0)
-
+report = valgrind.run("./program", timeout=1.0)
+print(report.memory_lost())
 
 # if __name__ == "__main__":
     # from grade.shell import main

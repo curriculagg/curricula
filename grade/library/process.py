@@ -1,12 +1,12 @@
 import subprocess
 import timeit
 from typing import Optional
+from dataclasses import dataclass
 
 
+@dataclass
 class Runtime:
     """Runtime data extracted from running an external process."""
-
-    __slots__ = ("timeout", "code", "stdout", "stderr", "elapsed")
 
     timeout: Optional[float]  # Populated if timed out
     code: Optional[int]
