@@ -20,7 +20,7 @@ def run(*args: str, timeout: float) -> Optional[int]:
     """Run callgrind on the program and return IR count."""
 
     path = tempfile.mktemp()
-    process.run("valgrind", "--tool=callgrind", f"--callgrind-out-file={path}", *args, timeout=timeout)
+    process.run("valgrind", "--tool=callgrind", f"--callgrind-out-file=\"{path}\"", *args, timeout=timeout)
     if os.path.exists(path):
         result = int(read_last_line(path).rsplit(maxsplit=1)[1])
         os.remove(path)
