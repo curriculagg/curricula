@@ -3,7 +3,7 @@ from typing import Optional, List, Dict
 
 from . import Result, Test
 from ..resource import Logger, Resource
-from ..library.utility import timed, name_from_doc
+from ..library.utility import timed
 
 
 class Runner:
@@ -33,6 +33,7 @@ class Runner:
                 # Otherwise, fill resource first from override then from default
                 dependency = resources.get(name, parameter.default)
                 assert dependency != parameter.empty, "could not satisfy dependency {} in {}".format(name, test.name)
+                dependencies[name] = dependency
 
             self.tests[test] = result = test.run(**dependencies)
 

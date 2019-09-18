@@ -1,8 +1,10 @@
 from typing import Callable
+from dataclasses import dataclass
 
 from ..resource import *
 
 
+@dataclass
 class Result:
     """The result of a test."""
 
@@ -18,6 +20,7 @@ class Result:
 Runnable = Callable[..., Result]
 
 
+@dataclass
 class Test:
     """A general test for a codebase.
 
@@ -30,16 +33,11 @@ class Test:
     runnable: Runnable
     details: dict
 
-    def __init__(self, name: str, runnable: Runnable, **details):
-        self.name = name
-        self.runnable = runnable
-        self.details = details
-
     def __str__(self):
         return self.name
 
-    def __repr__(self):
-        return "Test({})".format(str(self))
+    def __hash__(self):
+        return id(self)
 
     def run(self, **resources: Resource) -> Result:
         """Do the dependency injection for the runnable."""

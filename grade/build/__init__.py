@@ -17,7 +17,7 @@ class Build:
     buildable: Buildable
     details: dict
 
-    def build(self, **resources) -> Executable:
+    def run(self, **resources) -> Executable:
         """Run build and return a runnable executable."""
 
         return self.buildable(**resources)

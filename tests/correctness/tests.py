@@ -1,5 +1,6 @@
-from pathlib import Path
 import sys
+import shutil
+from pathlib import Path
 
 sys.path.append(str(Path(__file__).absolute().parent.parent.parent))
 from grade import Grader
@@ -12,15 +13,20 @@ grader = Grader()
 root = Path(__file__).absolute().parent
 
 
+def overwrite_directory(path: Path):
+    shutil.rmtree(str(path))
+    path.mkdir()
+
+
 @grader.build(name="program")
 def build_program(context: Context):
     """Compile program with GCC."""
 
     source = context.target.joinpath("program.cpp")
     build = root.joinpath("build")
-    build.mkdir()
+    overwrite_directory(build)
     executable = build.joinpath("program")
-    runtime = run("g++", "-Wall", "-o", str(executable), str(source), timeout=1)
+    runtime = run("g++", "-Wall", "-o", str(executable), str(source), timeout=5)
     if runtime.code == 0:
         return Executable(str(executable))
     raise Exception()

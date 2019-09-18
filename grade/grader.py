@@ -2,11 +2,12 @@ from typing import List
 from dataclasses import dataclass, field
 
 from .test import Runnable, Test
+from .test.runner import Runner
 from .build import Build
 from .library.utility import name_from_doc
 
 
-def create_registrar(container: List, wrapper: type, **details):
+def create_registrar(container: List, wrapper: type, details: dict):
     """A second-level decorator to reuse code."""
 
     def decorator(runnable: Runnable) -> Runnable:
@@ -14,7 +15,7 @@ def create_registrar(container: List, wrapper: type, **details):
 
         name = details.pop("name", name_from_doc(runnable))
         assert name is not None, "name must be provided in registration or docstring"
-        container.append(wrapper(name, runnable, **details))
+        container.append(wrapper(name, runnable, details))
         return runnable
 
     return decorator
@@ -30,9 +31,17 @@ class Grader:
     def test(self, **details):
         """Add a test to the grader."""
 
-        return create_registrar(self.tests, Test, **details)
+        return create_registrar(self.tests, Test, details)
 
     def build(self, **details):
         """Add a test to the grader."""
 
-        return create_registrar(self.builds, Build, **details)
+        return create_registrar(self.builds, Build, details)
+
+    def run(self, **resources):
+        """Build and test."""
+
+        for build in self.builds:
+            resources[build.name] = build.run(**resources)
+        runner = Runner(self.tests)
+        runner.run(**resources)
