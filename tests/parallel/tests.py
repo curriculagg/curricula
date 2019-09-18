@@ -4,7 +4,7 @@ import sys
 sys.path.append(dirname(dirname(dirname(abspath(__file__)))))
 from grade import Manager
 from grade.resource import Executable, Logger
-from grade.correctness import CorrectnessResult
+from grade.test.correctness import CorrectnessResult
 
 tests = Manager()
 root = dirname(abspath(__file__))

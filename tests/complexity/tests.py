@@ -4,7 +4,7 @@ import sys
 sys.path.append(dirname(dirname(dirname(abspath(__file__)))))
 from grade import Manager
 from grade.resource import Executable, Logger
-from grade.complexity import ComplexityResult
+from grade.test.complexity import ComplexityResult
 
 
 test = Manager()

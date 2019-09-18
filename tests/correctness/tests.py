@@ -1,15 +1,15 @@
-from os.path import dirname, abspath, join
+from pathlib import Path
 import sys
 
-sys.path.append(dirname(dirname(dirname(abspath(__file__)))))
-from grade import Manager
+sys.path.append(str(Path(__file__).absolute().parent.parent.parent))
 from grade.resource import Executable, Logger
-from grade.correctness import CorrectnessResult
+from grade.test.runner import Runner
+from grade.test.correctness import CorrectnessResult
 
 
-test = Manager()
-root = dirname(abspath(__file__))
-program = Executable(join(root, "program"))
+test = Runner()
+root = Path(__file__).absolute().parent
+program = Executable(str(root.joinpath("program")))
 
 
 @test.correctness()
@@ -57,7 +57,7 @@ def test_fault(out: Logger, target: Executable = program):
     if runtime.code != 0:
         out[2]("received return code", runtime.code)
         for line in filter(None, runtime.stderr.split("\n")):
-            out[2](line)
+            out[4](line)
         if runtime.code == -11:
             out[4]("segmentation fault")
         return CorrectnessResult(False, runtime)

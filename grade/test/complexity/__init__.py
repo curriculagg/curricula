@@ -1,6 +1,6 @@
 from typing import Callable
 
-from ..test import Result, Test
+from grade.test import Result, Test
 
 
 class ComplexityResult(Result):

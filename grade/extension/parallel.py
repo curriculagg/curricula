@@ -1,7 +1,7 @@
 import multiprocessing
 from typing import Dict
 
-from grade.runner import Runner
+from grade.test.runner import Runner
 from grade.test import Test
 from grade.resource import Executable, Logger
 from grade.library.utility import timed

@@ -1,5 +1,7 @@
 from collections import deque
-from typing import Deque, Optional, Tuple
+from typing import Deque, Dict, Tuple
+from pathlib import Path
+from dataclasses import dataclass, field
 
 from .library import callgrind
 from .library import process
@@ -9,6 +11,15 @@ class Resource:
     """A resource required for a test."""
 
 
+@dataclass
+class Context(Resource):
+    """The execution context of the tests."""
+
+    target: Path
+    options: Dict[str, str] = field(default_factory=dict)
+
+
+@dataclass
 class Logger(Resource):
     """A mutable message recipient.
 
@@ -16,14 +27,8 @@ class Logger(Resource):
     buffered and therefore kept  separate for independent test cases.
     """
 
-    messages: Deque[str]
+    messages: Deque[str] = field(default_factory=deque)
     indent: int = 0
-
-    def __init__(self):
-        self.messages = deque()
-
-    def __repr__(self):
-        return "Logger()".format()
 
     def __call__(self, *message, sep: str = " ", end: str = "\n"):
         """Place a message on the queue."""
@@ -51,33 +56,21 @@ class Logger(Resource):
         return "\n".join(prefix + line for line in out.split("\n")).rstrip()
 
 
+@dataclass
 class File(Resource):
     """A resource corresponding to a file."""
 
     path: str
 
-    def __init__(self, path: Optional[str]):
-        """Require a path to exist."""
 
-        self.path = path
-
-    def __repr__(self):
-        return "File({})".format(self.path)
-
-
+@dataclass
 class Executable(Resource):
     """A runnable testing target program."""
 
     args: Tuple[str]
 
     def __init__(self, *args: str):
-        """Initialize a target with commands to run the target.
-
-        Any paths invoked in the executable command must be absolute; relative
-        requires subprocess configuration that is unsafe.
-        """
-
-        self.args = tuple(args)
+        self.args = args
 
     def execute(self, *args: str, timeout: float) -> process.Runtime:
         """Run the target with command line arguments."""
@@ -88,6 +81,3 @@ class Executable(Resource):
         """Count the instructions executed during runtime."""
 
         return callgrind.run(*self.args, *args, timeout=timeout)
-
-    def __repr__(self):
-        return "Executable({})".format(" ".join(self.args))

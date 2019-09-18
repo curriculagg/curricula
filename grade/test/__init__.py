@@ -1,6 +1,6 @@
 from typing import Callable
 
-from .resource import *
+from ..resource import *
 
 
 class Result:

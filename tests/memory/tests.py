@@ -1,11 +1,8 @@
-from os.path import dirname, abspath, join
+from os.path import dirname, abspath
 import sys
 
 sys.path.append(dirname(dirname(dirname(abspath(__file__)))))
-from grade import Manager
-from grade.resource import Executable, Logger
 from grade.library import valgrind
-from grade.correctness import CorrectnessResult
 
 #
 # test = Manager()
