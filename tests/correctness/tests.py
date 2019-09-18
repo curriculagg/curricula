@@ -60,7 +60,7 @@ def test_fail(log: Logger, program: Executable):
     passing = runtime.stdout.strip() == "pass"
     result = CorrectnessResult(passing, runtime)
     if not passing:
-        log[2]("expected pass, got", runtime.stdout.strip())
+        log[2]("Expected pass, got", runtime.stdout.strip())
     return result
 
 
@@ -70,13 +70,13 @@ def test_error(log: Logger, program: Executable):
 
     runtime = program.execute("error", timeout=1.0)
     if runtime.code != 0:
-        log[2]("received return code", runtime.code)
+        log[2]("Received return code", runtime.code)
         for line in filter(None, runtime.stderr.split("\n")):
             log[4](line)
         return CorrectnessResult(False, runtime)
 
     passing = runtime.stdout.strip() == "pass"
-    log[2]("expected pass, got fail")
+    log[2]("Expected pass, got fail")
     return CorrectnessResult(passing, runtime)
 
 
@@ -86,15 +86,15 @@ def test_fault(log: Logger, program: Executable):
 
     runtime = program.execute("fault", timeout=1.0)
     if runtime.code != 0:
-        log[2]("received return code", runtime.code)
+        log[2]("Received return code", runtime.code)
         for line in filter(None, runtime.stderr.split("\n")):
             log[4](line)
         if runtime.code == -11:
-            log[4]("segmentation fault")
+            log[4]("Segmentation fault")
         return CorrectnessResult(False, runtime)
 
     passing = runtime.stdout.strip() == "pass"
-    log("expected pass, got fail")
+    log("Expected pass, got fail")
     return CorrectnessResult(passing, runtime)
 
 
@@ -108,15 +108,15 @@ def test_timeout(log: Logger, program: Executable):
         return CorrectnessResult(False, runtime)
 
     if runtime.code != 0:
-        log("received return code", runtime.code)
+        log("Received return code", runtime.code)
         for line in filter(None, runtime.stderr.split("\n")):
             log[2](line)
         if runtime.code == -11:
-            log[2]("segmentation fault")
+            log[2]("Segmentation fault")
         return CorrectnessResult(False, runtime)
 
     passing = runtime.stdout.strip() == "pass"
-    log("expected pass, got fail")
+    log("Expected pass, got fail")
     return CorrectnessResult(passing, runtime)
 
 
