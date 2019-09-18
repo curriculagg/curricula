@@ -4,6 +4,7 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).absolute().parent.parent.parent))
 from grade import Grader
+from grade.report import Report
 from grade.resource import *
 from grade.test.correctness import CorrectnessResult
 from grade.library.process import run
@@ -16,6 +17,14 @@ root = Path(__file__).absolute().parent
 def overwrite_directory(path: Path):
     shutil.rmtree(str(path))
     path.mkdir()
+
+
+@grader.check()
+def check_program(context: Context, report: Report):
+    """Check if the program has been submitted."""
+
+    if not context.target.joinpath("test.cpp").exists():
+        report.entry("note", "check_program", "File test.cpp is missing")
 
 
 @grader.build(name="program")
@@ -54,41 +63,41 @@ def test_fail(log: Logger, program: Executable):
 
 
 @grader.test()
-def test_error(out: Logger, program: Executable):
+def test_error(log: Logger, program: Executable):
     """Basic pass with error handling."""
 
     runtime = program.execute("error", timeout=1.0)
     if runtime.code != 0:
-        out[2]("received return code", runtime.code)
+        log[2]("received return code", runtime.code)
         for line in filter(None, runtime.stderr.split("\n")):
-            out[4](line)
+            log[4](line)
         return CorrectnessResult(False, runtime)
 
     passing = runtime.stdout.strip() == "pass"
-    out[2]("expected pass, got fail")
+    log[2]("expected pass, got fail")
     return CorrectnessResult(passing, runtime)
 
 
 @grader.test()
-def test_fault(out: Logger, program: Executable):
+def test_fault(log: Logger, program: Executable):
     """Basic pass with fault detection."""
 
     runtime = program.execute("fault", timeout=1.0)
     if runtime.code != 0:
-        out[2]("received return code", runtime.code)
+        log[2]("received return code", runtime.code)
         for line in filter(None, runtime.stderr.split("\n")):
-            out[4](line)
+            log[4](line)
         if runtime.code == -11:
-            out[4]("segmentation fault")
+            log[4]("segmentation fault")
         return CorrectnessResult(False, runtime)
 
     passing = runtime.stdout.strip() == "pass"
-    out("expected pass, got fail")
+    log("expected pass, got fail")
     return CorrectnessResult(passing, runtime)
 
 
 @grader.test()
-def test_timeout(out: Logger, program: Executable):
+def test_timeout(log: Logger, program: Executable):
     """Basic pass with timeout."""
 
     runtime = program.execute("hang", timeout=1.0)
@@ -97,15 +106,15 @@ def test_timeout(out: Logger, program: Executable):
         return CorrectnessResult(False, runtime)
 
     if runtime.code != 0:
-        out("received return code", runtime.code)
+        log("received return code", runtime.code)
         for line in filter(None, runtime.stderr.split("\n")):
-            out[2](line)
+            log[2](line)
         if runtime.code == -11:
-            out[2]("segmentation fault")
+            log[2]("segmentation fault")
         return CorrectnessResult(False, runtime)
 
     passing = runtime.stdout.strip() == "pass"
-    out("expected pass, got fail")
+    log("expected pass, got fail")
     return CorrectnessResult(passing, runtime)
 
 

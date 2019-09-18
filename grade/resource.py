@@ -1,12 +1,12 @@
+import inspect
 from collections import deque
 from typing import Deque, Dict, Tuple
 from pathlib import Path
 from dataclasses import dataclass, field
 
-from .library import callgrind
-from .library import process
+from .library import callgrind, process
 
-__all__ = ("Resource", "Context", "Logger", "File", "Executable")
+__all__ = ("Resource", "Context", "Logger", "File", "Executable", "inject")
 
 
 class Resource:
@@ -19,6 +19,16 @@ class Context(Resource):
 
     target: Path
     options: Dict[str, str] = field(default_factory=dict)
+    data: dict = field(default_factory=dict)
+
+    def __getitem__(self, item):
+        return self.data[item]
+
+    def __setitem__(self, key, value):
+        self.data[key] = value
+
+    def get(self, key, default=None):
+        return self.data.get(key, default=default)
 
 
 @dataclass
@@ -83,3 +93,14 @@ class Executable(Resource):
         """Count the instructions executed during runtime."""
 
         return callgrind.run(*self.args, *args, timeout=timeout)
+
+
+def inject(runnable, resources: dict) -> dict:
+    """Build injection map for method."""
+
+    dependencies = {}
+    for name, parameter in inspect.signature(runnable).parameters.items():
+        dependency = resources.get(name, parameter.default)
+        assert dependency != parameter.empty, "could not satisfy dependency {}".format(name)
+        dependencies[name] = dependency
+    return dependencies

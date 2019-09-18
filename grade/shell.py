@@ -1,6 +1,7 @@
 """The standalone runtime for individual correctness files."""
 
 import argparse
+import json
 from pathlib import Path
 
 from .grader import Grader
@@ -14,6 +15,10 @@ def main(grader: Grader):
 
     parser = argparse.ArgumentParser(description="the command line interface for a standalone correctness file")
     parser.add_argument("target")
+
     result = vars(parser.parse_args())
     context = Context(Path(result.pop("target")).absolute(), result)
-    grader.run(context=context)
+
+    report = grader.run(context=context)
+    with open("report.json", "w") as file:
+        json.dump(report.dump(), file, indent=2)
