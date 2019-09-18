@@ -1,25 +1,9 @@
 import inspect
-from typing import Optional, Callable, Dict
+from typing import Optional, List, Dict
 
-from . import Result, Test, Runnable
-from .correctness import CorrectnessTest
-from .complexity import ComplexityTest
+from . import Result, Test
 from ..resource import Logger, Resource
 from ..library.utility import timed, name_from_doc
-
-
-def create_registrar(self: "Runner", test: type, **details):
-    """A second-level decorator to reuse code."""
-
-    def decorator(runnable: Runnable) -> Runnable:
-        """Put the function in a correctness object."""
-
-        name = details.pop("name", name_from_doc(runnable))
-        assert name is not None, "test name must be provided in registration or docstring"
-        self.tests[test(name, runnable, **details)] = None
-        return runnable
-
-    return decorator
 
 
 class Runner:
@@ -27,18 +11,8 @@ class Runner:
 
     tests: Dict[Test, Optional[Result]]
 
-    def __init__(self):
-        self.tests = dict()
-
-    def correctness(self, **details) -> Callable:
-        """Register a new correctness test with the container."""
-
-        return create_registrar(self, CorrectnessTest, **details)
-
-    def complexity(self, **details) -> Callable:
-        """Register a new correctness test with the container."""
-
-        return create_registrar(self, ComplexityTest, **details)
+    def __init__(self, tests: List[Test]):
+        self.tests = {test: None for test in tests}
 
     @timed(name="Tests")
     def run(self, **resources: Resource) -> Dict[Test, Result]:

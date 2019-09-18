@@ -1,30 +1,31 @@
-from os.path import dirname, abspath
 import sys
+from pathlib import Path
 
-sys.path.append(dirname(dirname(dirname(abspath(__file__)))))
-from grade import Manager
-from grade.resource import Executable, Logger
+sys.path.append(Path(__file__).absolute().parent.parent.parent)
+from grade import Grader
+from grade.resource import *
 from grade.test.correctness import CorrectnessResult
+from grade.library.process import run
 
 
-test = Manager()
-root = dirname(abspath(__file__))
+grader = Grader()
+root = Path(__file__).absolute().parent
 
 
-@test.correctness()
-def test_pass(target: Executable = program):
+@grader.test()
+def test_pass(program: Executable):
     """Basic pass."""
 
-    runtime = target.execute("pass", timeout=1)
+    runtime = program.execute("pass", timeout=1)
     passing = runtime.stdout.strip() == "pass"
     return CorrectnessResult(passing, runtime)
 
 
-@test.correctness()
-def test_fail(log: Logger, target: Executable = program):
+@grader.test()
+def test_fail(log: Logger, program: Executable):
     """Basic pass with fail."""
 
-    runtime = target.execute("fail", timeout=1)
+    runtime = program.execute("fail", timeout=1)
     passing = runtime.stdout.strip() == "pass"
     result = CorrectnessResult(passing, runtime)
     if not passing:

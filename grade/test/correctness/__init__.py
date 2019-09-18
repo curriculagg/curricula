@@ -21,15 +21,3 @@ class CorrectnessResult(Result):
         return "{} in {} seconds".format(
             "passed" if self.correct else "failed",
             round(self.runtime.elapsed, 5))
-
-
-CorrectnessRunnable = Callable[..., CorrectnessResult]
-
-
-class CorrectnessTest(Test):
-    """A test subclassed for a correctness runnable."""
-
-    runnable: CorrectnessRunnable
-
-    def __init__(self, name: str, runnable: CorrectnessRunnable, **details):
-        super().__init__(name, runnable, **details)

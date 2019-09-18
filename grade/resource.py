@@ -6,6 +6,8 @@ from dataclasses import dataclass, field
 from .library import callgrind
 from .library import process
 
+__all__ = ("Resource", "Context", "Logger", "File", "Executable")
+
 
 class Resource:
     """A resource required for a test."""

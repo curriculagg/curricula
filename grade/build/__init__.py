@@ -1,16 +1,26 @@
-from typing import Set, Optional
+from typing import Set, Optional, Callable
 from pathlib import Path
 from dataclasses import dataclass
 
 from ..resource import File, Executable
+from ..library.process import run
+
+
+Buildable = Callable[..., Executable]
 
 
 @dataclass
 class Build:
     """A build strategy that produces an executable."""
 
-    def build(self) -> Executable:
+    name: str
+    buildable: Buildable
+    details: dict
+
+    def build(self, **resources) -> Executable:
         """Run build and return a runnable executable."""
+
+        return self.buildable(**resources)
 
 
 @dataclass
@@ -27,5 +37,7 @@ class GccBuild(Build):
         if self.out is None:
             self.out = Path(self.file.path).parts[-1].rsplit(".", maxsplit=1)[0]
 
-    def build(self) -> Executable:
-        pass
+    def build(self, timeout: float = 2.0) -> Executable:
+        """Build a project with GCC."""
+
+
