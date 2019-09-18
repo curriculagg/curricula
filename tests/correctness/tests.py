@@ -4,7 +4,7 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).absolute().parent.parent.parent))
 from grade import Grader
-from grade.report import Report
+from grade.build import BuildResult
 from grade.check import CheckResult
 from grade.resource import *
 from grade.test.correctness import CorrectnessResult
@@ -21,11 +21,12 @@ def overwrite_directory(path: Path):
 
 
 @grader.check()
-def check_program(context: Context, report: Report):
+def check_program(context: Context):
     """Check if the program has been submitted."""
 
-    if not context.target.joinpath("test.cpp").exists():
-        return CheckResult(valid=False, error="missing file test.cpp")
+    if not context.target.joinpath("program.cpp").exists():
+        return CheckResult(False, error="missing file test.cpp")
+    return CheckResult(True)
 
 
 @grader.build(name="program")
@@ -38,8 +39,8 @@ def build_program(context: Context):
     executable = build.joinpath("program")
     runtime = run("g++", "-Wall", "-o", str(executable), str(source), timeout=5)
     if runtime.code == 0:
-        return Executable(str(executable))
-    raise Exception()
+        return BuildResult(Executable(str(executable)))
+    return BuildResult(error="failed to build program")
 
 
 @grader.test()

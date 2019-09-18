@@ -10,7 +10,7 @@ class CheckResult(Result):
     valid: bool
     details: dict = field(default_factory=dict)
 
-    def __init__(self, *, valid: bool, **details):
+    def __init__(self, valid: bool, **details):
         self.valid = valid
         self.details = details
 

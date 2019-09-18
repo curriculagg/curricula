@@ -23,4 +23,4 @@ class Test(Task):
         return self.name
 
     def __hash__(self):
-        return super().__hash__()
+        return id(self)

@@ -59,8 +59,6 @@ class Grader:
         for check in self.checks:
             result = check.run(resources)
             report.add(result)
-            if not result.valid:
-                raise GraderException("failed check")
 
     def _do_build(self, report: Report, resources: dict):
         """Build stage."""
@@ -70,8 +68,6 @@ class Grader:
         for build in self.builds:
             result = build.run(resources)
             report.add(result)
-            if result.executable is None:
-                raise GraderException("no executable")
             resources[build.name] = result.executable
 
     def _do_test(self, report: Report, resources: dict):

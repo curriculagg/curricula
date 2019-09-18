@@ -12,6 +12,10 @@ class BuildResult(Result):
     executable: Optional[Executable]
     details: dict = field(default_factory=dict)
 
+    def __init__(self, executable: Executable = None, **details):
+        self.executable = executable
+        self.details = details
+
 
 Buildable = Runnable[Executable]
 
