@@ -1,8 +1,8 @@
-import inspect
 from typing import Optional, List, Dict
 
 from . import Result, Test
-from ..resource import Logger, Resource, inject
+from ..report import Report
+from ..resource import Logger, Resource
 from ..library.utility import timed
 
 
@@ -15,13 +15,16 @@ class Runner:
         self.tests = {test: None for test in tests}
 
     @timed(name="Tests")
-    def run(self, resources: Dict[str, Resource]) -> Dict[Test, Result]:
+    def run(self, report: Report, resources: Dict[str, Resource]) -> Dict[Test, Result]:
         """Run all tests on a target."""
 
         for test in self.tests:
             log = Logger()
             resources.update(log=log)
-            self.tests[test] = result = test.run(inject(test.runnable, resources))
+
+            self.tests[test] = result = test.run(resources)
+            report.add(result)
+
             log.sneak("{} {}".format(test, result))
             print(log.build(prefix="  "))
 

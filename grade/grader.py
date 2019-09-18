@@ -4,7 +4,6 @@ from dataclasses import dataclass, field
 from .report import Report
 from .check import Check
 from .build import Build
-from .resource import inject
 from .task import Task, Runnable
 from .test import Test
 from .test.runner import Runner
@@ -58,7 +57,10 @@ class Grader:
         print("Starting checks...")
         report.stage = "check"
         for check in self.checks:
-            check.run(inject(check.runnable, resources))
+            result = check.run(resources)
+            report.add(result)
+            if not result.valid:
+                raise GraderException("failed check")
 
     def _do_build(self, report: Report, resources: dict):
         """Build stage."""
@@ -66,7 +68,11 @@ class Grader:
         print("Starting build...")
         report.stage = "build"
         for build in self.builds:
-            resources[build.name] = build.run(inject(build.runnable, resources))
+            result = build.run(resources)
+            report.add(result)
+            if result.executable is None:
+                raise GraderException("no executable")
+            resources[build.name] = result.executable
 
     def _do_test(self, report: Report, resources: dict):
         """Test stage."""
@@ -77,7 +83,7 @@ class Grader:
         print("Starting tests...")
         report.stage = "test"
         runner = Runner(self.tests)
-        runner.run(resources)
+        runner.run(report, resources)
 
     def run(self, **resources) -> Report:
         """Build and test."""

@@ -5,6 +5,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).absolute().parent.parent.parent))
 from grade import Grader
 from grade.report import Report
+from grade.check import CheckResult
 from grade.resource import *
 from grade.test.correctness import CorrectnessResult
 from grade.library.process import run
@@ -24,7 +25,7 @@ def check_program(context: Context, report: Report):
     """Check if the program has been submitted."""
 
     if not context.target.joinpath("test.cpp").exists():
-        report.entry("note", "check_program", "File test.cpp is missing")
+        return CheckResult(valid=False, error="missing file test.cpp")
 
 
 @grader.build(name="program")
