@@ -1,19 +1,15 @@
-from typing import Callable
+from dataclasses import dataclass, asdict
 
-from grade.test import Result, Test
+from grade.test import Result
 from grade.library.process import Runtime
 
 
+@dataclass
 class CorrectnessResult(Result):
     """The result of a correctness case."""
 
-    runtime: Runtime
     correct: bool
-
-    def __init__(self, correct: bool, runtime: Runtime):
-        super().__init__()
-        self.correct = correct
-        self.runtime = runtime
+    runtime: Runtime
 
     def __str__(self):
         if self.runtime.timeout is not None:
@@ -21,3 +17,9 @@ class CorrectnessResult(Result):
         return "{} in {} seconds".format(
             "passed" if self.correct else "failed",
             round(self.runtime.elapsed, 5))
+
+    def dump(self) -> dict:
+        return {
+            "correct": self.correct,
+            "runtime": asdict(self.runtime)
+        }
