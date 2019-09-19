@@ -60,7 +60,7 @@ class Logger(Resource):
 
         self.messages.appendleft(" " * self.indent + sep.join(map(str, message)) + end)
 
-    def write(self, prefix="", file=sys.stdout):
+    def print(self, prefix="", file=sys.stdout):
         """Build the complete output as a string."""
 
         if not self.messages:

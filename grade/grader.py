@@ -65,7 +65,7 @@ class Grader:
             report.add(result)
             if not result.okay and check.required:
                 raise GraderException("failed required check")
-            resources["log"].write()
+            resources["log"].print()
 
     def _do_build(self, resources: dict):
         """Build stage."""
@@ -80,7 +80,7 @@ class Grader:
                 raise GraderException("failed required build")
             if result.inject:
                 resources[result.inject] = result.executable
-            resources["log"].write()
+            resources["log"].print()
 
     def _do_test(self, resources: dict):
         """Test stage."""
@@ -92,7 +92,7 @@ class Grader:
         print("Starting tests...")
         report.stage = "test"
         runner = Runner(self.tests)
-        runner.run(report, resources)
+        runner.run(resources)
 
     @timed(name="Grader")
     def run(self, **resources) -> Report:
