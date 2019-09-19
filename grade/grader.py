@@ -44,17 +44,17 @@ class Grader:
 
         return create_registrar(details, Check, self.checks)
 
-    def test(self, **details):
-        """Add a test to the grader."""
-
-        return create_registrar(details, Test, self.tests)
-
     def build(self, **details):
         """Add a test to the grader."""
 
         return create_registrar(details, Build, self.builds)
 
-    def _do_check(self, resources: dict):
+    def test(self, **details):
+        """Add a test to the grader."""
+
+        return create_registrar(details, Test, self.tests)
+
+    def _check(self, resources: dict):
         """Checks stage."""
 
         print("Starting checks...")
@@ -67,7 +67,7 @@ class Grader:
                 raise GraderException("failed required check")
             resources["log"].print()
 
-    def _do_build(self, resources: dict):
+    def _build(self, resources: dict):
         """Build stage."""
 
         print("Starting build...")
@@ -82,7 +82,7 @@ class Grader:
                 resources[result.name] = result.executable
             resources["log"].print()
 
-    def _do_test(self, resources: dict):
+    def _test(self, resources: dict):
         """Test stage."""
 
         report = resources["report"]
@@ -101,7 +101,7 @@ class Grader:
         report = Report()
         resources.update(report=report, log=Logger())
 
-        for stage in (self._do_check, self._do_build, self._do_test):
+        for stage in (self._check, self._build, self._test):
             try:
                 stage(resources)
             except GraderException:
