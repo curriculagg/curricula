@@ -27,6 +27,17 @@ class MemoryResult(TestResult):
     def __str__(self):
         if self.leaked_bytes is None:
             return "failed to run"
-        if self.leaked_bytes == 0:
-            return "found no leaks"
-        return f"leaked {self.leaked_bytes} bytes"
+        if self.leaked_bytes > 0:
+            return f"leaked {self.leaked_bytes} bytes"
+        if self.error_count > 0:
+            return f"encountered {self.error_count} errors"
+        return "found no leaked memory"
+
+    def dump(self) -> dict:
+        dump = super().dump()
+        dump.update(
+            runtime=self.runtime.dump(),
+            error_count=self.error_count,
+            leaked_blocks=self.leaked_blocks,
+            leaked_bytes=self.leaked_bytes)
+        return dump
