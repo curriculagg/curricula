@@ -20,7 +20,7 @@ def overwrite_directory(path: Path):
     path.mkdir()
 
 
-@grader.check()
+@grader.check(required=True)
 def check_program(context: Context):
     """Check if the program has been submitted."""
 
@@ -29,7 +29,7 @@ def check_program(context: Context):
     return CheckResult(True)
 
 
-@grader.build(name="program")
+@grader.build(required=True)
 def build_program(context: Context):
     """Compile program with GCC."""
 
@@ -39,8 +39,8 @@ def build_program(context: Context):
     executable = build.joinpath("program")
     runtime = run("g++", "-Wall", "-o", str(executable), str(source), timeout=5)
     if runtime.code == 0:
-        return BuildResult(Executable(str(executable)))
-    return BuildResult(error="failed to build program")
+        return BuildResult(True, Executable(str(executable)), inject="program")
+    return BuildResult(False, error="failed to build program")
 
 
 @grader.test()

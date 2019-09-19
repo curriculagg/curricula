@@ -1,7 +1,7 @@
 import subprocess
 import timeit
 from typing import Optional
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 
 
 @dataclass
@@ -25,6 +25,9 @@ class Runtime:
         self.stdout = stdout
         self.stderr = stderr
         self.elapsed = elapsed
+
+    def dump(self) -> dict:
+        return asdict(self)
 
 
 def run(*args: str, timeout: float) -> Runtime:

@@ -7,18 +7,19 @@ from .build import Build
 from .task import Task, Runnable
 from .test import Test
 from .test.runner import Runner
-from .library.utility import name_from_doc
 
 
-def create_registrar(container: List, factory: Callable[[str, Runnable, dict], Task], details: dict):
+def create_registrar(details: dict, factory: Callable[..., Task], container: List):
     """A second-level decorator to reuse code."""
 
     def decorator(runnable: Runnable) -> Runnable:
         """Put the function in a correctness object."""
 
-        name = details.pop("name", name_from_doc(runnable))
-        assert name is not None, "name must be provided in registration or docstring"
-        container.append(factory(name, runnable, details))
+        container.append(factory(
+            name=runnable.__qualname__,
+            description=runnable.__doc__,
+            details=details,
+            runnable=runnable))
         return runnable
 
     return decorator
@@ -39,17 +40,17 @@ class Grader:
     def check(self, **details):
         """Add a check to the grader."""
 
-        return create_registrar(self.checks, Check, details)
+        return create_registrar(details, Check, self.checks)
 
     def test(self, **details):
         """Add a test to the grader."""
 
-        return create_registrar(self.tests, Test, details)
+        return create_registrar(details, Test, self.tests)
 
     def build(self, **details):
         """Add a test to the grader."""
 
-        return create_registrar(self.builds, Build, details)
+        return create_registrar(details, Build, self.builds)
 
     def _do_check(self, report: Report, resources: dict):
         """Checks stage."""
@@ -59,6 +60,8 @@ class Grader:
         for check in self.checks:
             result = check.run(resources)
             report.add(result)
+            if not result.okay and check.required:
+                raise GraderException("failed required check")
 
     def _do_build(self, report: Report, resources: dict):
         """Build stage."""
@@ -68,7 +71,10 @@ class Grader:
         for build in self.builds:
             result = build.run(resources)
             report.add(result)
-            resources[build.name] = result.executable
+            if not result.okay and build.required:
+                raise GraderException("failed required build")
+            if result.inject:
+                resources[result.inject] = result.executable
 
     def _do_test(self, report: Report, resources: dict):
         """Test stage."""
