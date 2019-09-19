@@ -1,8 +1,18 @@
-from os.path import dirname, abspath
 import sys
+import shutil
+from pathlib import Path
 
-sys.path.append(dirname(dirname(dirname(abspath(__file__)))))
-from grade.library import valgrind
+sys.path.append(str(Path(__file__).absolute().parent.parent.parent))
+from grade.shortcuts import *
+from grade.library import process
+
+grader = Grader()
+root = Path(__file__)
+
+
+@grader.test()
+def test_memory():
+    """"""
 
 #
 # test = Manager()
