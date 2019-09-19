@@ -10,12 +10,12 @@ class BuildResult(Result):
     """Returned from a build task."""
 
     executable: Optional[Executable]
-    inject: Optional[str]
+    name: Optional[str]
     details: dict = field(default_factory=dict)
 
-    def __init__(self, okay: bool, executable: Executable = None, inject: str = None, **details):
+    def __init__(self, okay: bool, executable: Executable = None, name: str = None, **details):
         super().__init__(okay)
-        self.inject = inject
+        self.name = name
         self.executable = executable
         self.details = details
 

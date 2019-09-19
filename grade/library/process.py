@@ -8,18 +8,22 @@ from dataclasses import dataclass, asdict
 class Runtime:
     """Runtime data extracted from running an external process."""
 
+    command: str
     timeout: Optional[float]  # Populated if timed out
     code: Optional[int]
     stdout: Optional[str]
     stderr: Optional[str]
     elapsed: Optional[float]
 
-    def __init__(self, *,
+    def __init__(self,
+                 command: str,
+                 *,
                  timeout: float = None,
                  code: int = None,
                  stdout: str = None,
                  stderr: str = None,
                  elapsed: float = None):
+        self.command = command
         self.timeout = timeout
         self.code = code
         self.stdout = stdout
@@ -48,7 +52,11 @@ def run(*args: str, timeout: float) -> Runtime:
     except subprocess.TimeoutExpired:
         process.kill()
         # TODO: include any stdout and stderr that made it into the buffer
-        return Runtime(timeout=timeout)
+        return Runtime(" ".join(args), timeout=timeout)
     elapsed = timeit.default_timer() - start
 
-    return Runtime(code=process.returncode, stdout=stdout.decode(), stderr=stderr.decode(), elapsed=elapsed)
+    return Runtime(" ".join(args),
+                   code=process.returncode,
+                   stdout=stdout.decode(),
+                   stderr=stderr.decode(),
+                   elapsed=elapsed)

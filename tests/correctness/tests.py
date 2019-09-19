@@ -38,10 +38,10 @@ def build_program(context: Context, log: Logger):
 
     runtime = process.run("g++", "-Wall", "-o", str(executable), str(source), timeout=5)
     if runtime.code != 0:
-        return BuildResult(False, error="failed to build program")
+        return BuildResult(False, error="failed to build program", runtime=runtime.dump())
 
     log[2]("Successfully built program")
-    return BuildResult(True, Executable(str(executable)), inject="program")
+    return BuildResult(True, Executable(str(executable)), name="program", runtime=runtime.dump())
 
 
 @grader.test()

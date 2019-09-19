@@ -41,7 +41,7 @@ def build_program(context: Context, log: Logger):
         return BuildResult(False, error="failed to build program")
 
     log[2]("Successfully built program")
-    return BuildResult(True, Executable(str(executable)), inject="program")
+    return BuildResult(True, Executable(str(executable)), name="program")
 
 
 @grader.test()
