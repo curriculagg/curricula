@@ -1,6 +1,6 @@
 import abc
 from typing import Callable, Dict, TypeVar, Generic
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 
 from .resource import Resource, inject
 
@@ -18,23 +18,27 @@ class Result(abc.ABC):
         return dict(okay=self.okay, task=self.task.dump())
 
 
-T = TypeVar("T")
-Runnable = Callable[[dict], T]
+TResult = TypeVar("TResult", bound=Result)
+
+
+class Runnable(Generic[TResult]):
+    def __call__(self, **kwargs) -> TResult:
+        ...
 
 
 @dataclass
-class Task(Generic[T]):
+class Task(Generic[TResult]):
     """Superclass for check, build, run."""
 
     name: str
     description: str
-    runnable: Runnable[T]
+    runnable: Runnable[Result]
     details: dict = field(default_factory=dict)
 
-    def run(self, resources: Dict[str, Resource]) -> T:
+    def run(self, resources: Dict[str, Resource]) -> TResult:
         """Do the dependency injection for the runnable."""
 
-        result = self.runnable(**inject(self.runnable, resources))
+        result = inject(resources, self.runnable)
         result.task = self
         return result
 

@@ -5,6 +5,7 @@ from typing import Deque, Dict, Tuple
 from pathlib import Path
 from dataclasses import dataclass, field
 
+from .task import Runnable, TResult
 from .library import callgrind, process
 
 __all__ = ("Resource", "Context", "Logger", "File", "Executable", "inject")
@@ -101,7 +102,7 @@ class Executable(Resource):
         return callgrind.run(*self.args, *args, timeout=timeout)
 
 
-def inject(runnable, resources: dict) -> dict:
+def inject(resources: dict, runnable: Runnable[TResult]) -> TResult:
     """Build injection map for method."""
 
     dependencies = {}
@@ -109,4 +110,4 @@ def inject(runnable, resources: dict) -> dict:
         dependency = resources.get(name, parameter.default)
         assert dependency != parameter.empty, "could not satisfy dependency {}".format(name)
         dependencies[name] = dependency
-    return dependencies
+    return runnable(**dependencies)
