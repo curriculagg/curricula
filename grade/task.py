@@ -1,8 +1,9 @@
 import abc
-from typing import Callable, Dict, TypeVar, Generic
+import inspect
+from typing import Dict, TypeVar, Generic
 from dataclasses import dataclass, field
 
-from .resource import Resource, inject
+from .resource import Resource
 
 
 @dataclass
@@ -24,6 +25,17 @@ TResult = TypeVar("TResult", bound=Result)
 class Runnable(Generic[TResult]):
     def __call__(self, **kwargs) -> TResult:
         ...
+
+
+def inject(resources: dict, runnable: Runnable[TResult]) -> TResult:
+    """Build injection map for method."""
+
+    dependencies = {}
+    for name, parameter in inspect.signature(runnable).parameters.items():
+        dependency = resources.get(name, parameter.default)
+        assert dependency != parameter.empty, "could not satisfy dependency {}".format(name)
+        dependencies[name] = dependency
+    return runnable(**dependencies)
 
 
 @dataclass

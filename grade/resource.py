@@ -1,14 +1,12 @@
 import sys
-import inspect
 from collections import deque
 from typing import Deque, Dict, Tuple
 from pathlib import Path
 from dataclasses import dataclass, field
 
-from .task import Runnable, TResult
 from .library import callgrind, process
 
-__all__ = ("Resource", "Context", "Logger", "File", "Executable", "inject")
+__all__ = ("Resource", "Context", "Logger", "File", "Executable")
 
 
 class Resource:
@@ -100,14 +98,3 @@ class Executable(Resource):
         """Count the instructions executed during runtime."""
 
         return callgrind.run(*self.args, *args, timeout=timeout)
-
-
-def inject(resources: dict, runnable: Runnable[TResult]) -> TResult:
-    """Build injection map for method."""
-
-    dependencies = {}
-    for name, parameter in inspect.signature(runnable).parameters.items():
-        dependency = resources.get(name, parameter.default)
-        assert dependency != parameter.empty, "could not satisfy dependency {}".format(name)
-        dependencies[name] = dependency
-    return runnable(**dependencies)
