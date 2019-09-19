@@ -1,0 +1,30 @@
+[
+  {
+    "okay": true,
+    "task": {
+      "name": "check_program",
+      "description": "Check if the program has been submitted.",
+      "details": {}
+    },
+    "kind": "check",
+    "details": {}
+  },
+  {
+    "okay": true,
+    "task": {
+      "name": "build_program",
+      "description": "Compile program with GCC.",
+      "details": {}
+    },
+    "kind": "build",
+    "details": {}
+  },
+  {
+    "okay": false,
+    "task": {
+      "name": "test_memory",
+      "description": "Check memory leakage.",
+      "details": {}
+    }
+  }
+]

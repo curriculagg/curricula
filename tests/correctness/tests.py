@@ -12,7 +12,8 @@ root = Path(__file__).absolute().parent
 
 
 def overwrite_directory(path: Path):
-    shutil.rmtree(str(path))
+    if path.exists():
+        shutil.rmtree(str(path))
     path.mkdir()
 
 

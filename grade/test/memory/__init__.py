@@ -1,63 +1,32 @@
+from typing import Optional
+from dataclasses import dataclass
+
+from ...library.process import Runtime
+from ...library.valgrind import ValgrindReport
+from .. import TestResult
 
 
 @dataclass
-class ValgrindWhat:
-    """Explanation of error, can have dynamic tags."""
+class MemoryResult(TestResult):
+    """Result of a memory leak test."""
 
-    text: str
-    fields: dict = field(default_factory=dict)
+    runtime: Runtime
+    error_count: Optional[int] = None
+    leaked_blocks: Optional[int] = None
+    leaked_bytes: Optional[int] = None
 
     @classmethod
-    def load(cls, element: Element) -> "ValgrindWhat":
-        """Load either what or xwhat."""
+    def from_valgrind_report(cls, report: ValgrindReport) -> "MemoryResult":
+        """Generate a memory test result from a valgrind report."""
 
-        if element.tag == "what":
-            return ValgrindWhat(element.text)
-        else:
-            text = ""
-            fields = dict()
-            for child in element:
-                if child.tag == "tag":
-                    text = child.text
-                else:
-                    fields[child.tag] = child.text
-            return ValgrindWhat(text, fields)
+        if report.errors is None:
+            return cls(False, report.runtime)
+        blocks_leaked, bytes_leaked = report.memory_lost()
+        return cls(bytes_leaked == 0, report.runtime, len(report.errors), blocks_leaked, bytes_leaked)
 
-
-@dataclass
-class ValgrindError:
-    """Represents an error tag from a Valgrind XML report."""
-
-    unique: int
-    tid: int
-    kind: str
-    what: ValgrindWhat
-
-    @classmethod
-    def load(cls, element: Element) -> "ValgrindError":
-        """Load an error from an element."""
-
-        unique = int(element.find("unique").text, 16)
-        tid = int(element.find("tid").text)
-        kind = element.find("kind").text
-        what = ValgrindWhat.load(element.find("what") or element.find("xwhat"))
-        return cls(unique, tid, kind, what)
-
-
-@dataclass
-class ValgrindReport:
-    """Include data about memory lost and errors."""
-
-    runtime: process.Runtime
-    errors: Optional[List[ValgrindError]] = None
-
-    def memory_lost(self):
-        """Count up bytes and blocks lost."""
-
-        leaked_bytes = 0
-        leaked_blocks = 0
-        for error in self.errors:
-            if error.kind in ("Leak_DefinitelyLost", "Leak_IndirectlyLost", "Leak_PossiblyLost"):
-                leaked_bytes += int(error.what.fields["leakedbytes"])
-                leaked_blocks += int(error.what.fields["leakedblocks"])
-        return leaked_bytes, leaked_blocks
+    def __str__(self):
+        if self.leaked_bytes is None:
+            return "failed to run"
+        if self.leaked_bytes == 0:
+            return "found no leaks"
+        return f"leaked {self.leaked_bytes} bytes"

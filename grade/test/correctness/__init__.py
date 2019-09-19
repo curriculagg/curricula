@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 
-from grade.test import Result
-from grade.library.process import Runtime
+from .. import TestResult
+from ...library.process import Runtime
 
 
 @dataclass
-class CorrectnessResult(Result):
+class CorrectnessResult(TestResult):
     """The result of a correctness case."""
 
     runtime: Runtime

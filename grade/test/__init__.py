@@ -7,8 +7,6 @@ from ..task import Task, Result
 class TestResult(Result):
     """The result of a test."""
 
-    details: dict = field(default_factory=dict)
-
 
 @dataclass
 class Test(Task):
