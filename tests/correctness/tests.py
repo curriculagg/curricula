@@ -3,12 +3,8 @@ import shutil
 from pathlib import Path
 
 sys.path.append(str(Path(__file__).absolute().parent.parent.parent))
-from grade import Grader
-from grade.build import BuildResult
-from grade.check import CheckResult
-from grade.resource import *
-from grade.test.correctness import CorrectnessResult
-from grade.library.process import run
+from grade.shortcuts import *
+from grade.library import process
 
 
 grader = Grader()
@@ -39,7 +35,7 @@ def build_program(context: Context, log: Logger):
     overwrite_directory(build)
     executable = build.joinpath("program")
 
-    runtime = run("g++", "-Wall", "-o", str(executable), str(source), timeout=5)
+    runtime = process.run("g++", "-Wall", "-o", str(executable), str(source), timeout=5)
     if runtime.code != 0:
         return BuildResult(False, error="failed to build program")
 
