@@ -3,7 +3,6 @@ from typing import Optional, List, Dict
 from . import Result, Test
 from ..report import Report
 from ..resource import Logger, Resource
-from ..library.utility import timed
 
 
 class Runner:
@@ -14,7 +13,6 @@ class Runner:
     def __init__(self, tests: List[Test]):
         self.tests = {test: None for test in tests}
 
-    @timed(name="Tests")
     def run(self, report: Report, resources: Dict[str, Resource]) -> Dict[Test, Result]:
         """Run all tests on a target."""
 
@@ -26,6 +24,6 @@ class Runner:
             report.add(result)
 
             log.sneak("{} {}".format(test, result))
-            print(log.build(prefix="  "))
+            log.write(prefix="  ")
 
         return self.tests

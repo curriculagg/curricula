@@ -1,3 +1,4 @@
+import sys
 import inspect
 from collections import deque
 from typing import Deque, Dict, Tuple
@@ -58,14 +59,19 @@ class Logger(Resource):
         """Sneak in a message at the head."""
 
         self.messages.appendleft(" " * self.indent + sep.join(map(str, message)) + end)
-        self.indent = 0
 
-    def build(self, prefix="") -> str:
+    def write(self, prefix="", file=sys.stdout):
         """Build the complete output as a string."""
+
+        if not self.messages:
+            return
 
         out = "".join(message for message in self.messages)
         self.messages.clear()
-        return "\n".join(prefix + line for line in out.split("\n")).rstrip()
+        print("\n".join(prefix + line for line in out.split("\n")).rstrip(), file=file)
+
+    def clear(self):
+        self.messages.clear()
 
 
 @dataclass

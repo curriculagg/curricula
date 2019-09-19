@@ -2,11 +2,13 @@ from typing import List, Callable
 from dataclasses import dataclass, field
 
 from .report import Report
+from .resource import Logger
 from .check import Check
 from .build import Build
 from .task import Task, Runnable
 from .test import Test
 from .test.runner import Runner
+from .library.utility import timed
 
 
 def create_registrar(details: dict, factory: Callable[..., Task], container: List):
@@ -52,21 +54,24 @@ class Grader:
 
         return create_registrar(details, Build, self.builds)
 
-    def _do_check(self, report: Report, resources: dict):
+    def _do_check(self, resources: dict):
         """Checks stage."""
 
         print("Starting checks...")
+        report = resources["report"]
         report.stage = "check"
         for check in self.checks:
             result = check.run(resources)
             report.add(result)
             if not result.okay and check.required:
                 raise GraderException("failed required check")
+            resources["log"].write()
 
-    def _do_build(self, report: Report, resources: dict):
+    def _do_build(self, resources: dict):
         """Build stage."""
 
         print("Starting build...")
+        report = resources["report"]
         report.stage = "build"
         for build in self.builds:
             result = build.run(resources)
@@ -75,10 +80,12 @@ class Grader:
                 raise GraderException("failed required build")
             if result.inject:
                 resources[result.inject] = result.executable
+            resources["log"].write()
 
-    def _do_test(self, report: Report, resources: dict):
+    def _do_test(self, resources: dict):
         """Test stage."""
 
+        report = resources["report"]
         if resources["context"].options.get("sanity"):
             return
 
@@ -87,15 +94,16 @@ class Grader:
         runner = Runner(self.tests)
         runner.run(report, resources)
 
+    @timed(name="Grader")
     def run(self, **resources) -> Report:
         """Build and test."""
 
         report = Report()
-        resources.update(report=report)
+        resources.update(report=report, log=Logger())
 
         for stage in (self._do_check, self._do_build, self._do_test):
             try:
-                stage(report, resources)
+                stage(resources)
             except GraderException:
                 break
 
