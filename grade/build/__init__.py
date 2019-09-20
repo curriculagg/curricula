@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Dict
 from dataclasses import dataclass, field
 
 from ..task import Task, Result, Runnable
@@ -9,14 +9,12 @@ from ..resource import Executable
 class BuildResult(Result):
     """Returned from a build task."""
 
-    executable: Optional[Executable]
-    name: Optional[str]
+    resources: Optional[Dict[str, Executable]] = field(default_factory=dict)
     details: dict = field(default_factory=dict)
 
-    def __init__(self, okay: bool, executable: Executable = None, name: str = None, **details):
+    def __init__(self, okay: bool, resources: Dict[str, Executable] = None, **details):
         super().__init__(okay)
-        self.name = name
-        self.executable = executable
+        self.resources = resources
         self.details = details
 
     def dump(self) -> dict:
