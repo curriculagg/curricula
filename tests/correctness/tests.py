@@ -22,13 +22,13 @@ def check_program(context: Context, log: Logger):
     """Check if the program has been submitted."""
 
     if not context.target.joinpath("program.cpp").exists():
-        return CheckResult(False, error="missing file test.cpp")
+        return CheckResult(complete=True, passed=False, error="missing file test.cpp")
     log[2]("Found program.cpp")
-    return CheckResult(True)
+    return CheckResult(complete=True, passed=True)
 
 
 @grader.build(required=True)
-def build_program(context: Context, log: Logger):
+def build_program(context: Context, log: Logger, resources: dict):
     """Compile program with GCC."""
 
     source = context.target.joinpath("program.cpp")
@@ -38,10 +38,11 @@ def build_program(context: Context, log: Logger):
 
     runtime = process.run("g++", "-Wall", "-o", str(executable), str(source), timeout=5)
     if runtime.code != 0:
-        return BuildResult(False, error="failed to build program", runtime=runtime.dump())
+        return BuildResult(complete=False, error="failed to build program", runtime=runtime.dump())
 
     log[2]("Successfully built program")
-    return BuildResult(True, dict(program=Executable(str(executable))), runtime=runtime.dump())
+    resources.update(program=Executable(str(executable)))
+    return BuildResult(complete=True, runtime=runtime.dump())
 
 
 @grader.test()
@@ -49,8 +50,8 @@ def test_pass(program: Executable):
     """Basic pass."""
 
     runtime = program.execute("pass", timeout=1)
-    passing = runtime.stdout.strip() == "pass"
-    return CorrectnessResult(passing, runtime)
+    passed = runtime.stdout.strip() == "pass"
+    return CorrectnessResult(passed, runtime)
 
 
 @grader.test()
@@ -58,9 +59,9 @@ def test_fail(log: Logger, program: Executable):
     """Basic pass with fail."""
 
     runtime = program.execute("fail", timeout=1)
-    passing = runtime.stdout.strip() == "pass"
-    result = CorrectnessResult(passing, runtime)
-    if not passing:
+    passed = runtime.stdout.strip() == "pass"
+    result = CorrectnessResult(passed, runtime)
+    if not passed:
         log[2]("Expected pass, got", runtime.stdout.strip())
     return result
 
@@ -76,9 +77,9 @@ def test_error(log: Logger, program: Executable):
             log[4](line)
         return CorrectnessResult(False, runtime)
 
-    passing = runtime.stdout.strip() == "pass"
+    passed = runtime.stdout.strip() == "pass"
     log[2]("Expected pass, got fail")
-    return CorrectnessResult(passing, runtime)
+    return CorrectnessResult(passed, runtime)
 
 
 @grader.test()

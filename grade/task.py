@@ -1,22 +1,20 @@
 import abc
 import inspect
-from typing import Dict, TypeVar, Generic
+from typing import Dict, TypeVar, Generic, Any
 from dataclasses import dataclass, field
-
-from .resource import Resource
 
 
 @dataclass
 class Result(abc.ABC):
     """The result of a test."""
 
-    okay: bool
+    complete: bool
     task: "Task" = field(init=False)
 
     def dump(self) -> dict:
         """Return the result as JSON."""
 
-        return dict(okay=self.okay, task=self.task.dump())
+        return dict(complete=self.complete, task=self.task.dump())
 
 
 TResult = TypeVar("TResult", bound=Result)
@@ -47,7 +45,7 @@ class Task(Generic[TResult]):
     runnable: Runnable[Result]
     details: dict = field(default_factory=dict)
 
-    def run(self, resources: Dict[str, Resource]) -> TResult:
+    def run(self, resources: Dict[str, Any]) -> TResult:
         """Do the dependency injection for the runnable."""
 
         result = inject(resources, self.runnable)

@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from .. import TestResult
 from ...library.process import Runtime
@@ -9,12 +9,18 @@ class CorrectnessResult(TestResult):
     """The result of a correctness case."""
 
     runtime: Runtime
+    details: dict = field(default_factory=dict)
+
+    def __init__(self, passed: bool, runtime: Runtime, complete: bool = True, **details):
+        super().__init__(complete=complete, passed=passed)
+        self.runtime = runtime
+        self.details = details
 
     def __str__(self):
         if self.runtime.timeout is not None:
             return "timed out in {} seconds".format(self.runtime.timeout)
         return "{} in {} seconds".format(
-            "passed" if self.okay else "failed",
+            "passed" if self.passed else "failed",
             round(self.runtime.elapsed, 5))
 
     def dump(self) -> dict:

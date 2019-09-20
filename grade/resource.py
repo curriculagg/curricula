@@ -19,16 +19,6 @@ class Context(Resource):
 
     target: Path
     options: Dict[str, str] = field(default_factory=dict)
-    data: dict = field(default_factory=dict)
-
-    def __getitem__(self, item):
-        return self.data[item]
-
-    def __setitem__(self, key, value):
-        self.data[key] = value
-
-    def get(self, key, default=None):
-        return self.data.get(key, default=default)
 
 
 @dataclass

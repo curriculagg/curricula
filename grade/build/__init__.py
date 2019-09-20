@@ -12,8 +12,8 @@ class BuildResult(Result):
     resources: Optional[Dict[str, Executable]] = field(default_factory=dict)
     details: dict = field(default_factory=dict)
 
-    def __init__(self, okay: bool, resources: Dict[str, Executable] = None, **details):
-        super().__init__(okay)
+    def __init__(self, complete: bool, resources: Dict[str, Executable] = None, **details):
+        super().__init__(complete)
         self.resources = resources
         self.details = details
 

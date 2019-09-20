@@ -63,7 +63,7 @@ class Grader:
         for check in self.checks:
             result = check.run(resources)
             report.add(result)
-            if not result.okay and check.required:
+            if not result.complete and check.required:
                 raise GraderException("failed required check")
             resources["log"].print()
 
@@ -76,7 +76,7 @@ class Grader:
         for build in self.builds:
             result = build.run(resources)
             report.add(result)
-            if not result.okay and build.required:
+            if not result.complete and build.required:
                 raise GraderException("failed required build")
             resources.update(result.resources)
             resources["log"].print()
@@ -98,7 +98,7 @@ class Grader:
         """Build and test."""
 
         report = Report()
-        resources.update(report=report, log=Logger())
+        resources.update(report=report, log=Logger(), resources=resources)
 
         for stage in (self._check, self._build, self._test):
             try:

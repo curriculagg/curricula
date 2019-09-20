@@ -7,15 +7,17 @@ from ..task import Task, Result
 class CheckResult(Result):
     """Result of a submission check."""
 
-    details: dict = field(default_factory=dict)
+    passed: bool
+    details: dict
 
-    def __init__(self, okay: bool, **details):
-        super().__init__(okay)
+    def __init__(self, complete: bool, passed: bool, **details):
+        super().__init__(complete)
+        self.passed = passed
         self.details = details
 
     def dump(self):
         dump = super().dump()
-        dump.update(kind="check", details=self.details)
+        dump.update(passed=self.passed, kind="check", details=self.details)
         return dump
 
 

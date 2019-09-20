@@ -7,6 +7,13 @@ from ..task import Task, Result
 class TestResult(Result):
     """The result of a test."""
 
+    passed: bool
+
+    def dump(self) -> dict:
+        dump = super().dump()
+        dump.update(passed=self.passed)
+        return dump
+
 
 @dataclass
 class Test(Task):
