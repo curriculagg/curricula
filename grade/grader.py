@@ -78,7 +78,6 @@ class Grader:
             report.add(result)
             if not result.complete and build.required:
                 raise GraderException("failed required build")
-            resources.update(result.resources)
             resources["log"].print()
 
     def _test(self, resources: dict):

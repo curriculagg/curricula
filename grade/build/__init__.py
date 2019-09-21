@@ -1,4 +1,3 @@
-from typing import Optional, Dict
 from dataclasses import dataclass, field
 
 from ..task import Task, Result, Runnable
@@ -9,12 +8,10 @@ from ..resource import Executable
 class BuildResult(Result):
     """Returned from a build task."""
 
-    resources: Optional[Dict[str, Executable]] = field(default_factory=dict)
     details: dict = field(default_factory=dict)
 
-    def __init__(self, complete: bool, resources: Dict[str, Executable] = None, **details):
+    def __init__(self, complete: bool, **details):
         super().__init__(complete)
-        self.resources = resources
         self.details = details
 
     def dump(self) -> dict:
