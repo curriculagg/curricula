@@ -20,5 +20,5 @@ def main(grader: Grader):
     context = Context(Path(result.pop("target")).absolute(), result)
 
     report = grader.run(context=context)
-    with open("report.json", "w") as file:
+    with open(f"{context.target.parts[-1]}.report.json", "w") as file:
         json.dump(report.dump(), file, indent=2)
