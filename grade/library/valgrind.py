@@ -18,8 +18,11 @@ class ValgrindWhat:
     fields: dict = field(default_factory=dict)
 
     @classmethod
-    def load(cls, element: Element) -> "ValgrindWhat":
+    def load(cls, element: Optional[Element]) -> "Optional[ValgrindWhat]":
         """Load either what or xwhat."""
+
+        if element is None:
+            return None
 
         if element.tag == "what":
             return ValgrindWhat(element.text)
@@ -41,7 +44,7 @@ class ValgrindError:
     unique: int
     tid: int
     kind: str
-    what: ValgrindWhat
+    what: Optional[ValgrindWhat]
 
     @classmethod
     def load(cls, element: Element) -> "ValgrindError":
