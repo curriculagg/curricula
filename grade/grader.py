@@ -18,8 +18,8 @@ def create_registrar(details: dict, factory: Callable[..., Task], container: Lis
         """Put the function in a correctness object."""
 
         container.append(factory(
-            name=runnable.__qualname__,
-            description=runnable.__doc__,
+            name=details.pop("name", runnable.__qualname__),
+            description=details.pop("description", runnable.__doc__),
             details=details,
             runnable=runnable))
         return runnable
