@@ -50,7 +50,7 @@ def test_pass(program: Executable):
     """Basic pass."""
 
     runtime = program.execute("pass", timeout=1)
-    passed = runtime.stdout.strip() == "pass"
+    passed = runtime.stdout.strip() == b"pass"
     return CorrectnessResult(passed, runtime)
 
 
@@ -59,7 +59,7 @@ def test_fail(log: Logger, program: Executable):
     """Basic pass with fail."""
 
     runtime = program.execute("fail", timeout=1)
-    passed = runtime.stdout.strip() == "pass"
+    passed = runtime.stdout.strip() == b"pass"
     result = CorrectnessResult(passed, runtime)
     if not passed:
         log[2]("Expected pass, got", runtime.stdout.strip())
@@ -73,11 +73,11 @@ def test_error(log: Logger, program: Executable):
     runtime = program.execute("error", timeout=1.0)
     if runtime.code != 0:
         log[2]("Received return code", runtime.code)
-        for line in filter(None, runtime.stderr.split("\n")):
+        for line in filter(None, runtime.stderr.split(b"\n")):
             log[4](line)
         return CorrectnessResult(False, runtime)
 
-    passed = runtime.stdout.strip() == "pass"
+    passed = runtime.stdout.strip() == b"pass"
     log[2]("Expected pass, got fail")
     return CorrectnessResult(passed, runtime)
 
@@ -89,13 +89,13 @@ def test_fault(log: Logger, program: Executable):
     runtime = program.execute("fault", timeout=1.0)
     if runtime.code != 0:
         log[2]("Received return code", runtime.code)
-        for line in filter(None, runtime.stderr.split("\n")):
+        for line in filter(None, runtime.stderr.split(b"\n")):
             log[4](line)
         if runtime.code == -11:
             log[4]("Segmentation fault")
         return CorrectnessResult(False, runtime)
 
-    passing = runtime.stdout.strip() == "pass"
+    passing = runtime.stdout.strip() == b"pass"
     log("Expected pass, got fail")
     return CorrectnessResult(passing, runtime)
 
@@ -111,13 +111,13 @@ def test_timeout(log: Logger, program: Executable):
 
     if runtime.code != 0:
         log("Received return code", runtime.code)
-        for line in filter(None, runtime.stderr.split("\n")):
+        for line in filter(None, runtime.stderr.split(b"\n")):
             log[2](line)
         if runtime.code == -11:
             log[2]("Segmentation fault")
         return CorrectnessResult(False, runtime)
 
-    passing = runtime.stdout.strip() == "pass"
+    passing = runtime.stdout.strip() == b"pass"
     log("Expected pass, got fail")
     return CorrectnessResult(passing, runtime)
 

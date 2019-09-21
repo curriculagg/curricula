@@ -15,7 +15,7 @@ def main(grader: Grader):
 
     parser = argparse.ArgumentParser(description="the command line interface for a standalone correctness file")
     parser.add_argument("target", help="typically the submission directory to test")
-    parser.add_argument("destination", help="the directory or file to write the report to", default=".")
+    parser.add_argument("destination", nargs="?", help="the directory or file to write the report to", default=".")
 
     result = vars(parser.parse_args())
     destination = Path(result.pop("destination"))

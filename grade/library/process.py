@@ -11,8 +11,8 @@ class Runtime:
     command: str
     timeout: Optional[float]  # Populated if timed out
     code: Optional[int]
-    stdout: Optional[str]
-    stderr: Optional[str]
+    stdout: Optional[bytes]
+    stderr: Optional[bytes]
     elapsed: Optional[float]
 
     def __init__(self,
@@ -20,8 +20,8 @@ class Runtime:
                  *,
                  timeout: float = None,
                  code: int = None,
-                 stdout: str = None,
-                 stderr: str = None,
+                 stdout: bytes = None,
+                 stderr: bytes = None,
                  elapsed: float = None):
         self.command = command
         self.timeout = timeout
@@ -31,7 +31,12 @@ class Runtime:
         self.elapsed = elapsed
 
     def dump(self) -> dict:
-        return asdict(self)
+        dump = asdict(self)
+        if self.stdout is not None:
+            dump["stdout"] = self.stdout.decode(errors="replace")
+        if self.stderr is not None:
+            dump["stderr"] = self.stderr.decode(errors="replace")
+        return dump
 
 
 def run(*args: str, timeout: float) -> Runtime:
@@ -57,6 +62,6 @@ def run(*args: str, timeout: float) -> Runtime:
 
     return Runtime(" ".join(args),
                    code=process.returncode,
-                   stdout=stdout.decode(),
-                   stderr=stderr.decode(),
+                   stdout=stdout,
+                   stderr=stderr,
                    elapsed=elapsed)
