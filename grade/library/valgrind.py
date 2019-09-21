@@ -9,7 +9,6 @@ VALGRIND_ARGS = ("valgrind", "--tool=memcheck", "--leak-check=yes", "--xml=yes")
 VALGRIND_XML_FILE = "valgrind.xml"
 
 
-
 @dataclass
 class ValgrindWhat:
     """Explanation of error, can have dynamic tags."""
