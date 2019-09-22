@@ -39,7 +39,7 @@ class MemoryResult(TestResult):
             return cls(complete=False, passed=False, runtime=report.runtime)
         leaked_blocks, leaked_bytes = report.memory_lost()
         return cls(
-            passed=leaked_bytes == 0,
+            passed=leaked_bytes == 0 and len(report.errors) == 0,
             runtime=report.runtime,
             error_count=len(report.errors),
             leaked_blocks=leaked_blocks,
@@ -62,5 +62,6 @@ class MemoryResult(TestResult):
             runtime=self.runtime.dump(),
             error_count=self.error_count,
             leaked_blocks=self.leaked_blocks,
-            leaked_bytes=self.leaked_bytes)
+            leaked_bytes=self.leaked_bytes,
+            details=self.details)
         return dump

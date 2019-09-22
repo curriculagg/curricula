@@ -25,5 +25,5 @@ class CorrectnessResult(TestResult):
 
     def dump(self) -> dict:
         dump = super().dump()
-        dump.update(kind="correctness", runtime=self.runtime.dump())
+        dump.update(kind="correctness", runtime=self.runtime.dump(), details=self.details)
         return dump
