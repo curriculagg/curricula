@@ -63,7 +63,7 @@ class Grader:
         for check in self.checks:
             result = check.run(resources)
             report.add(result)
-            if not result.complete and check.required:
+            if (not result.complete or not result.passed) and check.required:
                 raise GraderException("failed required check")
             resources["log"].print()
 

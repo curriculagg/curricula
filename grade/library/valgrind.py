@@ -1,6 +1,6 @@
 import os
 from xml.etree.ElementTree import Element, parse
-from typing import Optional, List, TextIO
+from typing import Optional, List
 from dataclasses import dataclass, field
 
 from . import process
