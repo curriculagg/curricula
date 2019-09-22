@@ -4,6 +4,8 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).absolute().parent.parent.parent))
 from grade.shortcuts import *
+from grade.check.common import check_file_exists
+from grade.build.common import build_gpp_executable
 from grade.library import process
 
 
@@ -21,7 +23,7 @@ def overwrite_directory(path: Path):
 def check_program(context: Context, log: Logger):
     """Check if the program has been submitted."""
 
-    if not context.target.joinpath("a.cpp").exists():
+    if not context.target.joinpath("program.cpp").exists():
         return CheckResult(complete=True, passed=False, error="missing file test.cpp")
     log[2]("Found program.cpp")
     return CheckResult(complete=True, passed=True)
@@ -38,7 +40,7 @@ def build_program(context: Context, log: Logger, resources: dict):
 
     runtime = process.run("g++", "-Wall", "-o", str(executable), str(source), timeout=5)
     if runtime.code != 0:
-        return BuildResult(complete=False, error="failed to build program", runtime=runtime.dump())
+        return BuildResult(passed=False, error="failed to build program", runtime=runtime.dump())
 
     log[2]("Successfully built program")
     resources.update(program=Executable(str(executable)))
