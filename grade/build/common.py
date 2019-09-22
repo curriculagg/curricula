@@ -2,7 +2,7 @@ from ..library import process
 from ..resource import Logger, Executable
 from . import BuildResult
 
-from typing import Iterable
+from typing import Iterable, Optional
 from pathlib import Path
 
 
@@ -11,7 +11,7 @@ def build_gpp_executable(
         source: Path,
         destination: Path,
         gpp_options: Iterable[str],
-        timeout: int = 5) -> (Executable, BuildResult):
+        timeout: int = 5) -> (BuildResult, Optional[Executable]):
     """Build a binary from a single C++ file with G++."""
 
     destination.parent.mkdir(parents=True, exist_ok=True)
