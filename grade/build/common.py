@@ -2,7 +2,7 @@ from ..library import process
 from ..resource import Logger, Executable
 from . import BuildResult
 
-from typing import Tuple
+from typing import Iterable
 from pathlib import Path
 
 
@@ -10,7 +10,7 @@ def build_gpp_executable(
         log: Logger,
         source: Path,
         destination: Path,
-        gpp_options: Tuple[str],
+        gpp_options: Iterable[str],
         timeout: int = 5) -> (Executable, BuildResult):
     """Build a binary from a single C++ file with G++."""
 
