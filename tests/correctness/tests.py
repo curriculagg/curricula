@@ -4,8 +4,6 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).absolute().parent.parent.parent))
 from grade.shortcuts import *
-from grade.check.common import check_file_exists
-from grade.build.common import build_gpp_executable
 from grade.library import process
 
 
