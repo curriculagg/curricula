@@ -1,27 +1,25 @@
-from typing import List, Callable
+from typing import List
 from dataclasses import dataclass, field
 
 from .report import Report
 from .resource import Logger
-from .check import Check
-from .build import Build
-from .task import Task, Runnable
-from .test import Test
-from .test.runner import Runner
+from .task import Task, Runnable, Incomplete
 from .library.utility import timed
 
 
-def create_registrar(details: dict, factory: Callable[..., Task], container: List):
+def create_registrar(kind: str, details: dict, container: List):
     """A second-level decorator to reuse code."""
 
     def decorator(runnable: Runnable) -> Runnable:
         """Put the function in a correctness object."""
 
-        container.append(factory(
+        container.append(Task(
             name=details.pop("name", runnable.__qualname__),
             description=details.pop("description", runnable.__doc__),
-            details=details,
-            runnable=runnable))
+            kind=kind,
+            required=details.pop("required", False),
+            runnable=runnable,
+            details=details,))
         return runnable
 
     return decorator
@@ -35,62 +33,39 @@ class GraderException(Exception):
 class Grader:
     """A main class for grading runtime."""
 
-    checks: List[Check] = field(default_factory=list)
-    tests: List[Test] = field(default_factory=list)
-    builds: List[Build] = field(default_factory=list)
+    failed: bool = False
+    setups: List[Task] = field(default_factory=list)
+    tests: List[Task] = field(default_factory=list)
+    teardowns: List[Task] = field(default_factory=list)
 
-    def check(self, **details):
-        """Add a check to the grader."""
+    def setup(self, **details):
+        """Add a setup to the grader."""
 
-        return create_registrar(details, Check, self.checks)
-
-    def build(self, **details):
-        """Add a test to the grader."""
-
-        return create_registrar(details, Build, self.builds)
+        return create_registrar("setup", details, self.setups)
 
     def test(self, **details):
         """Add a test to the grader."""
 
-        return create_registrar(details, Test, self.tests)
+        return create_registrar("test", details, self.tests)
 
-    def _check(self, resources: dict):
+    def teardown(self, **details):
+        """Add a teardown to the grader."""
+
+        return create_registrar("teardown", details, self.teardowns)
+
+    def _run(self, tasks: List[Task], resources: dict):
         """Checks stage."""
 
-        print("Starting checks...")
         report = resources["report"]
-        report.stage = "check"
-        for check in self.checks:
-            result = check.run(resources)
+        report.stage = "setup"
+        for task in tasks:
+            result = Incomplete(task) if self.failed else task.run(resources)
             report.add(result)
-            if (not result.complete or not result.passed) and check.required:
-                raise GraderException("failed required check")
-            resources["log"].print()
-
-    def _build(self, resources: dict):
-        """Build stage."""
-
-        print("Starting build...")
-        report = resources["report"]
-        report.stage = "build"
-        for build in self.builds:
-            result = build.run(resources)
-            report.add(result)
-            if not result.complete and build.required:
-                raise GraderException("failed required build")
-            resources["log"].print()
-
-    def _test(self, resources: dict):
-        """Test stage."""
-
-        report = resources["report"]
-        if resources["context"].options.get("sanity"):
-            return
-
-        print("Starting tests...")
-        report.stage = "test"
-        runner = Runner(self.tests)
-        runner.run(resources)
+            if not self.failed:
+                resources["log"].sneak("{} {}".format(task, result))
+                resources["log"].print(prefix=" " * 2)
+            if task.required and (not result.complete or not result.passed):
+                self.failed = True
 
     @timed(name="Grader")
     def run(self, **resources) -> Report:
@@ -99,10 +74,8 @@ class Grader:
         report = Report()
         resources.update(report=report, log=Logger(), resources=resources)
 
-        for stage in (self._check, self._build, self._test):
-            try:
-                stage(resources)
-            except GraderException:
-                break
+        for name, tasks in (("setup", self.setups), ("tests", self.tests)):
+            print(f"Starting {name}")
+            self._run(tasks, resources)
 
         return report

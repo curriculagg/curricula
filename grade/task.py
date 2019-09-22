@@ -9,12 +9,26 @@ class Result(abc.ABC):
     """The result of a test."""
 
     complete: bool
+    passed: bool
     task: "Task" = field(init=False)
 
-    def dump(self) -> dict:
-        """Return the result as JSON."""
+    def __str__(self):
+        return "passed" if self.complete and self.passed else "failed"
 
-        return dict(complete=self.complete, task=self.task.dump())
+    def dump(self) -> dict:
+        return dict(complete=self.complete, passed=self.passed, task=self.task.dump())
+
+
+class Incomplete(Result):
+    """Used to represent a task that was never run."""
+
+    def __init__(self, task: "Task"):
+        self.task = task
+        self.complete = False
+        self.passed = False
+
+    def dump(self) -> dict:
+        return dict(complete=False, passed=False, task=self.task.dump())
 
 
 TResult = TypeVar("TResult", bound=Result)
@@ -42,8 +56,16 @@ class Task(Generic[TResult]):
 
     name: str
     description: str
+    kind: str
+    required: bool
     runnable: Runnable[Result]
-    details: dict = field(default_factory=dict)
+    details: dict
+
+    def __str__(self):
+        return self.name
+
+    def __hash__(self):
+        return id(self)
 
     def run(self, resources: Dict[str, Any]) -> TResult:
         """Do the dependency injection for the runnable."""
@@ -55,4 +77,9 @@ class Task(Generic[TResult]):
     def dump(self):
         """Return the task as JSON serializable."""
 
-        return dict(name=self.name, description=self.description, details=self.details)
+        return dict(
+            name=self.name,
+            description=self.description,
+            kind=self.kind,
+            required=self.required,
+            details=self.details)

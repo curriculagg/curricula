@@ -17,17 +17,17 @@ def overwrite_directory(path: Path):
     path.mkdir()
 
 
-@grader.check(required=True)
+@grader.setup(required=True)
 def check_program(context: Context, log: Logger):
     """Check if the program has been submitted."""
 
-    if not context.target.joinpath("program.cpp").exists():
+    if not context.target.joinpath("a.cpp").exists():
         return CheckResult(complete=True, passed=False, error="missing file test.cpp")
     log[2]("Found program.cpp")
     return CheckResult(complete=True, passed=True)
 
 
-@grader.build(required=True)
+@grader.setup(required=True)
 def build_program(context: Context, log: Logger, resources: dict):
     """Compile program with GCC."""
 
@@ -42,7 +42,7 @@ def build_program(context: Context, log: Logger, resources: dict):
 
     log[2]("Successfully built program")
     resources.update(program=Executable(str(executable)))
-    return BuildResult(complete=True, runtime=runtime.dump())
+    return BuildResult(passed=True, runtime=runtime.dump())
 
 
 @grader.test()

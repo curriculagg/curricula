@@ -17,7 +17,7 @@ def overwrite_directory(path: Path):
     path.mkdir()
 
 
-@grader.check(required=True)
+@grader.setup(required=True)
 def check_program(context: Context, log: Logger):
     """Check if the program has been submitted."""
 
@@ -27,8 +27,8 @@ def check_program(context: Context, log: Logger):
     return CheckResult(True)
 
 
-@grader.build(required=True)
-def build_program(context: Context, log: Logger):
+@grader.setup(required=True)
+def build_program(context: Context, log: Logger, resources: dict):
     """Compile program with GCC."""
 
     source = context.target.joinpath("program.cpp")
@@ -41,7 +41,8 @@ def build_program(context: Context, log: Logger):
         return BuildResult(False, error="failed to build program")
 
     log[2]("Successfully built program")
-    return BuildResult(True, Executable(str(executable)), name="program")
+    resources["program"] = Executable(str(executable))
+    return BuildResult(True)
 
 
 @grader.test()

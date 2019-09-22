@@ -1,5 +1,5 @@
 import os
-from xml.etree.ElementTree import Element, parse
+from xml.etree.ElementTree import Element, parse, ParseError
 from typing import Optional, List
 from dataclasses import dataclass, field
 
@@ -82,7 +82,10 @@ def run(*args: str, timeout: float) -> Optional[ValgrindReport]:
     if os.path.exists(VALGRIND_XML_FILE):
         errors = []
         with open(VALGRIND_XML_FILE) as file:
-            root = parse(file).getroot()
+            try:
+                root = parse(file).getroot()
+            except ParseError:
+                return ValgrindReport(runtime, None)
             for child in root:
                 if child.tag == "error":
                     errors.append(ValgrindError.load(child))

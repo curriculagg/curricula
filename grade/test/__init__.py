@@ -1,31 +1,7 @@
-from dataclasses import dataclass, field
+import abc
 
-from ..task import Task, Result
+from ..task import Result
 
 
-@dataclass
-class TestResult(Result):
+class TestResult(Result, abc.ABC):
     """The result of a test."""
-
-    passed: bool
-
-    def dump(self) -> dict:
-        dump = super().dump()
-        dump.update(passed=self.passed)
-        return dump
-
-
-@dataclass
-class Test(Task):
-    """A general test for a codebase.
-
-    From this class the correctness, complexity, and style tests are
-    derived such that they can be run generically. It is intended to
-    wrap a raw runnable with metadata used during registration.
-    """
-
-    def __str__(self):
-        return self.name
-
-    def __hash__(self):
-        return id(self)

@@ -1,17 +1,17 @@
 from typing import Optional, List, Dict
 
-from . import Result, Test
+from ..task import Task, Result
 
 
 class Runner:
     """A linear test runner."""
 
-    tests: Dict[Test, Optional[Result]]
+    tests: Dict[Task, Optional[Result]]
 
-    def __init__(self, tests: List[Test]):
+    def __init__(self, tests: List[Task]):
         self.tests = {test: None for test in tests}
 
-    def run(self, resources: dict) -> Dict[Test, Result]:
+    def run(self, resources: dict) -> Dict[Task, Result]:
         """Run all tests on a target."""
 
         for test in self.tests:

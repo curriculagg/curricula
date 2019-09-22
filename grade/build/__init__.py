@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 
-from ..task import Task, Result, Runnable
+from ..task import Result, Runnable
 from ..resource import Executable
 
 
@@ -10,8 +10,8 @@ class BuildResult(Result):
 
     details: dict = field(default_factory=dict)
 
-    def __init__(self, complete: bool, **details):
-        super().__init__(complete)
+    def __init__(self, passed: bool, complete: bool = True, **details):
+        super().__init__(complete=complete, passed=passed)
         self.details = details
 
     def dump(self) -> dict:
@@ -21,13 +21,3 @@ class BuildResult(Result):
 
 
 Buildable = Runnable[Executable]
-
-
-@dataclass
-class Build(Task[BuildResult]):
-    """A build strategy that produces an executable."""
-
-    required: bool = field(init=False)
-
-    def __post_init__(self):
-        self.required = self.details.pop("required", False)

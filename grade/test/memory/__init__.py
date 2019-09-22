@@ -17,9 +17,9 @@ class MemoryResult(TestResult):
     details: dict
 
     def __init__(self,
-                 complete: bool,
                  passed: bool,
                  runtime: Runtime,
+                 complete: bool = True,
                  error_count: int = None,
                  leaked_blocks: int = None,
                  leaked_bytes: int = None,
@@ -39,7 +39,6 @@ class MemoryResult(TestResult):
             return cls(complete=False, passed=False, runtime=report.runtime)
         leaked_blocks, leaked_bytes = report.memory_lost()
         return cls(
-            complete=True,
             passed=leaked_bytes == 0,
             runtime=report.runtime,
             error_count=len(report.errors),
@@ -59,7 +58,7 @@ class MemoryResult(TestResult):
     def dump(self) -> dict:
         dump = super().dump()
         dump.update(
-            kind="test.memory",
+            kind="memory",
             runtime=self.runtime.dump(),
             error_count=self.error_count,
             leaked_blocks=self.leaked_blocks,
