@@ -18,7 +18,7 @@ def build_gpp_executable(
     runtime = process.run("g++", *gpp_options, "-o", str(destination), str(source), timeout=timeout)
     if runtime.code != 0:
         log[2](f"Failed to compile {source.parts[-1]}")
-        return BuildResult(complete=False, passed=False, runtime=runtime.dump(), error="compilation failed"), None
+        return BuildResult(passed=False, runtime=runtime.dump(), error="compilation failed"), None
     elif not destination.exists():
         log[2](f"Build did not produce {destination.parts[-1]}")
         return BuildResult(passed=False, runtime=runtime.dump(), error="executable not found"), None

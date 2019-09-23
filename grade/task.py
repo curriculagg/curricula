@@ -28,7 +28,11 @@ class Incomplete(Result):
         self.passed = False
 
     def dump(self) -> dict:
-        return dict(complete=False, passed=False, task=self.task.dump())
+        return dict(
+            complete=False,
+            passed=False,
+            task=self.task.dump(),
+            details=dict(error="not completed because a prior required task failed"))
 
 
 TResult = TypeVar("TResult", bound=Result)

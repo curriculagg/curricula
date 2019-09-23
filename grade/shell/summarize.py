@@ -58,8 +58,9 @@ def build_summary(grader: Grader, reports_directory: Path) -> OverallSummary:
             task_name = task_result["task"]["name"]
             task = task_lookup[task_name]
 
-            if task_result["task"]["kind"] == "build" and not task_result["complete"]:
-                print(student.student)
+            if task_result["task"]["kind"] == "setup" and not task_result["passed"]:
+                error = task_result["details"]["error"] if "error" in task_result["details"] else ""
+                print("{} failed {}: {}".format(student.student["username"], task_result["task"]["name"], error))
 
             if task_result["complete"]:
                 task.students_complete.append(student)

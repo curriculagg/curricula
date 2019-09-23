@@ -9,9 +9,8 @@ def check_file_exists(log: Logger, path: Path) -> CheckResult:
     """Check if a file is present in the directory."""
 
     if not path.exists():
-        error = f"Can't find {path.parts[-1]}!"
-        log[2](error)
-        return CheckResult(passed=False, error=error)
+        log[2](f"Can't find {path.parts[-1]}!")
+        return CheckResult(passed=False, error=f"can't find {path.parts[-1]}")
 
     log[2](f"Found {path.parts[-1]}")
     return CheckResult(passed=True)
