@@ -74,7 +74,9 @@ class Grader:
         report = Report()
         resources.update(report=report, log=Logger(), resources=resources)
 
-        for name, tasks in (("setup", self.setups), ("tests", self.tests)):
+        for name, tasks in (("setup", self.setups), ("tests", self.tests), ("teardown", self.teardowns)):
+            if len(tasks) == 0:
+                continue
             print(f"Starting {name}")
             self._run(tasks, resources)
 
