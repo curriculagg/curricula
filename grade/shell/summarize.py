@@ -1,6 +1,5 @@
 import os
 import json
-import statistics
 import itertools
 from typing import List
 from dataclasses import dataclass, field
