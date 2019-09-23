@@ -1,6 +1,7 @@
 import os
 import json
 import itertools
+import statistics
 from typing import List
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -57,6 +58,9 @@ def build_summary(grader: Grader, reports_directory: Path) -> OverallSummary:
             task_name = task_result["task"]["name"]
             task = task_lookup[task_name]
 
+            if task_result["task"]["kind"] == "build" and not task_result["complete"]:
+                print(student.student)
+
             if task_result["complete"]:
                 task.students_complete.append(student)
                 student.tasks_complete.append(task)
@@ -84,6 +88,21 @@ def summarize(grader: Grader, args: dict):
     for task_summary in summary.tasks:
         task_name = task_summary.task["name"]
         print(f"{task_name}: {percent(len(task_summary.students_passed), len(task_summary.students_complete))}")
+
+    print()
+
+    scores = []
+    for student_summary in summary.students:
+        count_tests_complete = len(filter_tests(student_summary.tasks_complete))
+        if count_tests_complete:
+            scores.append(len(filter_tests(student_summary.tasks_passed)) / count_tests_complete)
+
+    print(len(scores))
+
+    print(statistics.mean(scores) * 100)
+    print(statistics.median(scores) * 100)
+    #with open("/Users/noahbkim/Desktop/report.csv", "w") as file:
+    #    file.write("\n".join(map(str, scores)) + "\n")
 
 #
 #
