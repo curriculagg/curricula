@@ -16,7 +16,8 @@ def single(grader: Grader, args: dict):
 
     context = Context(Path(args.pop("target")).absolute(), args)
     report = grader.run(context=context)
-    print(json.dumps(report.dump(), indent=2))
+    with Path(args.pop("report")).open("w") as file:
+        json.dump(report.dump(), file, indent=2)
 
 
 def main(grader: Grader):
@@ -27,6 +28,7 @@ def main(grader: Grader):
 
     single_parser = subparsers.add_parser("single")
     single_parser.add_argument("target", help="run tests on a single target")
+    single_parser.add_argument("report", help="where to write the report to")
 
     summarize_parser = subparsers.add_parser("summarize")
     summarize_parser.add_argument("reports", help="the directory containing the grade reports")
