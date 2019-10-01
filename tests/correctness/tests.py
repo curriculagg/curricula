@@ -3,8 +3,8 @@ import shutil
 from pathlib import Path
 
 sys.path.append(str(Path(__file__).absolute().parent.parent.parent))
-from grade.shortcuts import *
-from grade.library import process
+from curricula.grade.shortcuts import *
+from curricula.grade.library import process
 
 
 grader = Grader()
@@ -123,5 +123,5 @@ def test_timeout(log: Logger, program: Executable):
 
 
 if __name__ == "__main__":
-    from grade.shell import main
+    from curricula.grade import main
     main(grader)

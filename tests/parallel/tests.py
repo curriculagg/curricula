@@ -2,9 +2,9 @@ from os.path import dirname, abspath, join
 import sys
 
 sys.path.append(dirname(dirname(dirname(abspath(__file__)))))
-from grade import Manager
-from grade.resource import Executable, Logger
-from grade.test.correctness import CorrectnessResult
+from curricula.grade import Manager
+from curricula.grade import Executable, Logger
+from curricula.grade import CorrectnessResult
 
 tests = Manager()
 root = dirname(abspath(__file__))
@@ -23,5 +23,5 @@ def test(log: Logger, target: Executable = program):
 
 
 if __name__ == "__main__":
-    from grade.shell import main
+    from curricula.grade import main
     main(tests)

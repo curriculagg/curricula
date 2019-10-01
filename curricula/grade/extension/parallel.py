@@ -1,10 +1,10 @@
 import multiprocessing
 from typing import Dict
 
-from grade.test.runner import Runner
-from grade.test import Test
-from grade.resource import Executable, Logger
-from grade.library.utility import timed
+from curricula.grade import Runner
+from curricula.grade import Test
+from curricula.grade import Executable, Logger
+from curricula.grade.library import timed
 
 
 def worker(test: Test, resources: dict, output: multiprocessing.Queue):

@@ -2,11 +2,8 @@ import sys
 from pathlib import Path
 
 sys.path.append(Path(__file__).absolute().parent.parent.parent)
-from grade import Grader
-from grade.resource import *
-from grade.test.correctness import CorrectnessResult
-from grade.library.process import run
-
+from curricula.grade import *
+from curricula.grade import CorrectnessResult
 
 grader = Grader()
 root = Path(__file__).absolute().parent

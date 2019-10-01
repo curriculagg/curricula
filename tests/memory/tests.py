@@ -3,9 +3,8 @@ import shutil
 from pathlib import Path
 
 sys.path.append(str(Path(__file__).absolute().parent.parent.parent))
-from grade.shortcuts import *
-from grade.library import valgrind
-from grade.library import process
+from curricula.grade.shortcuts import *
+from curricula.grade.library import valgrind, process
 
 grader = Grader()
 root = Path(__file__).absolute().parent
@@ -53,5 +52,5 @@ def test_memory(program: Executable):
 
 
 if __name__ == "__main__":
-    from grade.shell import main
+    from curricula.grade import main
     main(grader)

@@ -1,4 +1,4 @@
-from grade.test import Result
+from curricula.grade import Result
 
 
 class ComplexityResult(Result):
