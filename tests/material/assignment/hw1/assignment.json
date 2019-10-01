@@ -1,0 +1,19 @@
+{
+  "title": "Homework 1",
+  "authors": [
+    {
+      "name": "Noah Kim",
+      "email": "noahbkim@gmail.com"
+    }
+  ],
+  "dates": {
+    "assigned": "2019-01-01 00:00",
+    "deadline": "2020-12-31 11:59"
+  },
+  "problems": [
+    {
+      "path": "problem/hello_world",
+      "percentage": 1
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "title": "Hello, World!",
+  "authors": [
+    {
+      "name": "Noah Kim",
+      "email": "noahbkim@gmail.edu"
+    }
+  ],
+  "topics": [
+    "streams",
+    "hello",
+    "world"
+  ],
+  "submission": [
+    "hello_world/hello_world.cpp"
+  ],
+  "grading": {
+    "minutes": 5,
+    "process": [
+      "automated",
+      "review"
+    ]
+  }
+}
