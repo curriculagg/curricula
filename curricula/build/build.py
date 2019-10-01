@@ -1,24 +1,9 @@
 from pathlib import Path
 
-from curricula.library import markdown
-from curricula.data.container import Assignment, Problem
-from .interpolate import interpolate
+from ..mapping.models import Assignment, Problem
+from ..mapping.shared import Files, Paths
 from ..library import files
-
-
-class Paths:
-    ROOT = Path(__file__).parent.parent
-    FRAGMENT = ROOT.joinpath("fragment")
-    ARTIFACTS = Path("artifacts")
-    SITE = Path("site")
-    SKELETON = Path("skeleton")
-    SOLUTION = Path("solution")
-    KEY = Path("key")
-    GRADING = Path("grading")
-
-
-class Files:
-    README = "README.md"
+from ..library import markdown
 
 
 def load_markdown(path: Path, assignment: Assignment, problem: Problem = None) -> str:
@@ -27,14 +12,8 @@ def load_markdown(path: Path, assignment: Assignment, problem: Problem = None) -
     if not path.is_file():
         path = path.joinpath("README.md")
     with path.open() as file:
-        contents = file.read()
-
-    contents = interpolate(contents, assignment, problem)
-    contents = contents.rstrip()
-    if contents:
-        contents += "\n\n"
-
-    return contents
+        template = markdown.Template(file)
+    return template.interpolate(dict(assignment=assignment, problem=problem))
 
 
 def make_problem_title(problem: Problem, number: int = None) -> str:
@@ -51,11 +30,11 @@ def make_problem_title(problem: Problem, number: int = None) -> str:
 def build_readme(assignment: Assignment, path: Path):
     """Generate the composite README."""
 
-    with path.joinpath(Files.README).open("w") as readme:
-        readme.write(markdown.front_matter(layout="default", title=assignment.title))
-        readme.write(markdown.header(assignment.title, level=2))
-        readme.write(load_markdown(Paths.FRAGMENT.joinpath("assignment_preamble"), assignment))
-        readme.write(load_markdown(assignment.path.joinpath(Files.README), assignment))
+    with markdown.Writer(path.joinpath(Files.README).open("w")) as readme:
+        readme.add_front_matter(layout="default", title=assignment.title)
+        readme.add_header(assignment.title, level=2)
+        readme.add(load_markdown(Paths.FRAGMENT.joinpath("assignment_preamble"), assignment))
+        readme.add(load_markdown(assignment.path.joinpath(Files.README), assignment))
         problem_counter = 1
 
         for problem in assignment.problems:

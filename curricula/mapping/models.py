@@ -4,10 +4,7 @@ from pathlib import Path
 from dataclasses import dataclass
 from typing import Optional, List
 
-
-class Paths:
-    ASSIGNMENT = "assignment.json"
-    PROBLEM = "problem.json"
+from .shared import *
 
 
 @dataclass
@@ -62,7 +59,7 @@ class Problem:
 
         path = root.joinpath(reference["path"])
         short = path.parts[-1]
-        with path.joinpath(Paths.PROBLEM).open() as file:
+        with path.joinpath(Files.PROBLEM).open() as file:
             data = json.load(file)
 
         authors = list(Author(**author) for author in data.pop("authors"))
@@ -89,7 +86,7 @@ class Assignment:
         """Load an assignment from a containing directory."""
 
         short = path.parts[-1]
-        with path.joinpath(Paths.ASSIGNMENT).open() as file:
+        with path.joinpath(Files.ASSIGNMENT).open() as file:
             data = json.load(file)
 
         authors = list(Author(**author) for author in data.pop("authors"))
