@@ -1,6 +1,6 @@
 import re
 
-from .container import Assignment, Problem
+from curricula.data.container import Assignment, Problem
 
 VARIABLE_PATTERN = re.compile(
     r"(?<!\\)"

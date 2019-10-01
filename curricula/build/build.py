@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from . import markdown
-from .container import Assignment, Problem
+from curricula.library import markdown
+from curricula.data.container import Assignment, Problem
 from .interpolate import interpolate
 from ..library import files
 
