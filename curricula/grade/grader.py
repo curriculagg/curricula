@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from .report import Report
 from .resource import Logger
 from .task import Task, Runnable, Incomplete
-from .library.utility import timed
+from curricula.library.utility import timed
 
 
 def create_registrar(kind: str, details: dict, container: List):

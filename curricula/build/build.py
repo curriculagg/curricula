@@ -1,9 +1,9 @@
 from pathlib import Path
 
 from . import markdown
-from . import files
 from .container import Assignment, Problem
 from .interpolate import interpolate
+from ..library import files
 
 
 class Paths:
@@ -79,13 +79,13 @@ def build_assets(assignment: Assignment, path: Path):
     # Copy assignment assets first
     assignment_assets_path = assignment.path.joinpath("assets")
     if assignment_assets_path.exists():
-        files.copy_tree(assignment_assets_path, assets_path)
+        files.copy_directory(assignment_assets_path, assets_path)
 
     # Overwrite by problem
     for problem in assignment.problems:
         problem_assets_path = problem.path.joinpath("assets")
         if problem_assets_path.exists():
-            files.copy_tree_overwrite(problem_assets_path, assets_path)
+            files.copy_directory(problem_assets_path, assets_path, merge=False)
 
 
 def build_site(assignment: Assignment, path: Path):
@@ -107,7 +107,7 @@ def build_skeleton(assignment: Assignment, path: Path):
         base_name = problem.path.parts[-1]
         problem_skeleton_path = problem.path.joinpath(Paths.SKELETON)
         if problem_skeleton_path.exists():
-            files.copy_tree(problem_skeleton_path, skeleton_path.joinpath(base_name))
+            files.copy_directory(problem_skeleton_path, skeleton_path.joinpath(base_name))
 
         if problem.submission:
             for submission_fragment in problem.submission:
@@ -193,7 +193,7 @@ def build(path: Path):
 
     assignment = Assignment.load(path)
     artifact_path = Paths.ARTIFACTS.joinpath(path)
-    files.overwrite_directory(artifact_path)
+    files.replace_directory(artifact_path)
     for step in BUILD_STEPS:
         step(assignment, artifact_path)
 
