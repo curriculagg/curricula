@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Dict, Any, Callable
 
 from ..mapping.models import Assignment, Problem
 from ..mapping.shared import Files, Paths
@@ -6,14 +7,14 @@ from ..library import files
 from ..library import markdown
 
 
-def load_markdown(path: Path, assignment: Assignment, problem: Problem = None) -> str:
+def load_markdown(path: Path, namespace: Dict[str, Any], filters: Dict[str, Callable[[Any], Any]] = None) -> str:
     """Load a markdown file and interpolate."""
 
     if not path.is_file():
         path = path.joinpath("README.md")
     with path.open() as file:
         template = markdown.Template(file)
-    return template.interpolate(dict(assignment=assignment, problem=problem))
+    return template.interpolate(namespace, filters)
 
 
 def make_problem_title(problem: Problem, number: int = None) -> str:
@@ -30,22 +31,25 @@ def make_problem_title(problem: Problem, number: int = None) -> str:
 def build_readme(assignment: Assignment, path: Path):
     """Generate the composite README."""
 
-    with markdown.Writer() as readme:
-        readme.add_front_matter(layout="default", title=assignment.title)
-        readme.add_header(assignment.title, level=2)
-        readme.add(load_markdown(Paths.FRAGMENT.joinpath("assignment_preamble"), assignment))
-        readme.add(load_markdown(assignment.path.joinpath(Files.README), assignment))
-        problem_counter = 1
+    readme = markdown.Builder()
+    readme.add_front_matter(layout="default", title=assignment.title)
+    readme.add_header(assignment.title, level=2)
+    readme.add(load_markdown(Paths.FRAGMENT.joinpath("assignment_preamble"), assignment))
+    readme.add(load_markdown(assignment.path.joinpath(Files.README), assignment))
+    problem_counter = 1
 
-        for problem in assignment.problems:
-            if problem.percentage > 0:
-                problem_number = problem_counter
-                problem_counter += 1
+    for problem in assignment.problems:
+        problem_number = None
+        if problem.percentage > 0:
+            problem_number = problem_counter
+            problem_counter += 1
 
-            problem_title = make_problem_title(problem, number=None if problem.percentage == 0 else problem_number)
-            readme.write(markdown.header(problem_title, level=3))
-            readme.write(load_markdown(problem.path.joinpath(Files.README), assignment, problem))
-        readme.write(load_markdown(Paths.FRAGMENT.joinpath("assignment_submission"), assignment))
+        problem_title = make_problem_title(problem, number=problem_number)
+        readme.add_header(problem_title, level=3)
+        readme.add(load_markdown(problem.path.joinpath(Files.README), assignment, problem))
+
+    readme.add(load_markdown(Paths.FRAGMENT.joinpath("assignment_submission"), assignment))
+    template =
 
 
 def build_assets(assignment: Assignment, path: Path):

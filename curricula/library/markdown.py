@@ -7,21 +7,31 @@ class ItemizeBuilder:
     """Context for managing a list generator."""
 
     items: List[str]
+    indent: int
 
-    def __init__(self):
+    def __init__(self, indent: int = 0):
         """Just use the file of the document."""
 
         self.items = []
+        self.indent = indent
 
     def add(self, item: str):
         """Add a bullet to the document."""
 
-        self.items.append("- {}".format(item.strip()))
+        self.items.append(" " * self.indent + "- {}".format(item.strip()))
 
     def get(self) -> str:
         """Return the string itemize."""
 
         return "\n".join(self.items)
+
+    @contextlib.contextmanager
+    def start_itemize(self):
+        """Open an itemizing context, resulting in a bulleted list."""
+
+        builder = ItemizeBuilder(indent=self.indent + 4)
+        yield builder
+        self.items.extend(builder.items)
 
 
 class EnumerateBuilder:
@@ -29,23 +39,33 @@ class EnumerateBuilder:
 
     items: List[str]
     counter: int
+    indent: int
 
-    def __init__(self, counter: int = 1):
+    def __init__(self, counter: int = 1, indent: int = 0):
         """Just use the file of the document."""
 
         self.items = []
         self.counter = counter
+        self.indent = indent
 
     def add(self, item: str):
         """Add a bullet to the document."""
 
-        self.items.append("{}. {}".format(self.counter, item.strip()))
+        self.items.append(" " * self.indent + "{}. {}".format(self.counter, item.strip()))
         self.counter += 1
 
     def get(self) -> str:
         """Return the string itemize."""
 
         return "\n".join(self.items)
+
+    @contextlib.contextmanager
+    def start_enumerate(self, counter: int = 1):
+        """Open an itemizing context, resulting in a bulleted list."""
+
+        builder = EnumerateBuilder(counter=counter, indent=self.indent + 4)
+        yield builder
+        self.add(builder.get())
 
 
 class Builder:
@@ -65,6 +85,11 @@ class Builder:
         """Add a header section."""
 
         self.add("{} {}".format("#" * level, contents))
+
+    def add_code(self, contents: str, *, language: str = ""):
+        """Add a code block."""
+
+        self.add("```{}\n{}\n```".format(language, contents))
 
     def add_front_matter(self, **kwargs):
         """Add a front matter header in YAML format."""
