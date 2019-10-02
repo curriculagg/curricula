@@ -1,4 +1,8 @@
-[[ front_matter ]]
+---
+layout: default
+nav: assignments
+title: [[ assignment.title ]]
+---
 
 - Assigned: [[ assignment.dates.assigned | date ]] PST
 - Due: [[ assignment.dates.deadline | datetime ]] PST
@@ -6,7 +10,11 @@
    - Once you have cloned your `{{ site.data.material.urls.github }}/hw-username` repo, create this `[[ assignment.short ]]` folder underneath it (i.e. `hw-username/[[ assignment.short ]]`).
    - Skeleton code for this assignment is available in `homework_resources/[[ assignment.short ]]`.
 
-[[ assignment.title ]]
+## [[ assignment.title ]]
+
+[[ instructions ]]
+
+[[ problems ]]
 
 ### Submitting Your Solution
 

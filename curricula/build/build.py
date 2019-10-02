@@ -1,9 +1,9 @@
 import jinja2
-import json
 from pathlib import Path
 from typing import Any, Dict
 from dataclasses import dataclass
 
+from ..configurable import create_jinja2_environment
 from ..mapping.models import Assignment, Problem
 from ..mapping.shared import Files, Paths
 from ..library import files
@@ -28,38 +28,31 @@ def load_markdown(path: Path, **namespace: Any) -> str:
         return markdown.Loader.load(file, **namespace)
 
 
-def make_problem_title(problem: Problem, number: int = None) -> str:
-    """Return title and percentage if non-zero."""
-
-    title = problem.title
-    if number is not None:
-        title = "{}. ".format(number) + title
-    if problem.percentage > 0:
-        title += " ({}%)".format(int(problem.percentage * 100))
-    return title
-
-
-def build_instructions_readme(assignment: Assignment, path: Path):
+def build_instructions_readme(context: Context, assignment: Assignment, path: Path):
     """Generate the composite README."""
 
-    readme = markdown.Builder()
-    readme.add_front_matter(layout="default", title=assignment.title)
-    readme.add_header(assignment.title, level=2)
-    readme.add(load_markdown(Paths.FRAGMENT.joinpath("assignment_preamble"), assignment))
-    readme.add(load_markdown(assignment.path.joinpath(Files.README), assignment))
-    problem_counter = 1
+    assignment_template = context.environment.get_template("template/instructions/assignment.md")
+    problem_template = context.environment.get_template("template/instructions/problem.md")
+    problems = []
 
     for problem in assignment.problems:
-        problem_number = None
-        if problem.percentage > 0:
-            problem_number = problem_counter
-            problem_counter += 1
+        readme_path = files.relative(context.path, problem.path.joinpath("README.md"))
+        instructions = context.environment.get_template(str(readme_path)).render(
+            assignment=assignment,
+            problem=problem)
+        problems.append(problem_template.render(
+            assignment=assignment,
+            problem=problem,
+            instructions=instructions).strip())
 
-        problem_title = make_problem_title(problem, number=problem_number)
-        readme.add_header(problem_title, level=3)
-        readme.add(load_markdown(problem.path.joinpath(Files.README), assignment, problem))
-
-    readme.add(load_markdown(Paths.FRAGMENT.joinpath("assignment_submission"), assignment))
+    with path.joinpath("README.md").open("w") as file:
+        readme_path = files.relative(context.path, assignment.path.joinpath("README.md"))
+        instructions = context.environment.get_template(str(readme_path)).render(
+            assignment=assignment)
+        file.write(assignment_template.render(
+            assignment=assignment,
+            instructions=instructions,
+            problems="\n\n".join(problems)))
 
 
 def build_assets(assignment: Assignment, path: Path):
@@ -81,13 +74,13 @@ def build_assets(assignment: Assignment, path: Path):
             files.copy_directory(problem_assets_path, assets_path, merge=False)
 
 
-def build_instructions(assignment: Assignment, path: Path):
+def build_instructions(context: Context, assignment: Assignment, path: Path):
     """Build all site components."""
 
-    site_path = path.joinpath(Paths.SITE)
-    site_path.mkdir()
-    build_readme(assignment, site_path)
-    build_assets(assignment, site_path)
+    instructions_path = path.joinpath(Paths.INSTRUCTIONS)
+    instructions_path.mkdir(exist_ok=True)
+    build_instructions_readme(context, assignment, instructions_path)
+    #build_assets(assignment, site_path)
 
 
 def build_skeleton(assignment: Assignment, path: Path):
@@ -185,14 +178,11 @@ BUILD_STEPS = (
 def build(args: dict):
     """Build the assignment at a given path."""
 
-    root = Path(__file__).absolute().parent.parent
-    with root.joinpath("jinja2.json").open() as file:
-        environment = jinja2.Environment(**json.load(file))
+    path = Path(args.pop("material")).absolute()
+    environment = create_jinja2_environment(loader=jinja2.FileSystemLoader(str(path)))
+    context = Context(environment, path, args)
 
-    material_path = args["path"]
+    artifacts_path = path.parent.joinpath("artifacts")
+    artifacts_path.mkdir(exist_ok=True)
 
-
-
-if __name__ == "__main__":
-    import sys
-    build(sys.argv[1])
+    build_instructions(context, Assignment.load(path.joinpath("assignment", "hw1")), artifacts_path)

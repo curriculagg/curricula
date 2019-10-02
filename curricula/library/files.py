@@ -4,6 +4,12 @@ import distutils.dir_util
 from pathlib import Path
 
 
+def relative(root: Path, path: Path):
+    """Left-truncate the path by the root."""
+
+    return Path(*path.parts[len(root.parts):])
+
+
 def copy(source: Path, destination: Path):
     """Copy a file."""
 

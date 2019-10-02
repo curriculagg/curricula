@@ -1,4 +1,2 @@
-# Hello, world!
-
 This is an example problem that requires users to print the canonical phrase `Hello, world!` to the command line.
-Welcome to Curricula.
+Make sure to write this in `[[ problem.short ]]/hello_world.cpp` in your homework directory.

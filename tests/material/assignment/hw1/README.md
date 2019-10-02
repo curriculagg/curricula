@@ -1,2 +1,3 @@
-Welcome to homework 1.
+Welcome to [[ assignment.title ]].
 This homework is pretty challenging, so make sure to get started early.
+Good luck!
