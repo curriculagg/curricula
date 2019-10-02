@@ -1,9 +1,9 @@
 import jinja2
 from pathlib import Path
-from typing import Any, Dict
+from typing import Dict, Union
 from dataclasses import dataclass
 
-from ..configurable import create_jinja2_environment
+from ..configurable import jinja2_create_environment
 from ..mapping.models import Assignment, Problem
 from ..mapping.shared import Files, Paths
 from ..library import files
@@ -15,44 +15,16 @@ class Context:
     """Build context."""
 
     environment: jinja2.Environment
-    path: Path
+    material_path: Path
     args: Dict[str, str]
-
-
-def load_markdown(path: Path, **namespace: Any) -> str:
-    """Load a markdown file and interpolate."""
-
-    if not path.is_file():
-        path = path.joinpath("README.md")
-    with path.open() as file:
-        return markdown.Loader.load(file, **namespace)
 
 
 def build_instructions_readme(context: Context, assignment: Assignment, path: Path):
     """Generate the composite README."""
 
     assignment_template = context.environment.get_template("template/instructions/assignment.md")
-    problem_template = context.environment.get_template("template/instructions/problem.md")
-    problems = []
-
-    for problem in assignment.problems:
-        readme_path = files.relative(context.path, problem.path.joinpath("README.md"))
-        instructions = context.environment.get_template(str(readme_path)).render(
-            assignment=assignment,
-            problem=problem)
-        problems.append(problem_template.render(
-            assignment=assignment,
-            problem=problem,
-            instructions=instructions).strip())
-
     with path.joinpath("README.md").open("w") as file:
-        readme_path = files.relative(context.path, assignment.path.joinpath("README.md"))
-        instructions = context.environment.get_template(str(readme_path)).render(
-            assignment=assignment)
-        file.write(assignment_template.render(
-            assignment=assignment,
-            instructions=instructions,
-            problems="\n\n".join(problems)))
+        file.write(assignment_template.render(assignment=assignment))
 
 
 def build_assets(assignment: Assignment, path: Path):
@@ -175,12 +147,34 @@ BUILD_STEPS = (
 )
 
 
+@jinja2.environmentfilter
+def filter_instructions(environment: jinja2.Environment, item: Union[Problem, Assignment]) -> str:
+    """Load instructions for a problem or assignment."""
+
+    context: Context = environment.globals["context"]  # Not jinja2 context, our context
+    readme_path = item.path.joinpath("README.md").relative_to(context.material_path)
+
+    if isinstance(item, Assignment):
+        return environment.get_template(str(readme_path)).render(assignment=item)
+    elif isinstance(item, Problem):
+        return environment.get_template(str(readme_path)).render(assignment=item.assignment, problem=item)
+
+
+def jinja2_create_build_environment(**options) -> jinja2.Environment:
+    """Add a couple filters for content building."""
+
+    environment = jinja2_create_environment(**options)
+    environment.filters.update(instructions=filter_instructions)
+    return environment
+
+
 def build(args: dict):
     """Build the assignment at a given path."""
 
     path = Path(args.pop("material")).absolute()
-    environment = create_jinja2_environment(loader=jinja2.FileSystemLoader(str(path)))
+    environment = jinja2_create_build_environment(loader=jinja2.FileSystemLoader(str(path)))
     context = Context(environment, path, args)
+    environment.globals["context"] = context
 
     artifacts_path = path.parent.joinpath("artifacts")
     artifacts_path.mkdir(exist_ok=True)

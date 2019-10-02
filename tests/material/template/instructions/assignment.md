@@ -12,9 +12,11 @@ title: [[ assignment.title ]]
 
 ## [[ assignment.title ]]
 
-[[ instructions ]]
+[[ assignment | instructions ]]
 
-[[ problems ]]
+[%- for problem in assignment.problems %]
+[% include "template/instructions/problem.md" %]
+[% endfor -%]
 
 ### Submitting Your Solution
 

@@ -41,6 +41,8 @@ class Grading:
 class Problem:
     """All problem data."""
 
+    assignment: "Assignment"
+
     path: Path
     short: str
     number: int
@@ -55,7 +57,7 @@ class Problem:
     grading: Optional[Grading] = None
 
     @classmethod
-    def load(cls, root: Path, reference: dict, number: int):
+    def load(cls, assignment: "Assignment", root: Path, reference: dict, number: int) -> "Problem":
         """Load a problem from the assignment path and reference."""
 
         path = root.joinpath(reference["path"])
@@ -66,7 +68,7 @@ class Problem:
         authors = list(Author(**author) for author in data.pop("authors"))
         grading = Grading(**data.pop("grading")) if "grading" in data else None
         percentage = reference["percentage"]
-        return cls(path, short, number, percentage, authors=authors, grading=grading, **data)
+        return cls(assignment, path, short, number, percentage, authors=authors, grading=grading, **data)
 
 
 @dataclass
@@ -83,7 +85,7 @@ class Assignment:
     notes: Optional[str] = None
 
     @classmethod
-    def load(cls, path: Path):
+    def load(cls, path: Path) -> "Assignment":
         """Load an assignment from a containing directory."""
 
         short = path.parts[-1]
@@ -92,14 +94,16 @@ class Assignment:
 
         authors = list(Author(**author) for author in data.pop("authors"))
         dates = Dates(**data.pop("dates"))
+        problem_references = data.pop("problems")
+
+        self = cls(path, short, authors=authors, dates=dates, problems=[], **data)
 
         counter = 1
-        problems = []
-        for reference in data.pop("problems"):
+        for reference in problem_references:
             number = None
             if reference["percentage"] > 0:
                 number = counter
                 counter += 1
-            problems.append(Problem.load(path, reference, number))
+            self.problems.append(Problem.load(self, path, reference, number))
 
-        return cls(path, short, authors=authors, dates=dates, problems=problems, **data)
+        return self

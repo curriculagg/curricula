@@ -1,3 +1,3 @@
-### [% if problem.number %][[ problem.number ]]. [% endif %][[ problem.title ]] [% if problem.percentage %]([[ problem.percentage * 100 | int ]]%)[% endif %]
+### [[ problem.number and problem.number ~ ". " or "" ]][[ problem.title ]][[ problem.percentage > 0 and " (" ~ problem.percentage * 100 | int ~ "%)" or "" ]]
 
-[[ instructions ]]
+[[ problem | instructions ]]
