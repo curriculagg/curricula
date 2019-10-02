@@ -1,6 +1,6 @@
 import re
 import contextlib
-from typing import TextIO, Dict, Callable, Any, List
+from typing import TextIO, Callable, Any, List
 
 
 class ItemizeBuilder:
@@ -119,17 +119,6 @@ class Builder:
         return "\n".join(self.sections)
 
 
-INTERPOLATION_PATTERN = re.compile(r"(?<!\\)" r"\[\[\s*" r"(.+?)" r"\s*\]\]")
-
-NAMESPACE = {}
-
-FILTERS = {
-    "datetime": lambda d: d.strftime("%B %d, %Y at %H:%M"),
-    "date": lambda d: d.strftime("%B %d, %Y"),
-    "str": lambda x: str(x),
-}
-
-
 def underwrite(top: dict, bottom: dict) -> dict:
     """Add any keys not in bottom to top, return top."""
 
@@ -147,28 +136,37 @@ def get(obj, *keys):
     return obj
 
 
-class Template:
+class Loader:
     """Tools for manipulating a Markdown template."""
 
-    contents: str
+    pattern = re.compile(r"(?<!\\)" r"\[\[\s*" r"(.+?)" r"\s*\]\]")
+    filters = {
+        "datetime": lambda d: d.strftime("%B %d, %Y at %H:%M"),
+        "date": lambda d: d.strftime("%B %d, %Y"),
+        "str": lambda x: str(x),
+    }
 
-    def __init__(self, file: TextIO):
-        """Load a Markdown template from a path."""
+    @classmethod
+    def register(cls, filter_name: str, filter_method: Callable[[Any], Any]):
+        """Register a interpolation filter."""
 
-        self.contents = file.read()
+        cls.filters[filter_name] = filter_method
 
-    def interpolate(self, namespace: Dict[str, Any], filters: Dict[str, Callable[[Any], Any]] = None) -> str:
+    @classmethod
+    def interpolate(cls, contents: str, **namespace: Any) -> str:
         """Interpolate the file with values and filters."""
 
-        contents = self.contents
-        namespace = underwrite(namespace, NAMESPACE)
-        filters = underwrite(filters, FILTERS) if filters is not None else {}
-
-        matches = list(INTERPOLATION_PATTERN.finditer(contents))
+        matches = list(cls.pattern.finditer(contents))
         for match in reversed(matches):
             variable_name, *filter_names = map(str.strip, match.group().split("|"))
             result = get(namespace, variable_name.split("."))
             for filter_name in filter_names:
-                result = filters[filter_name](result)
+                result = cls.filters[filter_name](result)
             contents = contents[:match.start()] + str(result) + contents[match.end():]
         return contents
+
+    @classmethod
+    def load(cls, file: TextIO, **namespace: Any) -> str:
+        """Load the contents of a markdown file."""
+
+        return cls.interpolate(file.read(), **namespace)

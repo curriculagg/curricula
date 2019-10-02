@@ -1,5 +1,8 @@
+import jinja2
+import json
 from pathlib import Path
-from typing import Dict, Any, Callable
+from typing import Any, Dict
+from dataclasses import dataclass
 
 from ..mapping.models import Assignment, Problem
 from ..mapping.shared import Files, Paths
@@ -7,14 +10,22 @@ from ..library import files
 from ..library import markdown
 
 
-def load_markdown(path: Path, namespace: Dict[str, Any], filters: Dict[str, Callable[[Any], Any]] = None) -> str:
+@dataclass(repr=False, eq=False)
+class Context:
+    """Build context."""
+
+    environment: jinja2.Environment
+    path: Path
+    args: Dict[str, str]
+
+
+def load_markdown(path: Path, **namespace: Any) -> str:
     """Load a markdown file and interpolate."""
 
     if not path.is_file():
         path = path.joinpath("README.md")
     with path.open() as file:
-        template = markdown.Template(file)
-    return template.interpolate(namespace, filters)
+        return markdown.Loader.load(file, **namespace)
 
 
 def make_problem_title(problem: Problem, number: int = None) -> str:
@@ -28,7 +39,7 @@ def make_problem_title(problem: Problem, number: int = None) -> str:
     return title
 
 
-def build_readme(assignment: Assignment, path: Path):
+def build_instructions_readme(assignment: Assignment, path: Path):
     """Generate the composite README."""
 
     readme = markdown.Builder()
@@ -49,7 +60,6 @@ def build_readme(assignment: Assignment, path: Path):
         readme.add(load_markdown(problem.path.joinpath(Files.README), assignment, problem))
 
     readme.add(load_markdown(Paths.FRAGMENT.joinpath("assignment_submission"), assignment))
-    template =
 
 
 def build_assets(assignment: Assignment, path: Path):
@@ -71,7 +81,7 @@ def build_assets(assignment: Assignment, path: Path):
             files.copy_directory(problem_assets_path, assets_path, merge=False)
 
 
-def build_site(assignment: Assignment, path: Path):
+def build_instructions(assignment: Assignment, path: Path):
     """Build all site components."""
 
     site_path = path.joinpath(Paths.SITE)
@@ -165,20 +175,22 @@ def build_grading(assignment: Assignment, path: Path):
 
 
 BUILD_STEPS = (
-    build_site,
-    build_skeleton,
-    build_key,
-    build_grading)
+    build_instructions,
+    # build_skeleton,
+    # build_key,
+    # build_grading
+)
 
 
-def build(path: Path):
+def build(args: dict):
     """Build the assignment at a given path."""
 
-    assignment = Assignment.load(path)
-    artifact_path = Paths.ARTIFACTS.joinpath(path)
-    files.replace_directory(artifact_path)
-    for step in BUILD_STEPS:
-        step(assignment, artifact_path)
+    root = Path(__file__).absolute().parent.parent
+    with root.joinpath("jinja2.json").open() as file:
+        environment = jinja2.Environment(**json.load(file))
+
+    material_path = args["path"]
+
 
 
 if __name__ == "__main__":

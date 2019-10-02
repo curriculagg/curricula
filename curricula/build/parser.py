@@ -18,4 +18,4 @@ def run(parser: argparse.ArgumentParser, args: argparse.Namespace):
     if args.problem is not None and args.assignment is None:
         parser.error("You must specify an assignment to build a specific problem!")
 
-    build.build(Path(args["path"]))
+    build.build(vars(args))

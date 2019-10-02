@@ -43,6 +43,7 @@ class Problem:
 
     path: Path
     short: str
+    number: int
     percentage: float
 
     title: str
@@ -54,7 +55,7 @@ class Problem:
     grading: Optional[Grading] = None
 
     @classmethod
-    def load(cls, root: Path, reference: dict):
+    def load(cls, root: Path, reference: dict, number: int):
         """Load a problem from the assignment path and reference."""
 
         path = root.joinpath(reference["path"])
@@ -65,7 +66,7 @@ class Problem:
         authors = list(Author(**author) for author in data.pop("authors"))
         grading = Grading(**data.pop("grading")) if "grading" in data else None
         percentage = reference["percentage"]
-        return cls(**data, path=path, short=short, percentage=percentage, authors=authors, grading=grading)
+        return cls(path, short, number, percentage, authors=authors, grading=grading, **data)
 
 
 @dataclass
@@ -91,5 +92,14 @@ class Assignment:
 
         authors = list(Author(**author) for author in data.pop("authors"))
         dates = Dates(**data.pop("dates"))
-        problems = list(Problem.load(path, reference) for reference in data.pop("problems"))
-        return cls(**data, path=path, short=short, authors=authors, dates=dates, problems=problems)
+
+        counter = 1
+        problems = []
+        for reference in data.pop("problems"):
+            number = None
+            if reference["percentage"] > 0:
+                number = counter
+                counter += 1
+            problems.append(Problem.load(path, reference, number))
+
+        return cls(path, short, authors=authors, dates=dates, problems=problems, **data)
