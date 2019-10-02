@@ -6,7 +6,7 @@ __all__ = ("Paths", "Files")
 class Paths:
     ARTIFACTS = Path("artifacts")
     INSTRUCTIONS = Path("site")
-    SKELETON = Path("skeleton")
+    RESOURCES = Path("resources")
     SOLUTION = Path("solution")
     GRADING = Path("grading")
     ASSETS = Path("assets")

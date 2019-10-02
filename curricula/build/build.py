@@ -32,7 +32,7 @@ def build_instructions_assets(assignment: Assignment, path: Path):
 
     # Get setup destination assets
     assets_path = path.joinpath(Paths.ASSETS)
-    assets_path.mkdir()
+    assets_path.mkdir(exist_ok=True)
 
     # Copy assignment assets first
     assignment_assets_path = assignment.path.joinpath(Paths.ASSETS)
@@ -55,43 +55,42 @@ def build_instructions(context: Context, assignment: Assignment, path: Path):
     build_instructions_assets(assignment, instructions_path)
 
 
-def build_skeleton(assignment: Assignment, path: Path):
-    """Compile skeleton files."""
+def build_resources(assignment: Assignment, path: Path):
+    """Compile resources files."""
 
-    skeleton_path = path.joinpath(Paths.SKELETON)
-    skeleton_path.mkdir()
+    resources_path = path.joinpath(Paths.RESOURCES)
+    resources_path.mkdir()
 
     for problem in assignment.problems:
-        base_name = problem.path.parts[-1]
-        problem_skeleton_path = problem.path.joinpath(Paths.SKELETON)
-        if problem_skeleton_path.exists():
-            files.copy_directory(problem_skeleton_path, skeleton_path.joinpath(base_name))
 
+        # Copy over resources
+        base_name = problem.path.parts[-1]
+        problem_resources_path = problem.path.joinpath(Paths.RESOURCES)
+        if problem_resources_path.exists():
+            files.copy_directory(problem_resources_path, resources_path.joinpath(base_name))
+
+        # Make sure files required for submission also exist
         if problem.submission:
             for submission_fragment in problem.submission:
-                submission_path = skeleton_path.joinpath(submission_fragment)
+                submission_path = resources_path.joinpath(submission_fragment)
                 if "." in submission_path.parts[-1] and not submission_path.exists():
                     submission_path.parent.mkdir(parents=True, exist_ok=True)
                     submission_path.touch(exist_ok=True)
 
 
-def build_cheatsheet(assignment: Assignment, path: Path):
+def build_solution_readme(context: Context, assignment: Assignment, path: Path):
     """Generate the composite README."""
 
-    with path.joinpath(Files.README).open("w") as readme:
-        readme.write(markdown.header(assignment.title))
-        for problem in assignment.problems:
-            problem_cheatsheet_path = problem.path.joinpath(Paths.SOLUTION, Files.README)
-            if problem_cheatsheet_path.exists():
-                readme.write(markdown.header(make_problem_title(problem), level=2))
-                readme.write(load_markdown(problem_cheatsheet_path, assignment, problem))
+    assignment_template = context.environment.get_template("template/solution/assignment.md")
+    with path.joinpath(Files.README).open("w") as file:
+        file.write(assignment_template.render(assignment=assignment))
 
 
-def build_solutions(assignment: Assignment, path: Path):
-    """Compile only submission files of the solutions."""
+def build_solution_code(assignment: Assignment, path: Path):
+    """Compile only submission files of the solution."""
 
     solution_path = path.joinpath(Paths.SOLUTION)
-    solution_path.mkdir()
+    solution_path.mkdir(exist_ok=True)
 
     for problem in assignment.problems:
         problem_solution_path = problem.path.joinpath(Paths.SOLUTION)
@@ -103,13 +102,13 @@ def build_solutions(assignment: Assignment, path: Path):
                 files.copy(relative_source_path, relative_destination_path)
 
 
-def build_key(assignment: Assignment, path: Path):
+def build_solution(context: Context, assignment: Assignment, path: Path):
     """Compile cheatsheets."""
 
-    key_path = path.joinpath(Paths.KEY)
-    key_path.mkdir()
-    build_cheatsheet(assignment, key_path)
-    build_solutions(assignment, key_path)
+    solution_path = path.joinpath(Paths.SOLUTION)
+    solution_path.mkdir(exist_ok=True)
+    build_solution_readme(context, assignment, solution_path)
+    build_solution_code(assignment, solution_path)
 
 
 def build_grading(assignment: Assignment, path: Path):
@@ -141,7 +140,7 @@ def build_grading(assignment: Assignment, path: Path):
 
 BUILD_STEPS = (
     build_instructions,
-    # build_skeleton,
+    # build_resources,
     # build_key,
     # build_grading
 )
@@ -160,11 +159,29 @@ def filter_instructions(environment: jinja2.Environment, item: Union[Problem, As
         return environment.get_template(str(readme_path)).render(assignment=item.assignment, problem=item)
 
 
+@jinja2.environmentfilter
+def filter_solution(environment: jinja2.Environment, problem: Problem) -> str:
+    """Load solution template from problem."""
+
+    context: Context = environment.globals["context"]
+    readme_path = problem.path.joinpath(Paths.SOLUTION, Files.README).relative_to(context.material_path)
+    return environment.get_template(str(readme_path)).render(assignment=problem.assignment, problem=problem)
+
+
+def filter_has_solution(problem: Problem) -> bool:
+    """Check whether a problem has a solution README."""
+
+    return problem.path.joinpath("solution", "README.md").exists()
+
+
 def jinja2_create_build_environment(**options) -> jinja2.Environment:
     """Add a couple filters for content building."""
 
     environment = jinja2_create_environment(**options)
-    environment.filters.update(instructions=filter_instructions)
+    environment.filters.update(
+        instructions=filter_instructions,
+        solution=filter_solution,
+        has_solution=filter_has_solution)
     return environment
 
 
@@ -179,4 +196,6 @@ def build(args: dict):
     artifacts_path = path.parent.joinpath("artifacts")
     artifacts_path.mkdir(exist_ok=True)
 
-    build_instructions(context, Assignment.load(path.joinpath("assignment", "hw1")), artifacts_path)
+    assignment = Assignment.load(path.joinpath("assignment", "hw1"))
+    build_instructions(context, assignment, artifacts_path)
+    build_solution(context, assignment, artifacts_path)
