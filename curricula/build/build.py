@@ -30,7 +30,7 @@ def make_problem_title(problem: Problem, number: int = None) -> str:
 def build_readme(assignment: Assignment, path: Path):
     """Generate the composite README."""
 
-    with markdown.Writer(path.joinpath(Files.README).open("w")) as readme:
+    with markdown.Writer() as readme:
         readme.add_front_matter(layout="default", title=assignment.title)
         readme.add_header(assignment.title, level=2)
         readme.add(load_markdown(Paths.FRAGMENT.joinpath("assignment_preamble"), assignment))

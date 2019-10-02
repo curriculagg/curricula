@@ -1,7 +1,7 @@
 import unittest
 from pathlib import Path
 
-from curricula.data.material import Problem, Assignment
+from curricula.mapping.models import Problem, Assignment
 
 root = Path(__file__).absolute().parent
 

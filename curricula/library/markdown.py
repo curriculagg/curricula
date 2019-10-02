@@ -1,68 +1,65 @@
 import re
 import contextlib
-from typing import TextIO, Dict, Callable, Any
-from pathlib import Path
+from typing import TextIO, Dict, Callable, Any, List
 
 
-class WriterItemize:
+class ItemizeBuilder:
     """Context for managing a list generator."""
 
-    file: TextIO
+    items: List[str]
 
-    def __init__(self, file: TextIO):
+    def __init__(self):
         """Just use the file of the document."""
 
-        self.file = file
+        self.items = []
 
     def add(self, item: str):
         """Add a bullet to the document."""
 
-        self.file.write("- {}".format(item.strip()))
+        self.items.append("- {}".format(item.strip()))
+
+    def get(self) -> str:
+        """Return the string itemize."""
+
+        return "\n".join(self.items)
 
 
-class WriterEnumerate:
+class EnumerateBuilder:
     """Context for managing an enumeration generator."""
 
-    file: TextIO
+    items: List[str]
     counter: int
 
-    def __init__(self, file: TextIO, counter: int = 1):
+    def __init__(self, counter: int = 1):
         """Just use the file of the document."""
 
-        self.file = file
+        self.items = []
         self.counter = counter
 
     def add(self, item: str):
         """Add a bullet to the document."""
 
-        self.file.write("{}. {}".format(self.counter, item.strip()))
+        self.items.append("{}. {}".format(self.counter, item.strip()))
         self.counter += 1
 
+    def get(self) -> str:
+        """Return the string itemize."""
 
-class Writer:
+        return "\n".join(self.items)
+
+
+class Builder:
     """A loose wrapper for a Markdown document."""
 
-    file: TextIO
+    def __init__(self):
+        """Create a builder with an empty section list."""
 
-    def __init__(self, file: TextIO):
-        """Initialize a new Markdown document."""
-
-        self.file = file
-
-    def __enter__(self):
-        """Enter in a with statement."""
-
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        """Close the file once done."""
-
-        self.file.close()
+        self.sections = []
 
     def add(self, section: str):
         """Add a section to the document, strip whitespace."""
 
-        self.file.write(section.strip() + "\n\n")
+        self.sections.append(section.strip() + "\n\n")
 
     def add_header(self, contents: str, *, level: int = 1):
         """Add a header section."""
@@ -79,15 +76,22 @@ class Writer:
     def start_itemize(self):
         """Open an itemizing context, resulting in a bulleted list."""
 
-        yield WriterItemize(self.file)
-        self.add("\n\n")
+        builder = ItemizeBuilder()
+        yield builder
+        self.add(builder.get())
 
     @contextlib.contextmanager
-    def start_enumerate(self):
+    def start_enumerate(self, counter: int = 1):
         """Open an itemizing context, resulting in a bulleted list."""
 
-        yield WriterEnumerate(self.file)
-        self.add("\n\n")
+        builder = EnumerateBuilder(counter=counter)
+        yield builder
+        self.add(builder.get())
+
+    def get(self) -> str:
+        """Return the string itemize."""
+
+        return "\n".join(self.sections)
 
 
 INTERPOLATION_PATTERN = re.compile(r"(?<!\\)" r"\[\[\s*" r"(.+?)" r"\s*\]\]")

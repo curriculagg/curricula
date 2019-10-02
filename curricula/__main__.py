@@ -10,5 +10,5 @@ subparsers = parser.add_subparsers(required=True, dest="app")
 build.setup(subparsers.add_parser("build", help="Run the material builder", ))
 grade.setup(subparsers.add_parser("grade", help="Manage assignment grading for submissions"))
 
-args = vars(parser.parse_args())
-dict(build=build.run, grade=grade.run)[args.pop("app")](args)
+args = parser.parse_args()
+dict(build=build.run, grade=grade.run)[args.app](parser, args)
