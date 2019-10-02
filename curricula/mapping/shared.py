@@ -9,6 +9,7 @@ class Paths:
     SKELETON = Path("skeleton")
     SOLUTION = Path("solution")
     GRADING = Path("grading")
+    ASSETS = Path("assets")
 
 
 class Files:

@@ -23,25 +23,25 @@ def build_instructions_readme(context: Context, assignment: Assignment, path: Pa
     """Generate the composite README."""
 
     assignment_template = context.environment.get_template("template/instructions/assignment.md")
-    with path.joinpath("README.md").open("w") as file:
+    with path.joinpath(Files.README).open("w") as file:
         file.write(assignment_template.render(assignment=assignment))
 
 
-def build_assets(assignment: Assignment, path: Path):
+def build_instructions_assets(assignment: Assignment, path: Path):
     """Compile assets into single folder."""
 
     # Get setup destination assets
-    assets_path = path.joinpath("assets")
+    assets_path = path.joinpath(Paths.ASSETS)
     assets_path.mkdir()
 
     # Copy assignment assets first
-    assignment_assets_path = assignment.path.joinpath("assets")
+    assignment_assets_path = assignment.path.joinpath(Paths.ASSETS)
     if assignment_assets_path.exists():
         files.copy_directory(assignment_assets_path, assets_path)
 
     # Overwrite by problem
     for problem in assignment.problems:
-        problem_assets_path = problem.path.joinpath("assets")
+        problem_assets_path = problem.path.joinpath(Paths.ASSETS)
         if problem_assets_path.exists():
             files.copy_directory(problem_assets_path, assets_path, merge=False)
 
@@ -52,7 +52,7 @@ def build_instructions(context: Context, assignment: Assignment, path: Path):
     instructions_path = path.joinpath(Paths.INSTRUCTIONS)
     instructions_path.mkdir(exist_ok=True)
     build_instructions_readme(context, assignment, instructions_path)
-    #build_assets(assignment, site_path)
+    build_instructions_assets(assignment, instructions_path)
 
 
 def build_skeleton(assignment: Assignment, path: Path):
