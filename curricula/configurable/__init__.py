@@ -17,8 +17,6 @@ def jinja2_create_environment(**options) -> jinja2.Environment:
         variable_end_string="]]",
         comment_start_string="[#",
         comment_end_string="#]",
-        trim_blocks=True,
-        keep_trailing_newline=True,
         autoescape=False,
         **options)
     environment.filters.update(JINJA2_FILTERS)
