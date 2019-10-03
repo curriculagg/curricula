@@ -31,6 +31,7 @@ def copy_directory(source: Path, destination: Path, merge: bool = True):
     if merge:
         distutils.dir_util.copy_tree(str(source), str(destination))
     else:
+        delete(destination)
         shutil.copytree(str(source), str(destination))
 
 

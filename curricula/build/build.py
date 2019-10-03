@@ -19,31 +19,46 @@ class Context:
     options: Dict[str, str]
 
 
-def build_instructions_readme(context: Context, assignment: Assignment, path: Path):
-    """Generate the composite README."""
+def compile_readme(context: Context, assignment: Assignment, template_relative_path: str, destination_path: Path):
+    """Compile a README from an assignment."""
 
-    assignment_template = context.environment.get_template("template/instructions/assignment.md")
-    with path.joinpath(Files.README).open("w") as file:
-        file.write(assignment_template.render(assignment=assignment))
+    template = context.environment.get_template(f"template/{template_relative_path}")
+    if destination_path.is_dir():
+        destination_path = destination_path.joinpath(Files.README)
+    with destination_path.open("w") as file:
+        file.write(template.render(assignment=assignment))
 
 
-def build_instructions_assets(assignment: Assignment, path: Path):
-    """Compile assets into single folder."""
+def merge_contents(assignment: Assignment, contents_relative_path: Path, destination_path: Path):
+    """Compile subdirectories from all problems into a single directory."""
 
-    # Get setup destination assets
-    assets_path = path.joinpath(Paths.ASSETS)
-    assets_path.mkdir(exist_ok=True)
+    destination_contents_path = destination_path.joinpath(contents_relative_path)
+    destination_contents_path.mkdir(exist_ok=True)
 
-    # Copy assignment assets first
-    assignment_assets_path = assignment.path.joinpath(Paths.ASSETS)
-    if assignment_assets_path.exists():
-        files.copy_directory(assignment_assets_path, assets_path)
+    assignment_contents_path = assignment.path.joinpath(contents_relative_path)
+    if assignment_contents_path.exists():
+        files.copy_directory(assignment_contents_path, destination_contents_path)
 
-    # Overwrite by problem
     for problem in assignment.problems:
-        problem_assets_path = problem.path.joinpath(Paths.ASSETS)
-        if problem_assets_path.exists():
-            files.copy_directory(problem_assets_path, assets_path, merge=False)
+        problem_contents_path = problem.path.joinpath(contents_relative_path)
+        if problem_contents_path.exists():
+            files.copy_directory(problem_contents_path, destination_contents_path, merge=True)
+
+
+def aggregate_contents(assignment: Assignment, contents_relative_path: Path, destination_path: Path):
+    """Compile subdirectories from all problems into respective directories."""
+
+    destination_contents_path = destination_path.joinpath(contents_relative_path)
+    destination_contents_path.mkdir(exist_ok=True)
+
+    assignment_contents_path = assignment.path.joinpath(contents_relative_path)
+    if assignment_contents_path.exists():
+        files.copy_directory(assignment_contents_path, destination_contents_path)
+
+    for problem in assignment.problems:
+        problem_contents_path = problem.path.joinpath(contents_relative_path)
+        if problem_contents_path.exists():
+            files.copy_directory(problem_contents_path, destination_contents_path.joinpath(problem.short))
 
 
 def build_instructions(context: Context, assignment: Assignment, path: Path):
@@ -51,8 +66,8 @@ def build_instructions(context: Context, assignment: Assignment, path: Path):
 
     instructions_path = path.joinpath(Paths.INSTRUCTIONS)
     instructions_path.mkdir(exist_ok=True)
-    build_instructions_readme(context, assignment, instructions_path)
-    build_instructions_assets(assignment, instructions_path)
+    compile_readme(context, assignment, "instructions/assignment.md", instructions_path)
+    merge_contents(assignment, Paths.ASSETS, instructions_path)
 
 
 def build_resources(context: Context, assignment: Assignment, path: Path):
@@ -60,22 +75,7 @@ def build_resources(context: Context, assignment: Assignment, path: Path):
 
     resources_path = path.joinpath(Paths.RESOURCES)
     resources_path.mkdir(exist_ok=True)
-
-    for problem in assignment.problems:
-
-        # Copy over resources
-        base_name = problem.path.parts[-1]
-        problem_resources_path = problem.path.joinpath(Paths.RESOURCES)
-        if problem_resources_path.exists():
-            files.copy_directory(problem_resources_path, resources_path.joinpath(base_name))
-
-        # Make sure files required for submission also exist
-        if problem.submission:
-            for submission_fragment in problem.submission:
-                submission_path = resources_path.joinpath(submission_fragment)
-                if "." in submission_path.parts[-1] and not submission_path.exists():
-                    submission_path.parent.mkdir(parents=True, exist_ok=True)
-                    submission_path.touch(exist_ok=True)
+    aggregate_contents(assignment, Paths.RESOURCES, resources_path)
 
 
 def build_solution_readme(context: Context, assignment: Assignment, path: Path):
@@ -111,14 +111,20 @@ def build_solution(context: Context, assignment: Assignment, path: Path):
     build_solution_code(assignment, solution_path)
 
 
+def build_grading_readme(context: Context, assignment: Assignment, path: Path):
+    """Aggregate README for rubric."""
+
+    assignment_template = context.environment.get_template("template/grading/assignment.md")
+    with path.joinpath(Files.README).open("w") as file:
+        file.write(assignment_template.render(assignment=assignment))
+
+
 def build_grading(context: Context, assignment: Assignment, path: Path):
     """Compile rubrics."""
 
     grading_path = path.joinpath(Paths.GRADING)
     grading_path.mkdir(exist_ok=True)
-    assignment_template = context.environment.get_template("template/grading/assignment.md")
-    with grading_path.joinpath(Files.README).open("w") as file:
-        file.write(assignment_template.render(assignment=assignment))
+    build_grading_readme(context, assignment, grading_path)
 
 
 BUILD_STEPS = (
