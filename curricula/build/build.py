@@ -7,7 +7,6 @@ from ..configurable import jinja2_create_environment
 from ..mapping.models import Assignment, Problem
 from ..mapping.shared import Files, Paths
 from ..library import files
-from ..library import markdown
 
 
 @dataclass(repr=False, eq=False)
