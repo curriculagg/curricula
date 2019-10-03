@@ -14,4 +14,5 @@ def setup(parser: argparse.ArgumentParser):
 def run(parser: argparse.ArgumentParser, args: argparse.Namespace):
     """Run if the build app is chosen."""
 
-    build.build(vars(args))
+    material_path = Path(args.material).absolute()
+    build.build(material_path, **vars(args))

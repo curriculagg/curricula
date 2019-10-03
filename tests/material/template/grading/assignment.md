@@ -2,15 +2,15 @@
 
 This rubric consists of two parts: the assignment-specific rubric and the general code review rubric.
 
-[%- if assignment | has_readme("solution") %]
+[%- if assignment | has_readme("grading") %]
 
-[[ assignment | get_readme("solution") ]]
+[[ assignment | get_readme("grading") ]]
 
 [% endif %]
 
 [% for problem in assignment.problems -%]
-[% if problem | has_readme("solution") -%]
-[%- include "template/solution/problem.md" -%]
+[% if problem | has_readme("grading") -%]
+[%- include "template/grading/problem.md" -%]
 [% endif %]
 [%- endfor %]
 

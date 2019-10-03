@@ -16,7 +16,7 @@ class Context:
 
     environment: jinja2.Environment
     material_path: Path
-    args: Dict[str, str]
+    options: Dict[str, str]
 
 
 def build_instructions_readme(context: Context, assignment: Assignment, path: Path):
@@ -155,19 +155,18 @@ def jinja2_create_build_environment(**options) -> jinja2.Environment:
     return environment
 
 
-def build(args: dict):
+def build(material_path: Path, **options):
     """Build the assignment at a given path."""
 
-    material_path = Path(args.pop("material")).absolute()
     environment = jinja2_create_build_environment(loader=jinja2.FileSystemLoader(str(material_path)))
-    context = Context(environment, material_path, args)
+    context = Context(environment, material_path, options)
     environment.globals["context"] = context
 
     artifacts_path = material_path.parent.joinpath("artifacts")
     artifacts_path.mkdir(exist_ok=True)
 
     for assignment_path in material_path.joinpath("assignment").glob("*/"):
-        if assignment_path.parts[-1] == args.get("assignment"):
+        if assignment_path.parts[-1] == options.get("assignment"):
             continue
 
         assignment = Assignment.load(assignment_path)
