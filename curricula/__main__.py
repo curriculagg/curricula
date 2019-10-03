@@ -1,14 +1,16 @@
 import argparse
 
-from .build import parser as build
-from .grade import parser as grade
+from .build.plugin import BuildPlugin
+from .grade.plugin import GradePlugin
+
+PLUGINS = (BuildPlugin, GradePlugin)
 
 
 parser = argparse.ArgumentParser(prog="curricula", description="Command line interface for Curricula")
 subparsers = parser.add_subparsers(required=True, dest="app")
-
-build.setup(subparsers.add_parser("build", help="Run the material builder", ))
-grade.setup(subparsers.add_parser("grade", help="Manage assignment grading for submissions"))
+for plugin in PLUGINS:
+    plugin.setup(subparsers.add_parser(plugin.name, help=plugin.help))
 
 args = parser.parse_args()
-dict(build=build.run, grade=grade.run)[args.app](parser, args)
+runnable = {plugin.name: plugin.run for plugin in PLUGINS}
+runnable[args.app](parser, args)
