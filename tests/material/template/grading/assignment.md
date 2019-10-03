@@ -1,3 +1,5 @@
+# [% assignment.title %] Rubric
+
 
 
 [[ content ]]
@@ -76,4 +78,3 @@ Additional deductions may be added if they don't fall under any of the following
 | Inconsistent indentation | 1 point | No uniformity in indentation levels |
 | Commented code | 2 points | Acceptable as proof of work |
 | Poor code quality | Up to 5 points | Includes repeated code, redundant logic, etc. |
-

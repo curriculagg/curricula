@@ -147,11 +147,11 @@ BUILD_STEPS = (
 
 
 @jinja2.environmentfilter
-def filter_instructions(environment: jinja2.Environment, item: Union[Problem, Assignment]) -> str:
-    """Load instructions for a problem or assignment."""
+def get_readme(environment: jinja2.Environment, item: Union[Problem, Assignment], *component: str) -> str:
+    """Render a README with options for nested path."""
 
     context: Context = environment.globals["context"]  # Not jinja2 context, our context
-    readme_path = item.path.joinpath("README.md").relative_to(context.material_path)
+    readme_path = item.path.joinpath(*component, Files.README).relative_to(context.material_path)
 
     if isinstance(item, Assignment):
         return environment.get_template(str(readme_path)).render(assignment=item)
@@ -159,29 +159,17 @@ def filter_instructions(environment: jinja2.Environment, item: Union[Problem, As
         return environment.get_template(str(readme_path)).render(assignment=item.assignment, problem=item)
 
 
-@jinja2.environmentfilter
-def filter_solution(environment: jinja2.Environment, problem: Problem) -> str:
-    """Load solution template from problem."""
-
-    context: Context = environment.globals["context"]
-    readme_path = problem.path.joinpath(Paths.SOLUTION, Files.README).relative_to(context.material_path)
-    return environment.get_template(str(readme_path)).render(assignment=problem.assignment, problem=problem)
-
-
-def filter_has_solution(problem: Problem) -> bool:
+def has_readme(item: Union[Problem, Assignment], *component: str) -> bool:
     """Check whether a problem has a solution README."""
 
-    return problem.path.joinpath("solution", "README.md").exists()
+    return item.path.joinpath(*component, "README.md").exists()
 
 
 def jinja2_create_build_environment(**options) -> jinja2.Environment:
     """Add a couple filters for content building."""
 
     environment = jinja2_create_environment(**options)
-    environment.filters.update(
-        instructions=filter_instructions,
-        solution=filter_solution,
-        has_solution=filter_has_solution)
+    environment.filters.update(get_readme=get_readme, has_readme=has_readme)
     return environment
 
 
