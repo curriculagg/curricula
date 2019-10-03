@@ -34,11 +34,13 @@ def copy_directory(source: Path, destination: Path, merge: bool = True):
         shutil.copytree(str(source), str(destination))
 
 
-def delete(source: Path):
+def delete(path: Path):
     """Delete a file or directory."""
 
-    if source.is_file():
-        delete_file(source)
+    if path.is_file():
+        delete_file(path)
+    else:
+        delete_directory(path)
 
 
 def delete_file(path: Path):

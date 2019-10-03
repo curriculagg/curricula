@@ -1,3 +1,4 @@
+import os
 import jinja2
 from pathlib import Path
 from typing import Dict, Union
@@ -157,14 +158,21 @@ def jinja2_create_build_environment(**options) -> jinja2.Environment:
 def build(args: dict):
     """Build the assignment at a given path."""
 
-    path = Path(args.pop("material")).absolute()
-    environment = jinja2_create_build_environment(loader=jinja2.FileSystemLoader(str(path)))
-    context = Context(environment, path, args)
+    material_path = Path(args.pop("material")).absolute()
+    environment = jinja2_create_build_environment(loader=jinja2.FileSystemLoader(str(material_path)))
+    context = Context(environment, material_path, args)
     environment.globals["context"] = context
 
-    artifacts_path = path.parent.joinpath("artifacts")
+    artifacts_path = material_path.parent.joinpath("artifacts")
     artifacts_path.mkdir(exist_ok=True)
 
-    assignment = Assignment.load(path.joinpath("assignment", "hw1"))
-    for step in BUILD_STEPS:
-        step(context, assignment, artifacts_path)
+    for assignment_path in material_path.joinpath("assignment").glob("*/"):
+        if assignment_path.parts[-1] == args.get("assignment"):
+            continue
+
+        assignment = Assignment.load(assignment_path)
+        assignment_artifacts_path = artifacts_path.joinpath(assignment_path.parts[-1])
+        files.replace_directory(assignment_artifacts_path)
+
+        for step in BUILD_STEPS:
+            step(context, assignment, assignment_artifacts_path)
