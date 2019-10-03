@@ -55,11 +55,11 @@ def build_instructions(context: Context, assignment: Assignment, path: Path):
     build_instructions_assets(assignment, instructions_path)
 
 
-def build_resources(assignment: Assignment, path: Path):
+def build_resources(context: Context, assignment: Assignment, path: Path):
     """Compile resources files."""
 
     resources_path = path.joinpath(Paths.RESOURCES)
-    resources_path.mkdir()
+    resources_path.mkdir(exist_ok=True)
 
     for problem in assignment.problems:
 
@@ -111,38 +111,20 @@ def build_solution(context: Context, assignment: Assignment, path: Path):
     build_solution_code(assignment, solution_path)
 
 
-def build_grading(assignment: Assignment, path: Path):
+def build_grading(context: Context, assignment: Assignment, path: Path):
     """Compile rubrics."""
 
     grading_path = path.joinpath(Paths.GRADING)
-    grading_path.mkdir()
-
-    with grading_path.joinpath(Files.README).open("w") as rubric:
-        rubric.write(markdown.header(f"{assignment.title} Rubric"))
-
-        rubric.write(markdown.header("Assignment Rubric", level=2))
-        rubric.write(load_markdown(Paths.FRAGMENT.joinpath("assignment_rubric"), assignment))
-
-        for problem in assignment.problems:
-            problem_grading_source_path = problem.path.joinpath(Paths.GRADING)
-            if not problem_grading_source_path.exists():
-                continue
-
-            problem_grading_artifact_path = grading_path.joinpath(problem.short)
-            files.copy(problem_grading_source_path, problem_grading_artifact_path)
-            rubric.write(markdown.header(make_problem_title(problem), level=3))
-            rubric.write(load_markdown(problem_grading_source_path.joinpath(Files.README), assignment, problem))
-            files.delete_file(problem_grading_artifact_path.joinpath(Files.README))
-
-        rubric.write(markdown.header("General Rubric", level=2))
-        rubric.write(load_markdown(Paths.FRAGMENT.joinpath("progressive_rubric"), assignment))
+    grading_path.mkdir(exist_ok=True)
+    assignment_template = context.environment.get_template("template/grading/assignment.md")
+    with grading_path.joinpath(Files.README).open("w") as file:
+        file.write(assignment_template.render(assignment=assignment))
 
 
 BUILD_STEPS = (
     build_instructions,
-    # build_resources,
-    # build_key,
-    # build_grading
+    build_resources,
+    build_grading
 )
 
 
@@ -185,5 +167,5 @@ def build(args: dict):
     artifacts_path.mkdir(exist_ok=True)
 
     assignment = Assignment.load(path.joinpath("assignment", "hw1"))
-    build_instructions(context, assignment, artifacts_path)
-    build_solution(context, assignment, artifacts_path)
+    for step in BUILD_STEPS:
+        step(context, assignment, artifacts_path)

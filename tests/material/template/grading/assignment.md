@@ -1,8 +1,18 @@
-# [% assignment.title %] Rubric
+# [[ assignment.title ]] Rubric
 
+This rubric consists of two parts: the assignment-specific rubric and the general code review rubric.
 
+[%- if assignment | has_readme("solution") %]
 
-[[ content ]]
+[[ assignment | get_readme("solution") ]]
+
+[% endif %]
+
+[% for problem in assignment.problems -%]
+[% if problem | has_readme("solution") -%]
+[%- include "template/solution/problem.md" -%]
+[% endif %]
+[%- endfor %]
 
 ## Progressive Rubric
 
