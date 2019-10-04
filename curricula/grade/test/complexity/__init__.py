@@ -1,7 +1,7 @@
-from curricula.grade import Result
+from .. import TestResult
 
 
-class ComplexityResult(Result):
+class ComplexityResult(TestResult):
     """The result of a correctness case."""
 
     constrained: bool

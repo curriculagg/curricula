@@ -17,3 +17,4 @@ class Files:
     ASSIGNMENT = "assignment.json"
     PROBLEM = "problem.json"
     GRADING = "grading.json"
+    TESTS = "tests.py"
