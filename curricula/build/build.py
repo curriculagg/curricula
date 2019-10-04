@@ -1,6 +1,7 @@
 import jinja2
+import json
 from pathlib import Path
-from typing import Dict, Union
+from typing import Dict, Union, List
 from dataclasses import dataclass
 
 from ..mapping.markdown import jinja2_create_environment
@@ -18,46 +19,62 @@ class Context:
     options: Dict[str, str]
 
 
-def compile_readme(context: Context, assignment: Assignment, template_relative_path: str, destination_path: Path):
-    """Compile a README from an assignment."""
+def compile_readme(
+        context: Context,
+        assignment: Assignment,
+        template_relative_path: str,
+        destination_path: Path) -> Path:
+    """Compile a README from an assignment.
+
+    This function returns the final path of the README, which may be
+    different if the provided destination is a directory.
+    """
 
     template = context.environment.get_template(f"template/{template_relative_path}")
     if destination_path.is_dir():
         destination_path = destination_path.joinpath(Files.README)
     with destination_path.open("w") as file:
         file.write(template.render(assignment=assignment))
+    return destination_path
 
 
 def merge_contents(assignment: Assignment, contents_relative_path: Path, destination_path: Path):
-    """Compile subdirectories from all problems into a single directory."""
+    """Compile subdirectories from problems into a single directory."""
 
-    destination_contents_path = destination_path.joinpath(contents_relative_path)
-    destination_contents_path.mkdir(exist_ok=True)
+    destination_path.mkdir(exist_ok=True)
 
     assignment_contents_path = assignment.path.joinpath(contents_relative_path)
     if assignment_contents_path.exists():
-        files.copy_directory(assignment_contents_path, destination_contents_path)
+        files.copy_directory(assignment_contents_path, destination_path)
 
     for problem in assignment.problems:
         problem_contents_path = problem.path.joinpath(contents_relative_path)
         if problem_contents_path.exists():
-            files.copy_directory(problem_contents_path, destination_contents_path, merge=True)
+            files.copy_directory(problem_contents_path, destination_path, merge=True)
 
 
-def aggregate_contents(assignment: Assignment, contents_relative_path: Path, destination_path: Path):
-    """Compile subdirectories from all problems into respective directories."""
+def aggregate_contents(assignment: Assignment, contents_relative_path: Path, destination_path: Path) -> List[Path]:
+    """Compile subdirectories from problems to respective directories.
 
-    destination_contents_path = destination_path.joinpath(contents_relative_path)
-    destination_contents_path.mkdir(exist_ok=True)
+    This method returns a list of the resultant folders that were
+    copied into the destination.
+    """
+
+    destination_path.mkdir(exist_ok=True)
 
     assignment_contents_path = assignment.path.joinpath(contents_relative_path)
     if assignment_contents_path.exists():
-        files.copy_directory(assignment_contents_path, destination_contents_path)
+        files.copy_directory(assignment_contents_path, destination_path)
 
+    copied_paths = []
     for problem in assignment.problems:
         problem_contents_path = problem.path.joinpath(contents_relative_path)
         if problem_contents_path.exists():
-            files.copy_directory(problem_contents_path, destination_contents_path.joinpath(problem.short))
+            problem_destination_path = destination_path.joinpath(problem.short)
+            copied_paths.append(problem_destination_path)
+            files.copy_directory(problem_contents_path, problem_destination_path)
+
+    return copied_paths
 
 
 def build_instructions(context: Context, assignment: Assignment, path: Path):
@@ -66,7 +83,7 @@ def build_instructions(context: Context, assignment: Assignment, path: Path):
     instructions_path = path.joinpath(Paths.INSTRUCTIONS)
     instructions_path.mkdir(exist_ok=True)
     compile_readme(context, assignment, "instructions/assignment.md", instructions_path)
-    merge_contents(assignment, Paths.ASSETS, instructions_path)
+    merge_contents(assignment, Paths.ASSETS, instructions_path.joinpath(Paths.ASSETS))
 
 
 def build_resources(_: Context, assignment: Assignment, path: Path):
@@ -118,12 +135,36 @@ def build_grading_readme(context: Context, assignment: Assignment, path: Path):
         file.write(assignment_template.render(assignment=assignment))
 
 
+def build_grading_schema(assignment: Assignment, path: Path):
+    """Generate a JSON data file with grading metadata."""
+
+    # Generate a grading schema JSON
+    percentages = {}
+    automated = []
+
+    for problem in assignment.problems:
+        percentages[problem.short] = problem.percentage
+        if "automated" in problem.grading.process:
+            automated.append(problem.short)
+
+    with path.joinpath(Files.GRADING).open("w") as file:
+        json.dump(dict(percentages=percentages, automated=automated), file, indent=2)
+
+
 def build_grading(context: Context, assignment: Assignment, path: Path):
     """Compile rubrics."""
 
     grading_path = path.joinpath(Paths.GRADING)
     grading_path.mkdir(exist_ok=True)
     build_grading_readme(context, assignment, grading_path)
+    build_grading_schema(assignment, grading_path)
+    copied_paths = aggregate_contents(assignment, Paths.GRADING, grading_path)
+
+    # Delete extra READMEs
+    for copied_path in copied_paths:
+        readme_path = copied_path.joinpath(Files.README)
+        if readme_path.exists():
+            files.delete(readme_path)
 
 
 BUILD_STEPS = (
@@ -149,7 +190,7 @@ def get_readme(environment: jinja2.Environment, item: Union[Problem, Assignment]
 def has_readme(item: Union[Problem, Assignment], *component: str) -> bool:
     """Check whether a problem has a solution README."""
 
-    return item.path.joinpath(*component, "README.md").exists()
+    return item.path.joinpath(*component, Files.README).exists()
 
 
 def jinja2_create_build_environment(**options) -> jinja2.Environment:
@@ -163,6 +204,9 @@ def jinja2_create_build_environment(**options) -> jinja2.Environment:
 def build(material_path: Path, **options):
     """Build the assignment at a given path."""
 
+    if not material_path.is_dir():
+        raise ValueError("material path does not exist!")
+
     environment = jinja2_create_build_environment(loader=jinja2.FileSystemLoader(str(material_path)))
     context = Context(environment, material_path, options)
     environment.globals["context"] = context
@@ -171,10 +215,10 @@ def build(material_path: Path, **options):
     artifacts_path.mkdir(exist_ok=True)
 
     for assignment_path in material_path.joinpath("assignment").glob("*/"):
+        assignment = Assignment.load(assignment_path)
         if assignment_path.parts[-1] == options.get("assignment"):
             continue
 
-        assignment = Assignment.load(assignment_path)
         assignment_artifacts_path = artifacts_path.joinpath(assignment_path.parts[-1])
         files.replace_directory(assignment_artifacts_path)
 

@@ -1,3 +1,4 @@
+import sys
 import argparse
 from pathlib import Path
 
@@ -23,4 +24,9 @@ class BuildPlugin(Plugin):
         """Run if the build app is chosen."""
 
         material_path = Path(args.material).absolute()
-        build.build(material_path, **vars(args))
+
+        try:
+            build.build(material_path, **vars(args))
+        except ValueError as exception:
+            print(f"Build error: {exception}", file=sys.stderr)
+            exit(1)

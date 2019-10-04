@@ -16,3 +16,4 @@ class Files:
     README = "README.md"
     ASSIGNMENT = "assignment.json"
     PROBLEM = "problem.json"
+    GRADING = "grading.json"
