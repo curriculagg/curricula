@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
-setup(name="grade",
-      version="0.1",
+setup(name="curricula",
+      version="0.0.1",
       description="A content manager and grading toolkit for evaluating student code",
       url="https://github.com/csci104/curricula",
       author="Noah Kim",
