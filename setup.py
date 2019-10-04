@@ -8,4 +8,5 @@ setup(name="grade",
       author_email="noahbkim@gmail.com",
       packages=find_packages(),
       zip_safe=False,
-      install_requires=["jinja2", "jsonschema"])
+      install_requires=["jinja2", "jsonschema"],
+      scripts=["scripts/curricula"])
