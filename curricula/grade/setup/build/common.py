@@ -1,5 +1,5 @@
-from ..library import process
-from ..resource import Logger, Executable
+from curricula.grade.library import process
+from curricula.grade.resource import Logger, Executable
 from . import BuildResult
 
 from typing import Iterable, Optional

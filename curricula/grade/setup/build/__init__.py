@@ -1,11 +1,12 @@
 from dataclasses import dataclass, field
 
-from ..task import Result, Runnable
-from ..resource import Executable
+from .. import SetupResult
+from ...task import Runnable
+from ...resource import Executable
 
 
 @dataclass
-class BuildResult(Result):
+class BuildResult(SetupResult):
     """Returned from a build task."""
 
     details: dict = field(default_factory=dict)

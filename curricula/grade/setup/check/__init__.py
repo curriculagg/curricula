@@ -1,10 +1,10 @@
 from dataclasses import dataclass
 
-from ..task import Result
+from .. import SetupResult
 
 
 @dataclass
-class CheckResult(Result):
+class CheckResult(SetupResult):
     """Result of a submission check."""
 
     details: dict

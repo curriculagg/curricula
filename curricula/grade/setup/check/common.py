@@ -1,7 +1,7 @@
 from typing import Optional
 from pathlib import Path
 
-from ..resource import Logger
+from curricula.grade.resource import Logger
 from . import CheckResult
 
 
