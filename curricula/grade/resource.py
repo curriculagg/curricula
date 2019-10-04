@@ -17,7 +17,7 @@ class Resource:
 class Context(Resource):
     """The execution context of the tests."""
 
-    target: Path
+    target_path: Path
     options: Dict[str, str] = field(default_factory=dict)
 
 
