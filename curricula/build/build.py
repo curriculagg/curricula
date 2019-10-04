@@ -1,10 +1,9 @@
-import os
 import jinja2
 from pathlib import Path
 from typing import Dict, Union
 from dataclasses import dataclass
 
-from ..configurable import jinja2_create_environment
+from ..mapping.markdown import jinja2_create_environment
 from ..mapping.models import Assignment, Problem
 from ..mapping.shared import Files, Paths
 from ..library import files
@@ -70,7 +69,7 @@ def build_instructions(context: Context, assignment: Assignment, path: Path):
     merge_contents(assignment, Paths.ASSETS, instructions_path)
 
 
-def build_resources(context: Context, assignment: Assignment, path: Path):
+def build_resources(_: Context, assignment: Assignment, path: Path):
     """Compile resources files."""
 
     resources_path = path.joinpath(Paths.RESOURCES)
