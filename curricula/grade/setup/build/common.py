@@ -10,7 +10,7 @@ def build_gpp_executable(
         source: Path,
         destination: Path,
         gpp_options: Iterable[str],
-        log: Optional[Logger] = None,
+        log: Logger = None,
         timeout: int = 5) -> (BuildResult, Optional[Executable]):
     """Build a binary from a single C++ file with G++."""
 

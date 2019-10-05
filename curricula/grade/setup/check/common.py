@@ -5,14 +5,14 @@ from curricula.grade.resource import Logger
 from . import CheckResult
 
 
-def check_file_exists(log: Logger, path: Path) -> CheckResult:
+def check_file_exists(path: Path, log: Logger = None) -> CheckResult:
     """Check if a file is present in the directory."""
 
     if not path.exists():
-        log[2](f"Can't find {path.parts[-1]}!")
+        log and log[2](f"Can't find {path.parts[-1]}!")
         return CheckResult(passed=False, error=f"can't find {path.parts[-1]}")
 
-    log[2](f"Found {path.parts[-1]}")
+    log and log[2](f"Found {path.parts[-1]}")
     return CheckResult(passed=True)
 
 
