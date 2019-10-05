@@ -1,6 +1,5 @@
 import json
 import jsonschema
-import os
 import sys
 from pathlib import Path
 
