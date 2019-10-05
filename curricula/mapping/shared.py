@@ -4,6 +4,8 @@ __all__ = ("Paths", "Files")
 
 
 class Paths:
+    ASSIGNMENT = Path("assignment")
+    PROBLEM = Path("problem")
     ARTIFACTS = Path("artifacts")
     INSTRUCTIONS = Path("instructions")
     RESOURCES = Path("resources")

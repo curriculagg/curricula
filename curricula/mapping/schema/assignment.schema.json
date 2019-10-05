@@ -1,0 +1,70 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Assignment",
+  "description": "Schema for assignment metadata.",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "authors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "pattern": ".+@.+\\..+"
+          }
+        },
+        "required": [
+          "name",
+          "email"
+        ]
+      }
+    },
+    "dates": {
+      "type": "object",
+      "properties": {
+        "assigned": {
+          "type": "string",
+          "pattern": "\\d{4}-\\d{1,2}-\\d{1,2} \\d{2}:\\d{2}"
+        },
+        "deadline": {
+          "type": "string",
+          "pattern": "\\d{4}-\\d{1,2}-\\d{1,2} \\d{2}:\\d{2}"
+        }
+      },
+      "required": [
+        "assigned",
+        "deadline"
+      ]
+    },
+    "problems": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "percentage": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "path",
+          "percentage"
+        ]
+      }
+    }
+  },
+  "required": [
+    "title",
+    "authors",
+    "dates",
+    "problems"
+  ]
+}
