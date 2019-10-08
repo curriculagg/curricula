@@ -212,10 +212,7 @@ def build(material_path: Path, **options):
     artifacts_path = material_path.parent.joinpath("artifacts")
     artifacts_path.mkdir(exist_ok=True)
 
-    for assignment_path in material_path.joinpath("assignment").glob("*/"):
-        if not assignment_path.is_dir():
-            continue
-
+    for assignment_path in Paths.glob_assignments(material_path):
         assignment = Assignment.load(assignment_path)
         if assignment_path.parts[-1] == options.get("assignment"):
             continue

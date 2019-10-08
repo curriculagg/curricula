@@ -31,7 +31,5 @@ def validate_assignment(assignment_path: Path):
 def validate(material_path: Path):
     """Do a bunch of checks """
 
-    for assignment_path in material_path.joinpath(Paths.ASSIGNMENT).glob("*/"):
-        if not assignment_path.is_dir():
-            continue
+    for assignment_path in Paths.glob_assignments(material_path):
         validate_assignment(assignment_path)
