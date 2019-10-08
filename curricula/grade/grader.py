@@ -1,3 +1,4 @@
+import itertools
 from typing import List
 from dataclasses import dataclass, field
 
@@ -84,3 +85,8 @@ class Grader:
             self._run(tasks, resources, ignore_result=name == "teardown")
 
         return report
+
+    def dump(self) -> list:
+        """Dump the tasks to something JSON serializable."""
+
+        return [task.dump() for task in itertools.chain(self.setups, self.tests, self.teardowns)]

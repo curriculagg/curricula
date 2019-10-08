@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from ..mapping.markdown import jinja2_create_environment
 from ..mapping.models import Assignment, Problem
 from ..mapping.shared import Files, Paths
+from ..grade.manager import generate_grading_schema
 from ..library import files
 
 
@@ -136,16 +137,13 @@ def build_grading_schema(assignment: Assignment, path: Path):
     """Generate a JSON data file with grading metadata."""
 
     # Generate a grading schema JSON
-    percentages = {}
-    automated = []
-
+    problems = []
     for problem in assignment.problems:
-        percentages[problem.short] = problem.percentage
         if "automated" in problem.grading.process:
-            automated.append(problem.short)
+            problems.append(problem)
 
     with path.joinpath(Files.GRADING).open("w") as file:
-        json.dump(dict(percentages=percentages, automated=automated), file, indent=2)
+        json.dump(generate_grading_schema(path, problems), file, indent=2)
 
 
 def build_grading(context: Context, assignment: Assignment, path: Path):
@@ -154,8 +152,8 @@ def build_grading(context: Context, assignment: Assignment, path: Path):
     grading_path = path.joinpath(Paths.GRADING)
     grading_path.mkdir(exist_ok=True)
     build_grading_readme(context, assignment, grading_path)
-    build_grading_schema(assignment, grading_path)
     copied_paths = aggregate_contents(assignment, Paths.GRADING, grading_path)
+    build_grading_schema(assignment, grading_path)
 
     # Delete extra READMEs
     for copied_path in copied_paths:

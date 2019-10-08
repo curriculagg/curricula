@@ -1,7 +1,7 @@
 import importlib
 import json
 import sys
-from typing import Dict
+from typing import Dict, List
 from pathlib import Path
 from dataclasses import dataclass
 
@@ -9,6 +9,37 @@ from .grader import Grader
 from .report import Report
 from .resource import Context
 from ..mapping.shared import *
+from ..mapping.models import Problem
+
+
+def import_grader(tests_path: Path, grader_name: str = "grader") -> Grader:
+    """Import a grader from a tests file."""
+
+    sys.path.insert(0, str(tests_path.parent))
+    base_name = tests_path.parts[-1]
+    if base_name.endswith(".py"):
+        base_name = base_name[:-3]
+
+    module = importlib.import_module(base_name)
+    grader = getattr(module, grader_name)
+    sys.path.pop(0)
+
+    return grader
+
+
+def generate_grading_schema(grading_path: Path, problems: List[Problem]) -> dict:
+    """Generate a JSON schema describing the grading package.
+
+    This method requires the grading artifact to already have been
+    aggregated, as it has to access the individual problem graders to
+    dump their task summaries.
+    """
+
+    result = {}
+    for problem in problems:
+        grader = import_grader(grading_path.joinpath(problem.short, Files.TESTS))
+        result[problem.short] = dict(percentage=problem.percentage, tasks=grader.dump())
+    return result
 
 
 @dataclass
@@ -25,11 +56,8 @@ class Manager:
             schema = json.load(file)
 
         graders = {}
-        for problem_short in schema["automated"]:
-            sys.path.insert(0, str(grading_path.joinpath(problem_short)))
-            module = importlib.import_module("tests")
-            graders[problem_short] = module.grade
-            sys.path.pop(0)
+        for problem_short in schema:
+            graders[problem_short] = import_grader(grading_path.joinpath(problem_short, Files.TESTS))
 
         return Manager(graders)
 
