@@ -86,7 +86,7 @@ def build_instructions(context: Context, assignment: Assignment, path: Path):
     merge_contents(assignment, Paths.ASSETS, instructions_path.joinpath(Paths.ASSETS))
 
 
-def build_resources(_: Context, assignment: Assignment, path: Path):
+def build_resources(context: Context, assignment: Assignment, path: Path):
     """Compile resources files."""
 
     resources_path = path.joinpath(Paths.RESOURCES)
@@ -213,6 +213,9 @@ def build(material_path: Path, **options):
     artifacts_path.mkdir(exist_ok=True)
 
     for assignment_path in material_path.joinpath("assignment").glob("*/"):
+        if not assignment_path.is_dir():
+            continue
+
         assignment = Assignment.load(assignment_path)
         if assignment_path.parts[-1] == options.get("assignment"):
             continue
