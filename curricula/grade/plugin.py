@@ -34,11 +34,9 @@ class GradePlugin(Plugin):
         parser.add_argument("grading", help="built grading directory artifact")
         subparsers = parser.add_subparsers(required=True, dest="command")
 
-        single_parser = subparsers.add_parser("single")
+        single_parser = subparsers.add_parser("run")
         single_parser.add_argument("target", help="run tests on a single target")
         single_parser.add_argument("report", help="where to write the report to")
-
-        batch_parser = subparsers.add_parser("batch")
 
         summarize_parser = subparsers.add_parser("summarize")
         summarize_parser.add_argument("reports", help="the directory containing the grade reports")
@@ -48,6 +46,7 @@ class GradePlugin(Plugin):
         """Start the grader."""
 
         options = vars(args)
+        options.pop("app")
 
         grading_path = Path(options.pop("grading")).absolute()
         if not grading_path.is_dir():
@@ -56,3 +55,10 @@ class GradePlugin(Plugin):
 
         manager = Manager.load(grading_path)
         command = options.pop("command")
+
+        if command == "run":
+            output_path = Path(options.pop("report"))
+            reports = manager.run(Path(options.pop("target")), **options)
+            with output_path.open("w") as file:
+                data = {problem_short: report.dump() for problem_short, report in reports.items()}
+                json.dump(data, file, indent=2)

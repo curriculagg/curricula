@@ -10,7 +10,6 @@ class Report(Resource):
     """The final report returned by the testing framework."""
 
     results: List[Result] = field(default_factory=list)
-    stage: str = "checks"
 
     def add(self, result: Result):
         return self.results.append(result)

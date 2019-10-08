@@ -26,6 +26,8 @@ class BuildPlugin(Plugin):
         """Run if the build app is chosen."""
 
         options = vars(args)
+        options.pop("app")
+
         material_path = Path(options.pop("material")).absolute()
         validate(material_path)
 

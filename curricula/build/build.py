@@ -105,15 +105,12 @@ def build_solution_readme(context: Context, assignment: Assignment, path: Path):
 def build_solution_code(assignment: Assignment, path: Path):
     """Compile only submission files of the solution."""
 
-    solution_path = path.joinpath(Paths.SOLUTION)
-    solution_path.mkdir(exist_ok=True)
-
     for problem in assignment.problems:
         problem_solution_path = problem.path.joinpath(Paths.SOLUTION)
         if problem_solution_path.exists() and problem.submission:
             for submission_path in map(Path, problem.submission):
                 relative_source_path = problem.path.joinpath(Paths.SOLUTION, *submission_path.parts[1:])
-                relative_destination_path = solution_path.joinpath(problem.short, *submission_path.parts[1:])
+                relative_destination_path = path.joinpath(problem.short, *submission_path.parts[1:])
                 relative_destination_path.parent.mkdir(parents=True, exist_ok=True)
                 files.copy(relative_source_path, relative_destination_path)
 
@@ -170,6 +167,7 @@ def build_grading(context: Context, assignment: Assignment, path: Path):
 BUILD_STEPS = (
     build_instructions,
     build_resources,
+    build_solution,
     build_grading
 )
 

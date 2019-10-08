@@ -6,6 +6,8 @@ from pathlib import Path
 from dataclasses import dataclass
 
 from .grader import Grader
+from .report import Report
+from .resource import Context
 from ..mapping.shared import *
 
 
@@ -30,3 +32,12 @@ class Manager:
             sys.path.pop(0)
 
         return Manager(graders)
+
+    def run(self, target_path: Path, **options) -> Dict[str, Report]:
+        """Run all tests on a submission and return a dict of results."""
+
+        reports = {}
+        for problem_short, grader in self.graders.items():
+            context = Context(target_path, **options)
+            reports[problem_short] = grader.run(context=context)
+        return reports

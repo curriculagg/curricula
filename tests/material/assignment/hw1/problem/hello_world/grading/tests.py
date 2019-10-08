@@ -27,6 +27,7 @@ def build_hello_world(hello_world_source_path: Path, resources: dict) -> BuildRe
     executable_path = Path("/tmp", "hello_world", "hello_world")
     files.replace_directory(executable_path.parent)
     result, executable = build_gpp_executable(hello_world_source_path, executable_path, GPP_OPTIONS)
+    resources["hello_world_path"] = executable_path
     resources["hello_world"] = executable
     return result
 
@@ -40,8 +41,8 @@ def test_output(hello_world: Executable) -> CorrectnessResult:
 
 
 @grade.teardown()
-def cleanup(executable_path: Path):
+def cleanup(hello_world_path: Path):
     """Clean up executables."""
 
-    if executable_path.is_file():
-        files.delete_file(executable_path)
+    if hello_world_path.is_file():
+        files.delete_file(hello_world_path)

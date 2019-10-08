@@ -53,13 +53,16 @@ class Grader:
 
         return create_registrar("teardown", details, self.teardowns)
 
-    def _run(self, tasks: List[Task], resources: dict):
+    def _run(self, tasks: List[Task], resources: dict, ignore_result: bool = False):
         """Checks stage."""
 
         report = resources["report"]
         report.stage = "setup"
         for task in tasks:
             result = Incomplete(task) if self.failed else task.run(resources)
+            if ignore_result:
+                continue
+
             report.add(result)
             if not self.failed:
                 resources["log"].sneak("{} {}".format(task, result))
@@ -78,6 +81,6 @@ class Grader:
             if len(tasks) == 0:
                 continue
             print(f"Starting {name}")
-            self._run(tasks, resources)
+            self._run(tasks, resources, ignore_result=name == "teardown")
 
         return report

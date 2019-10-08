@@ -75,7 +75,8 @@ class Task(Generic[TResult]):
         """Do the dependency injection for the runnable."""
 
         result = inject(resources, self.runnable)
-        result.task = self
+        if result is not None:
+            result.task = self
         return result
 
     def dump(self):
