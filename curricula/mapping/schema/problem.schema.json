@@ -1,0 +1,63 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Problem",
+  "description": "Schema for assignment metadata.",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "authors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "pattern": ".+@.+\\..+"
+          }
+        },
+        "required": [
+          "name",
+          "email"
+        ]
+      }
+    },
+    "grading": {
+      "type": "object",
+      "properties": {
+        "minutes": {
+          "type": "number"
+        },
+        "process": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "automated",
+              "review",
+              "manual"
+            ]
+          }
+        }
+      },
+      "required": [
+        "minutes",
+        "process"
+      ]
+    },
+    "topics": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minItems": 1
+      }
+    }
+  },
+  "required": [
+    "title",
+    "authors",
+    "grading"
+  ]
+}

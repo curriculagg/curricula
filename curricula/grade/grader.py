@@ -1,5 +1,5 @@
 import itertools
-from typing import List
+from typing import List, Container, Dict
 from dataclasses import dataclass, field
 
 from .report import Report
@@ -18,7 +18,7 @@ def create_registrar(kind: str, details: dict, container: List):
             name=details.pop("name", runnable.__qualname__),
             description=details.pop("description", runnable.__doc__),
             kind=kind,
-            required=details.pop("required", False),
+            dependencies=details.pop("dependencies", ()),
             runnable=runnable,
             details=details,))
         return runnable
@@ -30,11 +30,56 @@ class GraderException(Exception):
     """Thrown during checks, builds, tests."""
 
 
+def topological_sort_visit(task: Task, lookup: Dict[str, Task], marks: Dict[Task, int], result: List[Task]):
+    """Visit a node."""
+
+    if marks[task] == 2:
+        return
+    if marks[task] == 1:
+        raise ValueError("Found cycle!")
+    marks[task] = 1
+    for dependency in task.dependencies:
+        topological_sort_visit(lookup[dependency], lookup, marks, result)
+    marks[task] = 2
+    result.append(task)
+
+
+def topological_sort(*steps: List[Task]):
+    """Order tasks by dependency."""
+
+    lookup = {}
+    marks = {}
+    for tasks in steps:
+        result = []
+        for task in tasks:
+            marks[task] = 0
+            lookup[task.name] = task
+        for task in tasks:
+            if marks[task] != 2:
+                topological_sort_visit(task, lookup, marks, result)
+        tasks.clear()
+        tasks.extend(result)
+
+
+def run_tasks(tasks: List[Task], report: Report, resources: dict = None, ignore_result: bool = False):
+    """Execute sorted tasks, skipping if missing dependencies."""
+
+    for task in tasks:
+        satisfied = all(report.check(dependency) for dependency in task.dependencies)
+        result = Incomplete(task) if satisfied else task.run(resources or dict())
+        if ignore_result:
+            continue
+
+        report.add(result)
+        if satisfied:
+            resources["log"].sneak("{} {}".format(task, result))
+            resources["log"].print(prefix=" " * 2)
+
+
 @dataclass
 class Grader:
     """A main class for grading runtime."""
 
-    failed: bool = False
     setups: List[Task] = field(default_factory=list)
     tests: List[Task] = field(default_factory=list)
     teardowns: List[Task] = field(default_factory=list)
@@ -54,22 +99,10 @@ class Grader:
 
         return create_registrar("teardown", details, self.teardowns)
 
-    def _run(self, tasks: List[Task], resources: dict, ignore_result: bool = False):
-        """Checks stage."""
+    def check(self):
+        """Topologically sort tasks, checking for cycles."""
 
-        report = resources["report"]
-        report.stage = "setup"
-        for task in tasks:
-            result = Incomplete(task) if self.failed else task.run(resources)
-            if ignore_result:
-                continue
-
-            report.add(result)
-            if not self.failed:
-                resources["log"].sneak("{} {}".format(task, result))
-                resources["log"].print(prefix=" " * 2)
-            if task.required and (not result.complete or not result.passed):
-                self.failed = True
+        topological_sort(self.setups, self.tests, self.teardowns)
 
     @timed(name="Grader")
     def run(self, **resources) -> Report:
@@ -82,7 +115,7 @@ class Grader:
             if len(tasks) == 0:
                 continue
             print(f"Starting {name}")
-            self._run(tasks, resources, ignore_result=name == "teardown")
+            run_tasks(tasks, report, resources, ignore_result=name == "teardown")
 
         return report
 

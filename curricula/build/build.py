@@ -1,7 +1,7 @@
 import jinja2
 import json
 from pathlib import Path
-from typing import Dict, Union, List
+from typing import Dict, Union, List, Callable
 from dataclasses import dataclass
 
 from ..mapping.markdown import jinja2_create_environment
@@ -54,7 +54,11 @@ def merge_contents(assignment: Assignment, contents_relative_path: Path, destina
             files.copy_directory(problem_contents_path, destination_path, merge=True)
 
 
-def aggregate_contents(assignment: Assignment, contents_relative_path: Path, destination_path: Path) -> List[Path]:
+def aggregate_contents(
+        assignment: Assignment,
+        contents_relative_path: Path,
+        destination_path: Path,
+        filter_problems: Callable[[Problem], bool] = None) -> List[Path]:
     """Compile subdirectories from problems to respective directories.
 
     This method returns a list of the resultant folders that were
@@ -68,7 +72,7 @@ def aggregate_contents(assignment: Assignment, contents_relative_path: Path, des
         files.copy_directory(assignment_contents_path, destination_path)
 
     copied_paths = []
-    for problem in assignment.problems:
+    for problem in filter(filter_problems, assignment.problems):
         problem_contents_path = problem.path.joinpath(contents_relative_path)
         if problem_contents_path.exists():
             problem_destination_path = destination_path.joinpath(problem.short)
@@ -152,14 +156,19 @@ def build_grading(context: Context, assignment: Assignment, path: Path):
     grading_path = path.joinpath(Paths.GRADING)
     grading_path.mkdir(exist_ok=True)
     build_grading_readme(context, assignment, grading_path)
-    copied_paths = aggregate_contents(assignment, Paths.GRADING, grading_path)
-    build_grading_schema(assignment, grading_path)
+    copied_paths = aggregate_contents(
+        assignment,
+        Paths.GRADING,
+        grading_path,
+        filter_problems=lambda p: "automated" in p.grading.process)
 
     # Delete extra READMEs
     for copied_path in copied_paths:
         readme_path = copied_path.joinpath(Files.README)
         if readme_path.exists():
             files.delete(readme_path)
+
+    build_grading_schema(assignment, grading_path)
 
 
 BUILD_STEPS = (

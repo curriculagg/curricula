@@ -1,5 +1,6 @@
 import sys
 import argparse
+import jsonschema
 from pathlib import Path
 
 from . import build
@@ -29,7 +30,11 @@ class BuildPlugin(Plugin):
         options.pop("app")
 
         material_path = Path(options.pop("material")).absolute()
-        validate(material_path)
+
+        try:
+            validate(material_path)
+        except jsonschema.ValidationError:
+            return
 
         if options.pop("validate"):
             return
