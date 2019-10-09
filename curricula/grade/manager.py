@@ -1,4 +1,4 @@
-import importlib
+import importlib.util
 import json
 import sys
 from typing import Dict, List
@@ -15,13 +15,13 @@ from ..mapping.models import Problem
 def import_grader(tests_path: Path, grader_name: str = "grader") -> Grader:
     """Import a grader from a tests file."""
 
-    sys.path.insert(0, str(tests_path.parent))
-    base_name = tests_path.parts[-1]
-    if base_name.endswith(".py"):
-        base_name = base_name[:-3]
+    print(f"Importing {tests_path}")
 
-    module = importlib.import_module(base_name)
-    grader = getattr(module, grader_name)
+    sys.path.insert(0, str(tests_path.parent))
+    spec = importlib.util.spec_from_file_location(f"{tests_path.parent}.tests", str(tests_path))
+    tests = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(tests)
+    grader = getattr(tests, grader_name)
     sys.path.pop(0)
 
     return grader

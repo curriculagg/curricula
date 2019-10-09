@@ -1,5 +1,5 @@
 import itertools
-from typing import List, Container, Dict
+from typing import List, Dict
 from dataclasses import dataclass, field
 
 from .report import Report
@@ -14,13 +14,19 @@ def create_registrar(kind: str, details: dict, container: List):
     def decorator(runnable: Runnable) -> Runnable:
         """Put the function in a correctness object."""
 
+        name = details.pop("name", runnable.__qualname__)
+        description = details.pop("description", runnable.__doc__)
+        dependencies = details.pop("dependencies", ())
+        if isinstance(dependencies, str):
+            dependencies = (dependencies,)
+
         container.append(Task(
-            name=details.pop("name", runnable.__qualname__),
-            description=details.pop("description", runnable.__doc__),
+            name=name,
+            description=description,
             kind=kind,
-            dependencies=details.pop("dependencies", ()),
+            dependencies=dependencies,
             runnable=runnable,
-            details=details,))
+            details=details))
         return runnable
 
     return decorator

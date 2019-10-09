@@ -1,6 +1,6 @@
 import abc
 import inspect
-from typing import Dict, TypeVar, Generic, Any, List
+from typing import Dict, TypeVar, Generic, Any, Collection
 from dataclasses import dataclass, field
 
 
@@ -31,7 +31,7 @@ class Incomplete(Result):
         return dict(
             complete=False,
             passed=False,
-            details=dict(error="not completed because a prior required task failed"))
+            details=dict(error="not completed because a dependency failed"))
 
 
 TResult = TypeVar("TResult", bound=Result)
@@ -60,7 +60,7 @@ class Task(Generic[TResult]):
     name: str
     description: str
     kind: str
-    dependencies: List[str]
+    dependencies: Collection[str]
     runnable: Runnable[Result]
     details: dict
 
