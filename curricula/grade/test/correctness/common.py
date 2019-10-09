@@ -1,17 +1,15 @@
 """Convenience functions for output manipulation."""
 
-from typing import List, Tuple, Iterable
-
-__all__ = ("as_lines", "lines_match")
+from typing import List, Tuple, Iterable, AnyStr
 
 
-def as_lines(string: str) -> List[str]:
+def as_lines(string: AnyStr) -> List[AnyStr]:
     """Strip and split by newline."""
 
     return string.strip().split("\n")
 
 
-def lines_match(test: List[str], correct: Tuple[str]) -> Iterable:
+def lines_match(test: List[AnyStr], correct: Tuple[AnyStr]) -> Iterable:
     """Check equality without order.
 
     Returns a boolean indicating correctness and a list of errors
