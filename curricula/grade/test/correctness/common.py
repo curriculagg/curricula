@@ -9,7 +9,7 @@ def as_lines(string: AnyStr) -> List[AnyStr]:
     return string.strip().split("\n")
 
 
-def lines_match(test: List[AnyStr], correct: Tuple[AnyStr]) -> Iterable:
+def lines_match(test: List[AnyStr], correct: List[AnyStr]) -> Iterable:
     """Check equality without order.
 
     Returns a boolean indicating correctness and a list of errors

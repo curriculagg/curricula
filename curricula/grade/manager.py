@@ -15,8 +15,6 @@ from ..mapping.models import Problem
 def import_grader(tests_path: Path, grader_name: str = "grader") -> Grader:
     """Import a grader from a tests file."""
 
-    print(f"Importing {tests_path}")
-
     sys.path.insert(0, str(tests_path.parent))
     spec = importlib.util.spec_from_file_location(f"{tests_path.parent}.tests", str(tests_path))
     tests = importlib.util.module_from_spec(spec)
