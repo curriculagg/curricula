@@ -72,7 +72,7 @@ def run_tasks(tasks: List[Task], report: Report, resources: dict = None, ignore_
 
     for task in tasks:
         satisfied = all(report.check(dependency) for dependency in task.dependencies)
-        result = Incomplete(task) if satisfied else task.run(resources or dict())
+        result = Incomplete(task) if not satisfied else task.run(resources or dict())
         if ignore_result:
             continue
 

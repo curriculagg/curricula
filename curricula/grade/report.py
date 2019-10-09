@@ -9,7 +9,7 @@ from .task import Result
 class Report(Resource):
     """The final report returned by the testing framework."""
 
-    lookup: Dict[str, Result] = field(default_factory=list)
+    lookup: Dict[str, Result] = field(default_factory=dict)
     results: List[Result] = field(default_factory=list)
 
     def check(self, task_name: str) -> bool:
