@@ -66,13 +66,13 @@ class ValgrindReport:
     def memory_lost(self) -> (int, int):
         """Count up bytes and blocks lost."""
 
-        leaked_bytes = 0
         leaked_blocks = 0
+        leaked_bytes = 0
         for error in self.errors:
             if error.kind in ("Leak_DefinitelyLost", "Leak_IndirectlyLost", "Leak_PossiblyLost"):
-                leaked_bytes += int(error.what.fields["leakedbytes"])
                 leaked_blocks += int(error.what.fields["leakedblocks"])
-        return leaked_bytes, leaked_blocks
+                leaked_bytes += int(error.what.fields["leakedbytes"])
+        return leaked_blocks, leaked_bytes
 
 
 def run(*args: str, timeout: float) -> Optional[ValgrindReport]:
