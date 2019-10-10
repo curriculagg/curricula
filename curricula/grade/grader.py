@@ -125,7 +125,7 @@ class Grader:
 
         return report
 
-    def dump(self) -> list:
+    def dump(self) -> dict:
         """Dump the tasks to something JSON serializable."""
 
-        return [task.dump() for task in itertools.chain(self.setups, self.tests, self.teardowns)]
+        return {task.name: task.dump() for task in itertools.chain(self.setups, self.tests, self.teardowns)}

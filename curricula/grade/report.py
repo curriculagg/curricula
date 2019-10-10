@@ -20,5 +20,5 @@ class Report(Resource):
         self.lookup[result.task.name] = result
         return self.results.append(result)
 
-    def dump(self):
-        return [result.dump() for result in self.results]
+    def dump(self) -> dict:
+        return {result.task.name: result.dump() for result in self.results}

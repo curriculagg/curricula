@@ -16,7 +16,7 @@ class Result(abc.ABC):
         return "passed" if self.complete and self.passed else "failed"
 
     def dump(self) -> dict:
-        return dict(complete=self.complete, passed=self.passed, task=self.task.dump())
+        return dict(complete=self.complete, passed=self.passed, task=self.task.name)
 
 
 class Incomplete(Result):
