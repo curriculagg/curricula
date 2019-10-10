@@ -1,43 +1,32 @@
 """Convenience functions for output manipulation."""
 
-from typing import List, Tuple, Iterable, AnyStr
+from typing import List, Iterable, AnyStr, Union, Container
+
+__all__ = ("as_lines", "lines_match")
 
 
 def as_lines(string: AnyStr) -> List[AnyStr]:
     """Strip and split by newline."""
 
-    return string.strip().split("\n")
+    return string.strip().split("\n" if isinstance(string, str) else b"\n")
 
 
-def lines_match(test: List[AnyStr], correct: List[AnyStr]) -> Iterable:
+MaybeContainer = Union[Iterable, Container]
+
+
+def lines_match(a: MaybeContainer[AnyStr], b: MaybeContainer[AnyStr]) -> bool:
     """Check equality without order.
 
     Returns a boolean indicating correctness and a list of errors
     encountered while checking.
     """
 
-    if len(test) != len(correct):
-        difference = len(test) - len(correct)
-        yield False
-        yield "{} {} outputs".format(abs(difference), "extra" if difference > 0 else "missing")
-        return
+    if hasattr(a, "__len__") and hasattr(a, "__len__"):
+        if len(a) != len(b):
+            return False
 
-    unexpected = []
-    unmatched = list(correct)
-    for line in test:
-        if line in unmatched:
-            unmatched.remove(line)
-        else:
-            unexpected.append(line)
+    for x, y in zip(a, b):
+        if x != y:
+            return False
 
-    count = len(unexpected)
-    if count > 0:
-        yield False
-        yield "{} unexpected outputs".format(count)
-        for i in range(min(count, 5)):
-            yield "  " + unexpected[i]
-        if count > 5:
-            yield "  ..."
-        return
-
-    yield True
+    return True

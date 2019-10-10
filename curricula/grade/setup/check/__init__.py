@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 from .. import SetupResult
+from .common import *
 
 
 @dataclass

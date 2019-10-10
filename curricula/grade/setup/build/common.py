@@ -5,6 +5,8 @@ from . import BuildResult
 from typing import Iterable, Optional
 from pathlib import Path
 
+__all__ = ("build_gpp_executable", "build_makefile_executable")
+
 
 def build_gpp_executable(
         source: Path,
@@ -28,12 +30,12 @@ def build_gpp_executable(
 
 def build_makefile_executable(
         project_path: Path,
-        make_options: Iterable[str],
+        make_options: Iterable[str] = (),
         log: Logger = None,
         timeout: int = 5) -> BuildResult:
-    """Run make on the parent directory."""
+    """Run make on a project directory."""
 
-    runtime = process.run("make", str(project_path), *make_options, timeout=timeout)
+    runtime = process.run("make", "-B", "-C", str(project_path), *make_options, timeout=timeout)
     if runtime.code != 0 or runtime.timeout is not None:
         log and log[2](f"Failed to compile {project_path.parts[-1]}")
         return BuildResult(passed=False, runtime=runtime.dump(), error="compilation failed")

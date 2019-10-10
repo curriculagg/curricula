@@ -4,6 +4,8 @@ from pathlib import Path
 from curricula.grade.resource import Logger
 from . import CheckResult
 
+__all__ = ("check_file_exists", "search_file_by_name")
+
 
 def check_file_exists(path: Path, log: Logger = None) -> CheckResult:
     """Check if a file is present in the directory."""
