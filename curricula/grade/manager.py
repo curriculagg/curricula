@@ -1,7 +1,7 @@
 import importlib.util
 import json
 import sys
-from typing import Dict, List
+from typing import Dict, List, Iterable, Iterator, Tuple
 from pathlib import Path
 from dataclasses import dataclass
 
@@ -67,3 +67,11 @@ class Manager:
             context = Context(target_path, **options)
             reports[problem_short] = grader.run(context=context)
         return reports
+
+    def run_batch(self, target_paths: Iterable[Path], **options) -> Iterator[Tuple[Path, Dict[str, Report]]]:
+        """Run multiple reports, map directory to report."""
+
+        report_tree = {}
+        for target_path in target_paths:
+            yield target_path, self.run(target_path, **options)
+        return report_tree

@@ -38,6 +38,10 @@ class GradePlugin(Plugin):
         single_parser.add_argument("target", help="run tests on a single target")
         single_parser.add_argument("report", help="where to write the report to")
 
+        batch_parser = subparsers.add_parser("batch")
+        batch_parser.add_argument("targets", nargs="+", help="all targets to run")
+        batch_parser.add_argument("reports", help="a directory to write reports to")
+
         summarize_parser = subparsers.add_parser("summarize")
         summarize_parser.add_argument("reports", help="the directory containing the grade reports")
 
@@ -62,3 +66,11 @@ class GradePlugin(Plugin):
             with output_path.open("w") as file:
                 data = {problem_short: report.dump() for problem_short, report in reports.items()}
                 json.dump(data, file, indent=2)
+
+        elif command == "batch":
+            output_path = Path(options.pop("reports"))
+            output_path.mkdir(parents=True, exist_ok=True)
+            for target_path, reports in manager.run_batch(map(Path, options.pop("targets")), **options):
+                with output_path.joinpath(f"{target_path.parts[-1]}.json").open("w") as file:
+                    data = {problem_short: report.dump() for problem_short, report in reports.items()}
+                    json.dump(data, file, indent=2)
