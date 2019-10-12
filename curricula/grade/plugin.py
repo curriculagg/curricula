@@ -74,3 +74,7 @@ class GradePlugin(Plugin):
                 with output_path.joinpath(f"{target_path.parts[-1]}.json").open("w") as file:
                     data = {problem_short: report.dump() for problem_short, report in reports.items()}
                     json.dump(data, file, indent=2)
+
+        elif command == "summarize":
+            reports_path = Path(options.pop("reports"))
+            summarize(grading_path, reports_path)

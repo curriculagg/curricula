@@ -39,16 +39,22 @@ def compile_readme(
     return destination_path
 
 
-def merge_contents(assignment: Assignment, contents_relative_path: Path, destination_path: Path):
+def merge_contents(
+        assignment: Assignment,
+        contents_relative_path: Path,
+        destination_path: Path,
+        filter_problems: Callable[[Problem], bool] = None):
     """Compile subdirectories from problems into a single directory."""
 
     destination_path.mkdir(exist_ok=True)
 
+    # First copy any assignment-wide resources
     assignment_contents_path = assignment.path.joinpath(contents_relative_path)
     if assignment_contents_path.exists():
         files.copy_directory(assignment_contents_path, destination_path)
 
-    for problem in assignment.problems:
+    # Overwrite with problem contents, enable filtration
+    for problem in filter(filter_problems, assignment.problems):
         problem_contents_path = problem.path.joinpath(contents_relative_path)
         if problem_contents_path.exists():
             files.copy_directory(problem_contents_path, destination_path, merge=True)
@@ -67,10 +73,12 @@ def aggregate_contents(
 
     destination_path.mkdir(exist_ok=True)
 
+    # First compile assignment-wide assets
     assignment_contents_path = assignment.path.joinpath(contents_relative_path)
     if assignment_contents_path.exists():
         files.copy_directory(assignment_contents_path, destination_path)
 
+    # Copy per problem, enable filtration
     copied_paths = []
     for problem in filter(filter_problems, assignment.problems):
         problem_contents_path = problem.path.joinpath(contents_relative_path)
