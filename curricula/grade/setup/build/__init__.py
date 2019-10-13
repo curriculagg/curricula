@@ -3,7 +3,6 @@ from dataclasses import dataclass, field
 from .. import SetupResult
 from ...task import Runnable
 from ...resource import Executable
-from .common import *
 
 
 @dataclass

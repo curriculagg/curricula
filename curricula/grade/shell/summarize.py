@@ -1,6 +1,6 @@
 import json
 import statistics
-from typing import List, Dict
+from typing import List, Dict, Iterable, Union, Set
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -12,8 +12,16 @@ class TaskSummary:
     """Statistics about task results."""
 
     task: dict
-    students_complete: List["StudentSummary"] = field(default_factory=list)
-    students_passed: List["StudentSummary"] = field(default_factory=list)
+    students_complete: List[dict] = field(default_factory=list)
+    students_passed: List[dict] = field(default_factory=list)
+
+
+@dataclass
+class StudentProblemSummary:
+    """Problem results for a single student."""
+
+    tasks_complete: List[dict] = field(default_factory=list)
+    tasks_passed: List[dict] = field(default_factory=list)
 
 
 @dataclass
@@ -21,65 +29,94 @@ class StudentSummary:
     """Statistics for an individual student."""
 
     student: dict
-    tasks_complete: List[TaskSummary] = field(default_factory=list)
-    tasks_passed: List[TaskSummary] = field(default_factory=list)
+    problems: Dict[str, StudentProblemSummary]
+
+    def __init__(self, student: dict, problem_shorts: Iterable[str]):
+        self.student = student
+        self.problems = {}
+        for problem_short in problem_shorts:
+            self.problems[problem_short] = StudentProblemSummary()
 
 
 @dataclass
 class ProblemSummary:
     """Statistics about a set of tests."""
 
-    tasks: List[TaskSummary] = field(default_factory=list)
-    students: List[StudentSummary] = field(default_factory=list)
+    tasks: Dict[str, TaskSummary]
+
+    def __init__(self, tasks: dict):
+        self.tasks = {task_short: TaskSummary(task) for task_short, task in tasks.items()}
 
 
-def build_problem_summary(problem_grading_schema: dict, reports_directory: Path) -> ProblemSummary:
+@dataclass
+class Summary:
+    """Overall assignment statistics."""
+
+    problems: Dict[str, ProblemSummary]
+    students: Dict[str, StudentSummary]
+    failed_setup: Set[str]
+
+    def __init__(self, grading_schema: dict, students: dict):
+        """Generate skeleton of data store."""
+
+        self.problems = {}
+        for problem_short, data in grading_schema.items():
+            self.problems[problem_short] = ProblemSummary(data["tasks"])
+        self.students = {}
+        problem_shorts = tuple(grading_schema.keys())
+        for student_username, student in students.items():
+            self.students[student_username] = StudentSummary(student, problem_shorts)
+        self.failed_setup = set()
+
+
+def build_student_summary(summary: Summary, report_path: Path):
     """Build a table of results with axes students and tasks."""
 
-    summary = ProblemSummary()
-    tasks = problem_grading_schema["tasks"]
+    report_name = report_path.parts[-1].rsplit(".")[0]
+    student_summary = summary.students[report_name]
 
-    for report_path in reports_directory.glob("*.json"):
-        with report_path.open() as file:
-            report = json.load(file)
-        report_name = report_path.parts[-1].rsplit(".")[0]
+    with report_path.open() as file:
+        report = json.load(file)
 
-        student_summary = StudentSummary(dict(username=report_name))
-        summary.students.append(student_summary)
+    for problem_short, problem_report in report.items():
+        problem_summary = summary.problems[problem_short]
 
-        for result in report:
-            task_name = result["task"]
-            task = tasks[task_name]
-
+        for task_name, result in problem_report.items():
+            task_summary = problem_summary.tasks[task_name]
+            task = task_summary.task
             if task["kind"] == "setup" and not result["passed"]:
-                error = result["details"]["error"] if "error" in result["details"] else ""
-                print("{} failed {}: {}".format(student_summary.student["username"], result["task"]["name"], error))
+                summary.failed_setup.add(report_name)
 
             if result["complete"]:
-                task.students_complete.append(student_summary)
-                student_summary.tasks_complete.append(task)
+                task_summary.students_complete.append(student_summary.student)
+                student_summary.problems[problem_short].tasks_complete.append(task)
             if result["passed"]:
-                task.students_passed.append(student_summary)
-                student_summary.tasks_passed.append(task)
+                task_summary.students_passed.append(student_summary.student)
+                student_summary.problems[problem_short].tasks_passed.append(task)
 
     return summary
 
 
-def build_summary(grading_schema: dict, reports_directory: Path) -> Dict[str, ProblemSummary]:
+def build_summary(grading_schema: dict, reports_directory: Path) -> Summary:
     """Compile problem summaries."""
 
-    result = {}
-    for key, problem_grading_schema in grading_schema.items():
-        result[key] = build_problem_summary(problem_grading_schema, reports_directory)
-    return result
+    report_paths = tuple(reports_directory.glob("*.json"))
+    students = {}
+    for report_path in report_paths:
+        student_username = report_path.parts[-1].rsplit(".")[0]
+        students[student_username] = dict(username=student_username)
+    summary = Summary(grading_schema, students)
+    for report_path in report_paths:
+        build_student_summary(summary, report_path)
+    return summary
 
 
-def percent(x, n) -> str:
+def percent(x: Union[int, float], n: int = 1) -> str:
     return f"{round(x / n * 1000) / 10}%"
 
 
-def filter_tests(tasks: List[TaskSummary]) -> List[TaskSummary]:
-    return list(task_summary for task_summary in tasks if task_summary.task["kind"] == "test")
+def filter_tests(tasks: List[dict]) -> List[dict]:
+    return list(task for task in tasks if task["kind"] == "test")
 
 
 def summarize(grading_path: Path, reports_path: Path):
@@ -90,23 +127,23 @@ def summarize(grading_path: Path, reports_path: Path):
 
     summary = build_summary(grading_schema, reports_path)
 
-    for problem_short, problem_summary in summary.items():
-        print(problem_short)
-        for task_summary in problem_summary.tasks:
-            task_name = task_summary.task["name"]
-            print(f"{task_name}: {percent(len(task_summary.students_passed), len(task_summary.students_complete))}")
+    print(f"Failed setup: {len(summary.failed_setup)}")
 
-    print()
+    print("Problem reports:")
+    for problem_short, problem_summary in summary.problems.items():
+        print(f"  Problem: {problem_short}")
+        for task_name, task_summary in problem_summary.tasks.items():
+            print(f"    {task_name}: {percent(len(task_summary.students_passed), len(task_summary.students_complete))}")
 
-    for problem_short, problem_summary in summary.items():
-        print(problem_short)
+    for problem_short in summary.problems.keys():
         scores = []
-
-        for student_summary in problem_summary.students:
-            count_tests_complete = len(filter_tests(student_summary.tasks_complete))
+        for student_username, student_summary in summary.students.items():
+            count_tests_complete = len(filter_tests(student_summary.problems[problem_short].tasks_complete))
             if count_tests_complete:
-                scores.append(len(filter_tests(student_summary.tasks_passed)) / count_tests_complete)
+                scores.append(len(filter_tests(student_summary.problems[problem_short].tasks_passed)) / count_tests_complete)
 
-        print(len(scores))
-        print(statistics.mean(scores) * 100)
-        print(statistics.median(scores) * 100)
+        print(f"  Total scores: {len(scores)}")
+        print(f"  Mean: {percent(statistics.mean(scores))}")
+        print(f"  Median: {percent(statistics.median(scores))}")
+        print(f"  Perfect: {percent(len(list(filter(lambda x: x == 1, scores))), len(scores))}")
+        print(f"  Scores: {list(scores)}")

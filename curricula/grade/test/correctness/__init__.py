@@ -2,7 +2,6 @@ from dataclasses import dataclass, field
 
 from .. import TestResult
 from ...library.process import Runtime
-from .common import *
 
 
 @dataclass
