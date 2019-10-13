@@ -40,9 +40,6 @@ def generate_grading_schema(grading_path: Path, problems: List[Problem]) -> dict
     return result
 
 
-MISSED = {'amanosme', 'amalcolm', 'hern784', 'doh732', 'emanning', 'smcneely', 'ebork', 'hanjeffr', 'liu861', 'conormcc', 'zhuanzhl', 'sagartiw', 'kexinw', 'edelheal', 'daerowon', 'bmorehou', 'kakooza', 'udasgupt', 'hannaho', 'johncand', 'roycechu', 'andrewfw', 'ujwalgup', 'mitraarj', 'zhianli', 'roost', 'maryowen', 'patricjk', 'ddrain', 'binwu', 'bmrollin', 'varanasi', 'najensen', 'jliu6011', 'junyou', 'kim257', 'taylorri', 'concho'}
-
-
 @dataclass
 class Manager:
     """A container for multiple graders in an assignment."""
@@ -76,6 +73,5 @@ class Manager:
 
         report_tree = {}
         for target_path in target_paths:
-            if target_path.parts[-1] in MISSED:
-                yield target_path, self.run(target_path, **options)
+            yield target_path, self.run(target_path, **options)
         return report_tree
