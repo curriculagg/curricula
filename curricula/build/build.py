@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Dict, Union, List, Callable
 from dataclasses import dataclass
 
-from ..mapping.markdown import jinja2_create_environment
+from ..template import jinja2_create_environment
 from ..mapping.models import Assignment, Problem
 from ..mapping.shared import Files, Paths
 from ..grade.manager import generate_grading_schema
@@ -148,14 +148,8 @@ def build_grading_readme(context: Context, assignment: Assignment, path: Path):
 def build_grading_schema(assignment: Assignment, path: Path):
     """Generate a JSON data file with grading metadata."""
 
-    # Generate a grading schema JSON
-    problems = []
-    for problem in assignment.problems:
-        if "automated" in problem.grading.process:
-            problems.append(problem)
-
     with path.joinpath(Files.GRADING).open("w") as file:
-        json.dump(generate_grading_schema(path, problems), file, indent=2)
+        json.dump(generate_grading_schema(path, assignment), file, indent=2)
 
 
 def build_grading(context: Context, assignment: Assignment, path: Path):
@@ -206,21 +200,14 @@ def has_readme(item: Union[Problem, Assignment], *component: str) -> bool:
     return item.path.joinpath(*component, Files.README).exists()
 
 
-def jinja2_create_build_environment(**options) -> jinja2.Environment:
-    """Add a couple filters for content building."""
-
-    environment = jinja2_create_environment(**options)
-    environment.filters.update(get_readme=get_readme, has_readme=has_readme)
-    return environment
-
-
 def build(material_path: Path, **options):
     """Build the assignment at a given path."""
 
     if not material_path.is_dir():
         raise ValueError("material path does not exist!")
 
-    environment = jinja2_create_build_environment(loader=jinja2.FileSystemLoader(str(material_path)))
+    environment = jinja2_create_environment(custom_template_path=material_path)
+    environment.filters.update(get_readme=get_readme, has_readme=has_readme)
     context = Context(environment, material_path, options)
     environment.globals["context"] = context
 

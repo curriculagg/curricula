@@ -9,7 +9,7 @@ from .grader import Grader
 from .report import Report
 from .resource import Context
 from ..mapping.shared import *
-from ..mapping.models import Problem
+from ..mapping.models import Assignment
 
 
 def import_grader(tests_path: Path, grader_name: str = "grader") -> Grader:
@@ -25,7 +25,7 @@ def import_grader(tests_path: Path, grader_name: str = "grader") -> Grader:
     return grader
 
 
-def generate_grading_schema(grading_path: Path, problems: List[Problem]) -> dict:
+def generate_grading_schema(grading_path: Path, assignment: Assignment) -> dict:
     """Generate a JSON schema describing the grading package.
 
     This method requires the grading artifact to already have been
@@ -33,10 +33,14 @@ def generate_grading_schema(grading_path: Path, problems: List[Problem]) -> dict
     dump their task summaries.
     """
 
-    result = {}
-    for problem in problems:
-        grader = import_grader(grading_path.joinpath(problem.short, Files.TESTS))
-        result[problem.short] = dict(percentage=problem.percentage, tasks=grader.dump())
+    result = dict(title=assignment.title, problems=dict())
+    for problem in assignment.problems:
+        if "automated" in problem.grading.process:
+            grader = import_grader(grading_path.joinpath(problem.short, Files.TESTS))
+            result["problems"][problem.short] = dict(
+                title=problem.title,
+                percentage=problem.percentage,
+                tasks=grader.dump())
     return result
 
 
@@ -54,7 +58,7 @@ class Manager:
             schema = json.load(file)
 
         graders = {}
-        for problem_short in schema:
+        for problem_short in schema["problems"]:
             graders[problem_short] = import_grader(grading_path.joinpath(problem_short, Files.TESTS))
 
         return Manager(graders)

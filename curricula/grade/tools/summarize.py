@@ -60,10 +60,10 @@ class Summary:
         """Generate skeleton of data store."""
 
         self.problems = {}
-        for problem_short, data in grading_schema.items():
+        for problem_short, data in grading_schema["problems"].items():
             self.problems[problem_short] = ProblemSummary(data["tasks"])
         self.students = {}
-        problem_shorts = tuple(grading_schema.keys())
+        problem_shorts = tuple(grading_schema["problems"].keys())
         for student_username, student in students.items():
             self.students[student_username] = StudentSummary(student, problem_shorts)
         self.failed_setup = set()
@@ -94,7 +94,7 @@ def build_student_summary(summary: Summary, report_path: Path):
                 task_summary.students_passed.append(student_summary.student)
                 student_summary.problems[problem_short].tasks_passed.append(task)
 
-    return summary
+    return student_summary
 
 
 def build_summary(grading_schema: dict, reports_directory: Path) -> Summary:

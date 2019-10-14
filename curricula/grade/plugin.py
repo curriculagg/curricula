@@ -6,7 +6,8 @@ from pathlib import Path
 from .grader import Grader
 from .manager import Manager
 from .resource import Context
-from .shell.summarize import summarize
+from .tools.summarize import summarize
+from .tools.format import format_report_markdown
 from ..plugin import Plugin
 
 MODES = ("parallel", "linear")
@@ -45,6 +46,10 @@ class GradePlugin(Plugin):
         summarize_parser = subparsers.add_parser("summarize")
         summarize_parser.add_argument("reports", help="the directory containing the grade reports")
 
+        format_parser = subparsers.add_parser("format")
+        format_parser.add_argument("reports", help="reports directory")
+        format_parser.add_argument("submissions", help="submissions to write reports to")
+
     @classmethod
     def run(cls, parser: argparse.ArgumentParser, args: argparse.Namespace):
         """Start the grader."""
@@ -78,3 +83,11 @@ class GradePlugin(Plugin):
         elif command == "summarize":
             reports_path = Path(options.pop("reports"))
             summarize(grading_path, reports_path)
+
+        elif command == "format":
+            reports_path = Path(options.pop("reports"))
+            submissions_path = Path(options.pop("submissions"))
+            for report_path in reports_path.glob("*.json"):
+                report = format_report_markdown(grading_path, report_path)
+                username = report_path.parts[-1].rsplit(".")[0]
+                submissions_path.joinpath(username, f"{username}.report.md").write_text(report)
