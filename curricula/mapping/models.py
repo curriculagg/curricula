@@ -25,8 +25,8 @@ class Dates:
     def __init__(self, assigned: str, deadline: str):
         """Convert to datetime."""
 
-        self.assigned = datetime.datetime.strptime(assigned, "%Y-%m-%d %H:%M")
-        self.deadline = datetime.datetime.strptime(deadline, "%Y-%m-%d %H:%M")
+        self.assigned = datetime.datetime.strptime(assigned, "%Y-%m-%d %H:%M:%S")
+        self.deadline = datetime.datetime.strptime(deadline, "%Y-%m-%d %H:%M:%S")
 
 
 @dataclass
