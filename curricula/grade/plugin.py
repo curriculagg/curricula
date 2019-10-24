@@ -8,6 +8,7 @@ from .manager import Manager
 from .report import Report
 from .tools.summarize import summarize
 from .tools.format import format_report_markdown
+from .tools.compare import compare_output
 from ..plugin import Plugin, PluginException
 
 
@@ -81,6 +82,12 @@ class GradePlugin(Plugin):
 
         summarize_parser = subparsers.add_parser("summarize")
         summarize_parser.add_argument("reports", help="the directory containing the grade reports")
+        
+        compare_parser = subparsers.add_parser("compare")
+        to_group = compare_parser.add_mutually_exclusive_group(required=True)
+        to_group.add_argument("-f", "--file", help="output file for single report")
+        to_group.add_argument("-d", "--directory", help="where to write reports to if batched")
+        compare_parser.add_argument("report", help="the report to compare")
 
     @classmethod
     def main(cls, parser: argparse.ArgumentParser, args: argparse.Namespace):
@@ -97,6 +104,7 @@ class GradePlugin(Plugin):
             "run": cls.run,
             "format": cls.format,
             "summarize": cls.summarize,
+            "compare": cls.compare,
         }[options.pop("command")](grading_path, options)
 
     @classmethod
@@ -158,3 +166,11 @@ class GradePlugin(Plugin):
 
         reports_path = Path(options.pop("reports"))
         summarize(grading_path, reports_path)
+
+    @classmethod
+    def compare(cls, grading_path: Path, options: dict):
+        """Generate a comparison of two files."""
+
+        report_path = Path(options.pop("report"))
+        with file_from_options(options, change_extension(report_path, "compare.html"), batch=False) as file:
+            file.write(compare_output(report_path))
