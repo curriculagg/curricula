@@ -34,7 +34,7 @@ def compare_output(report_path: Path) -> str:
         for task_name, result in report.items():
             if result["complete"] and result["kind"] == "correctness" and not result["passed"]:
                 expected = show_whitespace(result["details"]["expected"])
-                received = show_whitespace(result["details"]["out"])
+                received = show_whitespace(result["details"]["received"])
                 content += difference_template.render(task_name=task_name, expected=expected, received=received)
 
     return compare_template.render(content=content)

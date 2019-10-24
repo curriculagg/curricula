@@ -1,6 +1,5 @@
 import datetime
 import json
-from decimal import Decimal
 from pathlib import Path
 from dataclasses import dataclass
 from typing import Optional, List
