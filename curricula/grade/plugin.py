@@ -20,7 +20,7 @@ def make_report_name(target_path: Path, extension: str) -> str:
 def change_extension(report_path: Path, extension: str) -> str:
     """Return the report name with a different extension."""
 
-    basename = report_path.parts[-1].rsplit(".")[0]
+    basename = report_path.parts[-1].rsplit(".", maxsplit=1)[0]
     return f"{basename}.{extension}"
 
 
