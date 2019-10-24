@@ -1,5 +1,6 @@
 import datetime
 import json
+from decimal import Decimal
 from pathlib import Path
 from dataclasses import dataclass
 from typing import Optional, List
@@ -46,7 +47,7 @@ class Problem:
     path: Path
     short: str
     number: int
-    percentage: float
+    percentage: Decimal
 
     title: str
     authors: List[Author]
@@ -67,7 +68,7 @@ class Problem:
 
         authors = list(Author(**author) for author in data.pop("authors"))
         grading = Grading(**data.pop("grading")) if "grading" in data else None
-        percentage = reference["percentage"]
+        percentage = Decimal(reference["percentage"])
         return cls(assignment, path, short, number, percentage, authors=authors, grading=grading, **data)
 
 

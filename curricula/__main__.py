@@ -1,5 +1,7 @@
 import argparse
+import sys
 
+from .plugin import PluginException
 from .build.plugin import BuildPlugin
 from .grade.plugin import GradePlugin
 
@@ -12,5 +14,10 @@ for plugin in PLUGINS:
     plugin.setup(subparsers.add_parser(plugin.name, help=plugin.help))
 
 args = parser.parse_args()
-runnable = {plugin.name: plugin.run for plugin in PLUGINS}
-runnable[args.app](parser, args)
+runnable = {plugin.name: plugin.main for plugin in PLUGINS}
+
+try:
+    runnable[args.app](parser, args)
+except PluginException as e:
+    print(e, file=sys.stderr)
+    exit(1)

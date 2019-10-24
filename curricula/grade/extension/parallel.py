@@ -9,7 +9,7 @@ from curricula.grade.library import timed
 
 def worker(test: Test, resources: dict, output: multiprocessing.Queue):
     log = Logger()
-    result = test.run(**resources)
+    result = test.run_single(**resources)
     log.sneak("{} {}".format(test, result))
     output.put(log.build(prefix=" " * 2))
     return test, result

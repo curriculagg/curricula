@@ -23,7 +23,7 @@ class BuildPlugin(Plugin):
         parser.add_argument("-v", "--validate", dest="validate", action="store_true", help="Only validate")
 
     @classmethod
-    def run(cls, parser: argparse.ArgumentParser, args: argparse.Namespace):
+    def main(cls, parser: argparse.ArgumentParser, args: argparse.Namespace):
         """Run if the build app is chosen."""
 
         options = vars(args)
