@@ -13,10 +13,9 @@ title: [[ assignment.title ]]
 ## [[ assignment.title ]]
 
 [[ assignment | get_readme ]]
-
-[% for problem in assignment.problems %]
-[%- include "template/instructions/problem.md" -%]
-[% endfor %]
+[% for problem in assignment.problems -%]
+[% include "template/instructions/problem.md" %]
+[%- endfor -%]
 
 ### Submitting Your Solution
 
