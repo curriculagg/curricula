@@ -215,10 +215,10 @@ def build(material_path: Path, **options):
     artifacts_path.mkdir(exist_ok=True)
 
     for assignment_path in Paths.glob_assignments(material_path):
-        assignment = Assignment.load(assignment_path)
-        if assignment_path.parts[-1] == options.get("assignment"):
+        if assignment_path.parts[-1] not in options.get("assignment", ()):
             continue
 
+        assignment = Assignment.load(assignment_path)
         assignment_artifacts_path = artifacts_path.joinpath(assignment_path.parts[-1])
         files.replace_directory(assignment_artifacts_path)
 

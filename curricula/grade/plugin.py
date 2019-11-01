@@ -13,15 +13,6 @@ from ..plugin import Plugin
 MODES = ("parallel", "linear")
 
 
-def single(grader: Grader, args: dict):
-    """Run tests on a single target and print report."""
-
-    context = Context(Path(args.pop("target")).absolute(), args)
-    report = grader.run(context=context)
-    with Path(args.pop("report")).open("w") as file:
-        json.dump(report.dump(), file, indent=2)
-
-
 class GradePlugin(Plugin):
     """Implement grade plugin."""
 
@@ -47,6 +38,7 @@ class GradePlugin(Plugin):
         summarize_parser.add_argument("reports", help="the directory containing the grade reports")
 
         format_parser = subparsers.add_parser("format")
+        format_parser.add_argument("template", help="report template path")
         format_parser.add_argument("reports", help="reports directory")
         format_parser.add_argument("submissions", help="submissions to write reports to")
 
@@ -85,9 +77,10 @@ class GradePlugin(Plugin):
             summarize(grading_path, reports_path)
 
         elif command == "format":
+            template_path = Path(options.pop("template"))
             reports_path = Path(options.pop("reports"))
             submissions_path = Path(options.pop("submissions"))
             for report_path in reports_path.glob("*.json"):
-                report = format_report_markdown(grading_path, report_path)
+                report = format_report_markdown(grading_path, template_path, report_path)
                 username = report_path.parts[-1].rsplit(".")[0]
-                submissions_path.joinpath(username, f"{username}.report.md").write_text(report)
+                submissions_path.joinpath(username, f"{username}.correction.md").write_text(report)

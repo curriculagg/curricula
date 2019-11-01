@@ -39,10 +39,10 @@ def summarize(grading_schema: dict, report: dict) -> ReportSummary:
     return summary
 
 
-def format_report_markdown(grading_path: Path, report_path: Path) -> str:
+def format_report_markdown(grading_path: Path, template_path: Path, report_path: Path) -> str:
     """Return a formatted markdown report."""
 
-    environment = jinja2_create_environment(custom_template_path=grading_path)
+    environment = jinja2_create_environment(custom_template_path=template_path.parent)
     with grading_path.joinpath(Files.GRADING).open() as file:
         grading_schema = json.load(file)
     with report_path.open() as file:
@@ -50,5 +50,5 @@ def format_report_markdown(grading_path: Path, report_path: Path) -> str:
     summary = summarize(grading_schema, report)
 
     environment.globals.update(schema=grading_schema, summary=summary)
-    report_template = environment.get_template("template/grading/report.md")
+    report_template = environment.get_template(template_path.parts[-1])
     return report_template.render()

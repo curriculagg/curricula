@@ -140,7 +140,9 @@ def summarize(grading_path: Path, reports_path: Path):
         for student_username, student_summary in summary.students.items():
             count_tests_complete = len(filter_tests(student_summary.problems[problem_short].tasks_complete))
             if count_tests_complete:
-                scores.append(len(filter_tests(student_summary.problems[problem_short].tasks_passed)) / count_tests_complete)
+                count_tests_passed = len(filter_tests(student_summary.problems[problem_short].tasks_passed))
+                scores.append(count_tests_passed / count_tests_complete)
+                print(student_username, 100 * count_tests_passed / count_tests_complete)
 
         print(f"  Total scores: {len(scores)}")
         print(f"  Mean: {percent(statistics.mean(scores))}")
