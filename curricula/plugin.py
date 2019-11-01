@@ -2,6 +2,10 @@ import abc
 import argparse
 
 
+class PluginException(BaseException):
+    """Base exception."""
+
+
 class Plugin(abc.ABC):
     """All apps must meet these plugin criteria."""
 
@@ -22,5 +26,5 @@ class Plugin(abc.ABC):
 
     @classmethod
     @abc.abstractmethod
-    def run(cls, parser: argparse.ArgumentParser, args: argparse.Namespace):
+    def main(cls, parser: argparse.ArgumentParser, args: argparse.Namespace):
         """Run if the build app is chosen."""

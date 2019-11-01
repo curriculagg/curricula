@@ -63,12 +63,12 @@ class Manager:
 
         return Manager(graders)
 
-    def run(self, target_path: Path, **options) -> Dict[str, Report]:
+    def run_single(self, target_path: Path, **options) -> Dict[str, Report]:
         """Run all tests on a submission and return a dict of results."""
 
         reports = {}
         for problem_short, grader in self.graders.items():
-            context = Context(target_path, **options)
+            context = Context(target_path, options)
             reports[problem_short] = grader.run(context=context)
         return reports
 
@@ -77,5 +77,5 @@ class Manager:
 
         report_tree = {}
         for target_path in target_paths:
-            yield target_path, self.run(target_path, **options)
+            yield target_path, self.run_single(target_path, **options)
         return report_tree
