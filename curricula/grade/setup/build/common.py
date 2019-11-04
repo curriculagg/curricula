@@ -32,8 +32,8 @@ def build_makefile_executable(
         project_path: Path,
         make_options: Iterable[str] = (),
         log: Logger = None,
-        timeout: int = 5) -> BuildResult:
-    """Run make on a project directory."""
+        timeout: int = 30) -> BuildResult:
+    """Run make on the parent directory."""
 
     runtime = process.run("make", "-B", "-C", str(project_path), *make_options, timeout=timeout)
     if runtime.code != 0 or runtime.timeout is not None:

@@ -4,7 +4,7 @@ from pathlib import Path
 from curricula.grade.resource import Logger
 from . import CheckResult
 
-__all__ = ("check_file_exists", "search_file_by_name")
+__all__ = ("check_file_exists", "check_makefile_exists", "search_file_by_name")
 
 
 def check_file_exists(path: Path, log: Logger = None) -> CheckResult:
@@ -15,6 +15,20 @@ def check_file_exists(path: Path, log: Logger = None) -> CheckResult:
         return CheckResult(passed=False, error=f"can't find {path.parts[-1]}")
 
     log and log[2](f"Found {path.parts[-1]}")
+    return CheckResult(passed=True)
+
+
+def check_makefile_exists(path: Path, log: Logger = None) -> CheckResult:
+    """Check whether there is a makefile in a directory."""
+
+    lower_path = path.joinpath("makefile")
+    upper_path = path.joinpath("Makefile")
+
+    if not lower_path.exists() and not upper_path.exists():
+        log and log[2](f"Can't find {upper_path.parts[-1]}!")
+        return CheckResult(passed=False, error=f"can't find {upper_path.parts[-1]}")
+
+    log and log[2](f"Found {upper_path.parts[-1]}")
     return CheckResult(passed=True)
 
 
