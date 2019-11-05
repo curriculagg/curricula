@@ -1,8 +1,11 @@
 """Convenience functions for output manipulation."""
 
-from typing import List, Iterable, AnyStr, Union, Container
+from ...library.process import Runtime
+from ...test.correctness import CorrectnessResult
 
-__all__ = ("as_lines", "lines_match")
+from typing import List, Iterable, AnyStr, Union, Sized
+
+__all__ = ("as_lines", "lines_match", "compare_stdout")
 
 
 def as_lines(string: AnyStr) -> List[AnyStr]:
@@ -11,11 +14,11 @@ def as_lines(string: AnyStr) -> List[AnyStr]:
     return string.strip().split("\n" if isinstance(string, str) else b"\n")
 
 
-MaybeContainer = Union[Iterable, Container]
+AnyStrSequence = Union[Iterable[AnyStr], Sized]
 
 
-def lines_match(a: MaybeContainer[AnyStr], b: MaybeContainer[AnyStr]) -> bool:
-    """Check equality without order.
+def lines_match(a: AnyStrSequence, b: AnyStrSequence) -> bool:
+    """Check ordered equality.
 
     Returns a boolean indicating correctness and a list of errors
     encountered while checking.
@@ -30,3 +33,16 @@ def lines_match(a: MaybeContainer[AnyStr], b: MaybeContainer[AnyStr]) -> bool:
             return False
 
     return True
+
+
+def compare_stdout(runtime: Runtime, test_out_line_lists: List[List[bytes]]) -> CorrectnessResult:
+    """Check stdout for matching output."""
+
+    if runtime.timeout is not None:
+        return CorrectnessResult(complete=False, passed=False, runtime=runtime)
+
+    out_lines = runtime.stdout.strip().split(b"\n")
+    passed = any(lines_match(out_lines, test_out_lines) for test_out_lines in test_out_line_lists)
+    details = dict() if passed else dict(expected=[b"\n".join(lines).decode() for lines in test_out_line_lists])
+
+    return CorrectnessResult(passed=passed, runtime=runtime, **details)
