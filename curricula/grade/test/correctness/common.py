@@ -2,6 +2,7 @@
 
 from ...library.process import Runtime
 from ...test.correctness import CorrectnessResult
+from curricula.mapping.serialization import truncate
 
 from typing import List, Iterable, AnyStr, Union, Sized
 
@@ -35,7 +36,10 @@ def lines_match(a: AnyStrSequence, b: AnyStrSequence) -> bool:
     return True
 
 
-def compare_stdout(runtime: Runtime, test_out_line_lists: List[List[bytes]]) -> CorrectnessResult:
+def compare_stdout(
+        runtime: Runtime,
+        test_out_line_lists: List[List[bytes]],
+        truncate_to: int = 0) -> CorrectnessResult:
     """Check stdout for matching output."""
 
     if runtime.timeout is not None:
@@ -43,6 +47,10 @@ def compare_stdout(runtime: Runtime, test_out_line_lists: List[List[bytes]]) -> 
 
     out_lines = runtime.stdout.strip().split(b"\n")
     passed = any(lines_match(out_lines, test_out_lines) for test_out_lines in test_out_line_lists)
-    details = dict() if passed else dict(expected=[b"\n".join(lines).decode() for lines in test_out_line_lists])
+
+    expected_out_lines = []
+    for out_lines in test_out_line_lists:
+        expected_out_lines.append(truncate(b"\n".join(out_lines).decode(errors="replace"), length=truncate_to))
+    details = dict() if passed else dict(expected=expected_out_lines)
 
     return CorrectnessResult(passed=passed, runtime=runtime, **details)

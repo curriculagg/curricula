@@ -67,15 +67,12 @@ def topological_sort(*steps: List[Task]):
         tasks.extend(result)
 
 
-def run_tasks(tasks: List[Task], report: Report, resources: dict = None, ignore_result: bool = False):
+def run_tasks(tasks: List[Task], report: Report, resources: dict = None):
     """Execute sorted tasks, skipping if missing dependencies."""
 
     for task in tasks:
         satisfied = all(report.check(dependency) for dependency in task.dependencies)
         result = Incomplete(task) if not satisfied else task.run(resources or dict())
-        if ignore_result:
-            continue
-
         report.add(result)
         if satisfied:
             resources["log"].sneak("{} {}".format(task, result))
@@ -121,7 +118,7 @@ class Grader:
             if len(tasks) == 0:
                 continue
             print(f"Starting {name}")
-            run_tasks(tasks, report, resources, ignore_result=name == "teardown")
+            run_tasks(tasks, report, resources)
 
         return report
 

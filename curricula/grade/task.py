@@ -1,6 +1,6 @@
 import abc
 import inspect
-from typing import Dict, TypeVar, Generic, Any, Collection
+from typing import Dict, TypeVar, Generic, Any, Collection, Type
 from dataclasses import dataclass, field
 
 
@@ -74,8 +74,8 @@ class Task(Generic[TResult]):
         """Do the dependency injection for the runnable."""
 
         result = inject(resources, self.runnable)
-        if result is not None:
-            result.task = self
+        assert result, "Task must return a result"
+        result.task = self
         return result
 
     def dump(self):
