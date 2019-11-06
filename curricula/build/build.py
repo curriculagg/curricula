@@ -9,6 +9,7 @@ from ..mapping.models import Assignment, Problem
 from ..mapping.shared import Files, Paths
 from ..grade.manager import generate_grading_schema
 from ..library import files
+from ..library.utility import timed
 
 
 @dataclass(repr=False, eq=False)
@@ -200,6 +201,7 @@ def has_readme(item: Union[Problem, Assignment], *component: str) -> bool:
     return item.path.joinpath(*component, Files.README).exists()
 
 
+@timed("Build")
 def build(material_path: Path, **options):
     """Build the assignment at a given path."""
 
