@@ -3,8 +3,6 @@ import timeit
 from typing import Optional
 from dataclasses import dataclass, asdict
 
-from curricula.mapping.serialization import truncate
-
 
 @dataclass
 class Runtime:
@@ -32,12 +30,12 @@ class Runtime:
         self.stderr = stderr
         self.elapsed = elapsed
 
-    def dump(self, truncate_to: int = 500) -> dict:
+    def dump(self) -> dict:
         dump = asdict(self)
         if self.stdout is not None:
-            dump["stdout"] = truncate(self.stdout.decode(errors="replace"), length=truncate_to)
+            dump["stdout"] = self.stdout.decode(errors="replace")
         if self.stderr is not None:
-            dump["stderr"] = truncate(self.stderr.decode(errors="replace"), length=truncate_to)
+            dump["stderr"] = self.stderr.decode(errors="replace")
         return dump
 
 

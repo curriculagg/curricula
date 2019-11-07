@@ -1,5 +1,4 @@
 import argparse
-import json
 from pathlib import Path
 from contextlib import contextmanager
 from typing import TextIO, Dict, Iterable
@@ -9,6 +8,7 @@ from .report import Report
 from .tools.summarize import summarize
 from .tools.format import format_report_markdown
 from .tools.compare import compare_output
+from ..mapping.serialization import dump
 from ..plugin import Plugin, PluginException
 
 
@@ -29,7 +29,7 @@ def dump_reports(reports: Dict[str, Report], file: TextIO):
     """Write a dict of reports to a file."""
 
     data = {problem_short: report.dump() for problem_short, report in reports.items()}
-    json.dump(data, file, indent=2)
+    dump(data, file, indent=2)
 
 
 @contextmanager

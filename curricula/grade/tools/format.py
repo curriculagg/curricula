@@ -12,12 +12,13 @@ class ProblemSummary:
     tests_total: int = 0
     tests_correct: int = 0
     tests_incorrect: List[str] = field(default_factory=list)
+    failed_setup: bool = False
+    build_error: str = ""
 
 
 @dataclass
 class ReportSummary:
     problems: Dict[str, ProblemSummary] = field(default_factory=dict)
-    failed_setup: bool = False
 
 
 def summarize(grading_schema: dict, report: dict) -> ReportSummary:
@@ -29,7 +30,10 @@ def summarize(grading_schema: dict, report: dict) -> ReportSummary:
         for task_name, task in problem["tasks"].items():
             result = report[problem_short][task_name]
             if task["kind"] == "setup":
-                summary.failed_setup = True
+                if not result["complete"] or not result["passed"]:
+                    problem_summary.failed_setup = True
+                if result["kind"] == "build" and not result["passed"] and "runtime" in result["details"]:
+                    problem_summary.build_error = result["details"]["runtime"]["stderr"]
             elif task["kind"] == "test":
                 problem_summary.tests_total += 1
                 if result["complete"] and result["passed"]:

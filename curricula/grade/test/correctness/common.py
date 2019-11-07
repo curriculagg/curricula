@@ -2,7 +2,6 @@
 
 from ...library.process import Runtime
 from ...test.correctness import CorrectnessResult
-from curricula.mapping.serialization import truncate
 
 from typing import List, Iterable, AnyStr, Union, Sized
 
@@ -50,7 +49,7 @@ def compare_stdout(
 
     expected_out_lines = []
     for out_lines in test_out_line_lists:
-        expected_out_lines.append(truncate(b"\n".join(out_lines).decode(errors="replace"), length=truncate_to))
+        expected_out_lines.append(b"\n".join(out_lines).decode(errors="replace"))
     details = dict() if passed else dict(expected=expected_out_lines)
 
     return CorrectnessResult(passed=passed, runtime=runtime, **details)
