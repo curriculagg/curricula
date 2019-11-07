@@ -9,9 +9,9 @@ from ...mapping.shared import Files
 
 @dataclass
 class ProblemSummary:
-    problems_total: int = 0
-    problems_correct: int = 0
-    problems_incorrect: List[str] = field(default_factory=list)
+    tests_total: int = 0
+    tests_correct: int = 0
+    tests_incorrect: List[str] = field(default_factory=list)
 
 
 @dataclass
@@ -31,11 +31,11 @@ def summarize(grading_schema: dict, report: dict) -> ReportSummary:
             if task["kind"] == "setup":
                 summary.failed_setup = True
             elif task["kind"] == "test":
-                problem_summary.problems_total += 1
+                problem_summary.tests_total += 1
                 if result["complete"] and result["passed"]:
-                    problem_summary.problems_correct += 1
+                    problem_summary.tests_correct += 1
                 else:
-                    problem_summary.problems_incorrect.append(task_name)
+                    problem_summary.tests_incorrect.append(task_name)
     return summary
 
 
