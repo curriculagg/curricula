@@ -32,7 +32,7 @@ def summarize(grading_schema: dict, report: dict) -> ReportSummary:
             if task["kind"] == "setup":
                 if not result["complete"] or not result["passed"]:
                     problem_summary.failed_setup = True
-                if result["kind"] == "build" and not result["passed"] and "runtime" in result["details"]:
+                if "kind" in result and result["kind"] == "build" and not result["passed"] and "runtime" in result["details"]:
                     problem_summary.build_error = result["details"]["runtime"]["stderr"]
             elif task["kind"] == "test":
                 problem_summary.tests_total += 1

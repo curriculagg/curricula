@@ -1,6 +1,5 @@
 import argparse
 from pathlib import Path
-from contextlib import contextmanager
 from typing import TextIO, Dict, Iterable
 
 from .manager import Manager
@@ -32,22 +31,18 @@ def dump_reports(reports: Dict[str, Report], file: TextIO):
     dump(data, file, indent=2)
 
 
-@contextmanager
-def file_from_options(options: dict, default_file_name: str, *, batch: bool) -> TextIO:
+def path_from_options(options: dict, default_file_name: str, *, batch: bool) -> Path:
     """Return an open file and whether to close it after."""
 
     if options["file"] is not None:
         if batch:
             raise PluginException("Cannot use --file for batch grading, use --directory")
-        output_path = Path(options.pop("file"))
+        output_path = Path(options["file"])
         if not output_path.parent.exists():
             raise PluginException(f"Containing directory {output_path.parent} does not exist")
-        with output_path.open("w") as file:
-            yield file
+        return output_path
     elif options["directory"] is not None:
-        output_path = Path(options.pop("directory")).joinpath(default_file_name)
-        with output_path.open("w") as file:
-            yield file
+        return Path(options["directory"]).joinpath(default_file_name)
     else:
         raise PluginException("Output file or directory must be specified!")
 
@@ -67,16 +62,17 @@ class GradePlugin(Plugin):
         subparsers = parser.add_subparsers(required=True, dest="command")
 
         run_parser = subparsers.add_parser("run")
+        run_parser.add_argument("-s", "--skip", action="store_true", help="skip reports that have already been run")
         run_parser.add_argument("-q", "--quiet", action="store_true", help="whether to log test results")
         to_group = run_parser.add_mutually_exclusive_group(required=True)
-        to_group.add_argument("-f", "--file", help="output file for single report")
-        to_group.add_argument("-d", "--directory", help="where to write reports to if batched")
+        to_group.add_argument("-f", "--file", dest="file", help="output file for single report")
+        to_group.add_argument("-d", "--directory", dest="directory", help="where to write reports to if batched")
         run_parser.add_argument("targets", nargs="+", help="run tests on a single target")
 
         format_parser = subparsers.add_parser("format")
         to_group = format_parser.add_mutually_exclusive_group(required=True)
-        to_group.add_argument("-f", "--file", help="output file for single report")
-        to_group.add_argument("-d", "--directory", help="where to write reports to if batched")
+        to_group.add_argument("-f", "--file", dest="file", help="output file for single report")
+        to_group.add_argument("-d", "--directory", dest="directory", help="where to write reports to if batched")
         format_parser.add_argument("template", help="the markdown template to write the report to")
         format_parser.add_argument("reports", nargs="+", help="a variable number of reports to format")
 
@@ -85,8 +81,8 @@ class GradePlugin(Plugin):
 
         compare_parser = subparsers.add_parser("compare")
         to_group = compare_parser.add_mutually_exclusive_group(required=True)
-        to_group.add_argument("-f", "--file", help="output file for single report")
-        to_group.add_argument("-d", "--directory", help="where to write reports to if batched")
+        to_group.add_argument("-f", "--file", dest="file", help="output file for single report")
+        to_group.add_argument("-d", "--directory", dest="directory", help="where to write reports to if batched")
         compare_parser.add_argument("report", help="the report to compare")
 
     @classmethod
@@ -123,7 +119,7 @@ class GradePlugin(Plugin):
 
         manager = Manager.load(grading_path)
         reports = manager.run_single(target_path, **options)
-        with file_from_options(options, make_report_name(target_path, "json"), batch=False) as file:
+        with path_from_options(options, make_report_name(target_path, "json"), batch=False).open("w") as file:
             dump_reports(reports, file)
 
     @classmethod
@@ -131,8 +127,19 @@ class GradePlugin(Plugin):
         """Run a batch of reports."""
 
         manager = Manager.load(grading_path)
+        if options["skip"]:
+            new_target_paths = []
+            skip_count = 0
+            for target_path in target_paths:
+                if not path_from_options(options, make_report_name(target_path, "json"), batch=True).exists():
+                    new_target_paths.append(target_path)
+                else:
+                    skip_count += 1
+            print(f"Skipping {skip_count}")
+            target_paths = new_target_paths
+
         for target_path, reports in manager.run_batch(target_paths, **options):
-            with file_from_options(options, make_report_name(target_path, "json"), batch=True) as file:
+            with path_from_options(options, make_report_name(target_path, "json"), batch=True).open("w") as file:
                 dump_reports(reports, file)
 
     @classmethod
@@ -150,7 +157,7 @@ class GradePlugin(Plugin):
     def format_single(cls, grading_path: Path, template_path: Path, report_path: Path, options: dict):
         """Format a single report."""
 
-        with file_from_options(options, change_extension(report_path, "md"), batch=False) as file:
+        with path_from_options(options, change_extension(report_path, "md"), batch=False).open("w") as file:
             file.write(format_report_markdown(grading_path, template_path, report_path))
 
     @classmethod
@@ -172,5 +179,5 @@ class GradePlugin(Plugin):
         """Generate a comparison of two files."""
 
         report_path = Path(options.pop("report"))
-        with file_from_options(options, change_extension(report_path, "compare.html"), batch=False) as file:
+        with path_from_options(options, change_extension(report_path, "compare.html"), batch=False).open("w") as file:
             file.write(compare_output(report_path))

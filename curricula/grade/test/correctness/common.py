@@ -35,13 +35,10 @@ def lines_match(a: AnyStrSequence, b: AnyStrSequence) -> bool:
     return True
 
 
-def compare_stdout(
-        runtime: Runtime,
-        test_out_line_lists: List[List[bytes]],
-        truncate_to: int = 0) -> CorrectnessResult:
+def compare_stdout(runtime: Runtime, test_out_line_lists: List[List[bytes]]) -> CorrectnessResult:
     """Check stdout for matching output."""
 
-    if runtime.timeout is not None:
+    if runtime.error is not None:
         return CorrectnessResult(complete=False, passed=False, runtime=runtime)
 
     out_lines = runtime.stdout.strip().split(b"\n")

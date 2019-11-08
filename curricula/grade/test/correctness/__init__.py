@@ -17,8 +17,8 @@ class CorrectnessResult(TestResult):
         self.details = details
 
     def __str__(self):
-        if self.runtime.timeout is not None:
-            return "timed out in {} seconds".format(self.runtime.timeout)
+        if self.runtime.error is not None:
+            return "{} in {} seconds".format(self.runtime.error, self.runtime.elapsed)
         return "{} in {} seconds".format(
             "passed" if self.passed else "failed",
             round(self.runtime.elapsed, 5))

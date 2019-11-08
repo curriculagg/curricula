@@ -14,6 +14,7 @@ class Runtime:
     stdout: Optional[bytes]
     stderr: Optional[bytes]
     elapsed: Optional[float]
+    error: Optional[str]
 
     def __init__(self,
                  command: str,
@@ -22,13 +23,15 @@ class Runtime:
                  code: int = None,
                  stdout: bytes = None,
                  stderr: bytes = None,
-                 elapsed: float = None):
+                 elapsed: float = None,
+                 error: str = None):
         self.command = command
         self.timeout = timeout
         self.code = code
         self.stdout = stdout
         self.stderr = stderr
         self.elapsed = elapsed
+        self.error = error
 
     def dump(self) -> dict:
         dump = asdict(self)
@@ -48,7 +51,13 @@ def run(*args: str, timeout: float) -> Runtime:
     """
 
     # Spawn the process, access stdout and stderr
-    process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    try:
+        process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    except OSError as e:
+        message = "executable error"
+        if e.errno == 8:
+            message = "executable format error"
+        return Runtime(" ".join(args), error=message, elapsed=0)
 
     # Wait for the process to finish with timeout
     start = timeit.default_timer()
@@ -57,7 +66,7 @@ def run(*args: str, timeout: float) -> Runtime:
     except subprocess.TimeoutExpired:
         process.kill()
         # TODO: include any stdout and stderr that made it into the buffer
-        return Runtime(" ".join(args), timeout=timeout)
+        return Runtime(" ".join(args), timeout=timeout, error="timeout")
     elapsed = timeit.default_timer() - start
 
     return Runtime(" ".join(args),
