@@ -7,14 +7,14 @@ from . import CheckResult
 __all__ = ("check_file_exists", "check_makefile_exists", "search_file_by_name")
 
 
-def check_file_exists(path: Path, log: Logger = None) -> CheckResult:
+def check_file_exists(*paths: Path, log: Logger = None) -> CheckResult:
     """Check if a file is present in the directory."""
 
-    if not path.exists():
-        log and log[2](f"Can't find {path.parts[-1]}!")
-        return CheckResult(passed=False, error=f"can't find {path.parts[-1]}")
+    if not any(path.exists() for path in paths):
+        log and log[2](f"Can't find {paths[0].parts[-1]}!")
+        return CheckResult(passed=False, error=f"can't find {paths[0].parts[-1]}")
 
-    log and log[2](f"Found {path.parts[-1]}")
+    log and log[2](f"Found {paths[0].parts[-1]}")
     return CheckResult(passed=True)
 
 
