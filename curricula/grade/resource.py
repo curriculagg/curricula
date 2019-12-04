@@ -67,7 +67,7 @@ class Logger(Resource):
 class File(Resource):
     """A resource corresponding to a file."""
 
-    path: str
+    path: Path
 
 
 @dataclass
@@ -88,3 +88,25 @@ class Executable(Resource):
         """Count the instructions executed during runtime."""
 
         return callgrind.run(*self.args, *args, timeout=timeout)
+
+
+@dataclass
+class ExecutableFile(Executable, File):
+    """A local file that can be executed."""
+
+    def __init__(self, path: Path, *args: str):
+        super(File, self).__init__(path)
+        super(Executable, self).__init__(*args)
+
+    # TODO: fuck it, can't think of a worthwhile fancy way to keep the
+    # TODO: path updated and inside args[0]
+
+    def execute(self, *args: str, timeout: float) -> process.Runtime:
+        """Run the target with command line arguments."""
+
+        return process.run(str(self.path), *self.args, *args, timeout=timeout)
+
+    def count(self, *args: str, timeout: float) -> int:
+        """Count the instructions executed during runtime."""
+
+        return callgrind.run(str(self.path), *self.args, *args, timeout=timeout)
