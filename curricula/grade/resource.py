@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 
 from .library import callgrind, process
 
-__all__ = ("Resource", "Context", "Logger", "File", "Executable")
+__all__ = ("Resource", "Context", "Logger", "File", "Executable", "ExecutableFile")
 
 
 class Resource:
@@ -95,8 +95,9 @@ class ExecutableFile(Executable, File):
     """A local file that can be executed."""
 
     def __init__(self, path: Path, *args: str):
-        super(File, self).__init__(path)
-        super(Executable, self).__init__(*args)
+        super().__init__()
+        self.path = path
+        self.args = args
 
     # TODO: fuck it, can't think of a worthwhile fancy way to keep the
     # TODO: path updated and inside args[0]

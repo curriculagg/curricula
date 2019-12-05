@@ -2,12 +2,11 @@
 
 from ...library.process import Runtime
 from ...test.correctness import CorrectnessResult
-from ...resource import Executable
 
 from typing import List, Iterable, AnyStr, Union, Sized
 from pathlib import Path
 
-__all__ = ("as_lines", "lines_match", "compare_stdout")
+__all__ = ("as_lines", "lines_match", "compare_stdout", "make_make_test_in_out")
 
 
 def as_lines(string: AnyStr) -> List[AnyStr]:
