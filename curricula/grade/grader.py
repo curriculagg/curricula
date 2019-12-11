@@ -75,7 +75,8 @@ def run_tasks(tasks: List[Task], report: Report, resources: dict = None):
         result = Incomplete(task) if not satisfied else task.run(resources or dict())
         report.add(result)
         if satisfied:
-            resources["log"].sneak("{} {}".format(task, result))
+            symbol = "\u2713" if result.passed else "\u2717"
+            resources["log"].sneak(f"{symbol} {task} {result}")
             resources["log"].print(prefix=" " * 2)
 
 

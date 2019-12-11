@@ -1,12 +1,17 @@
 """Convenience functions for output manipulation."""
 
 from ...library.process import Runtime
-from ...test.correctness import CorrectnessResult
+from . import CorrectnessResult
 
-from typing import List, Iterable, AnyStr, Union, Sized
+from typing import List, Iterable, AnyStr, Union, Sized, Callable
 from pathlib import Path
 
-__all__ = ("as_lines", "lines_match", "compare_stdout", "make_make_test_in_out")
+__all__ = (
+    "as_lines",
+    "lines_match",
+    "compare_stdout",
+    "make_make_test_in_out",
+    "make_exit_test")
 
 
 def as_lines(string: AnyStr) -> List[AnyStr]:
@@ -58,7 +63,9 @@ def compare_stdout(runtime: Runtime, test_out_line_lists: List[List[bytes]]) -> 
     return CorrectnessResult(passed=passed, runtime=runtime, **details)
 
 
-def make_make_test_in_out(executable_name: str):
+def make_make_test_in_out(
+        executable_name: str,
+        ) -> Callable[..., Callable[[dict], CorrectnessResult]]:
     """Procedurally generate a test case generator (lol).
 
     The innermost function is the actual test case. The intermediate
@@ -68,7 +75,11 @@ def make_make_test_in_out(executable_name: str):
     injection system.
     """
 
-    def make_test_in_out(test_in_path: Path, test_out_path: Path, *test_out_paths: Path):
+    def make_test_in_out(
+            test_in_path: Path,
+            test_out_path: Path,
+            *test_out_paths: Path,
+            timeout: float = 1) -> Callable[[dict], CorrectnessResult]:
         """Create an input-output test case.
 
         Returns a test case that feeds the executable the in path on
@@ -83,13 +94,28 @@ def make_make_test_in_out(executable_name: str):
         for out_path in (test_out_path,) + test_out_paths:
             test_out_line_lists.append(out_path.read_bytes().strip().split(b"\n"))
 
-        def test_in_out(resources: dict):
+        def test_in_out(resources: dict) -> CorrectnessResult:
             """Actually test the executable."""
 
             executable = resources[executable_name]
-            runtime = executable.execute(str(test_in_path), timeout=1)
+            runtime = executable.execute(str(test_in_path), timeout=timeout)
             return compare_stdout(runtime, test_out_line_lists)
 
         return test_in_out
 
     return make_test_in_out
+
+
+# TODO: make_make can be made into a functools.partial wrapper
+
+def make_exit_test(executable_name: str, *args: str, timeout: float):
+    """Make a generic exit code test."""
+
+    def test(resources: dict) -> CorrectnessResult:
+        executable = resources[executable_name]
+        runtime = executable.execute(*args, timeout=timeout)
+        if runtime.error or runtime.code != 0:
+            return CorrectnessResult(passed=False, runtime=runtime)
+        return CorrectnessResult(passed=True, runtime=runtime)
+
+    return test

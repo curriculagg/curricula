@@ -74,7 +74,7 @@ class File(Resource):
 class Executable(Resource):
     """A runnable testing target program."""
 
-    args: Tuple[str]
+    args: Tuple[str, ...]
 
     def __init__(self, *args: str):
         self.args = args
@@ -97,7 +97,7 @@ class ExecutableFile(Executable, File):
     def __init__(self, path: Path, *args: str):
         super().__init__()
         self.path = path
-        self.args = args
+        self.args = (str(path),) + args
 
     # TODO: fuck it, can't think of a worthwhile fancy way to keep the
     # TODO: path updated and inside args[0]
@@ -105,9 +105,9 @@ class ExecutableFile(Executable, File):
     def execute(self, *args: str, timeout: float) -> process.Runtime:
         """Run the target with command line arguments."""
 
-        return process.run(str(self.path), *self.args, *args, timeout=timeout)
+        return process.run(*self.args, *args, timeout=timeout)
 
     def count(self, *args: str, timeout: float) -> int:
         """Count the instructions executed during runtime."""
 
-        return callgrind.run(str(self.path), *self.args, *args, timeout=timeout)
+        return callgrind.run(*self.args, *args, timeout=timeout)

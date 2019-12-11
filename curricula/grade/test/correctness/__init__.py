@@ -1,29 +1,34 @@
 from dataclasses import dataclass, field
 
 from .. import TestResult
-from ...library.process import Runtime
+
+# TODO: this is getting fucked up
 
 
 @dataclass
 class CorrectnessResult(TestResult):
     """The result of a correctness case."""
 
-    runtime: Runtime
     details: dict = field(default_factory=dict)
 
-    def __init__(self, passed: bool, runtime: Runtime, complete: bool = True, **details):
+    def __init__(self, passed: bool, complete: bool = True, **details):
         super().__init__(complete=complete, passed=passed)
-        self.runtime = runtime
         self.details = details
 
     def __str__(self):
-        if self.runtime.error is not None:
-            return "{} in {} seconds".format(self.runtime.error, self.runtime.elapsed)
-        return "{} in {} seconds".format(
-            "passed" if self.passed else "failed",
-            round(self.runtime.elapsed, 5))
+        runtime = self.details.get("runtime")
+        passed_text = "passed" if self.passed else "failed"
+        if runtime is not None:
+            if runtime.error is not None:
+                return f"{runtime.error} in {round(runtime.elapsed, 5)} seconds"
+            return f"{passed_text} in {round(runtime.elapsed, 5)} seconds"
+        return passed_text
 
     def dump(self) -> dict:
         dump = super().dump()
-        dump.update(kind="correctness", runtime=self.runtime.dump(), details=self.details)
+        details = self.details.copy()
+        runtime = self.details.get("runtime")
+        if runtime is not None:
+            details["runtime"] = runtime.dump()
+        dump.update(kind="correctness", details=details)
         return dump

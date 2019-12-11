@@ -14,6 +14,7 @@ class TaskSummary:
     task: dict
     students_complete: List[dict] = field(default_factory=list)
     students_passed: List[dict] = field(default_factory=list)
+    students_timeout: List[dict] = field(default_factory=list)
 
 
 @dataclass
@@ -93,6 +94,8 @@ def build_student_summary(summary: Summary, report_path: Path):
             if result["passed"]:
                 task_summary.students_passed.append(student_summary.student)
                 student_summary.problems[problem_short].tasks_passed.append(task)
+            if "runtime" in result and result["runtime"]["timeout"] is not None:
+                task_summary.students_timeout.append(student_summary.student)
 
     return student_summary
 
@@ -133,7 +136,7 @@ def summarize(grading_path: Path, reports_path: Path):
     for problem_short, problem_summary in summary.problems.items():
         print(f"  Problem: {problem_short}")
         for task_name, task_summary in problem_summary.tasks.items():
-            print(f"    {task_name}: {percent(len(task_summary.students_passed), len(task_summary.students_complete))}")
+            print(f"    {task_name}: {percent(len(task_summary.students_passed), len(task_summary.students_complete))} ({len(task_summary.students_timeout)} timeout)")
 
     for problem_short in summary.problems.keys():
         scores = []
@@ -142,7 +145,7 @@ def summarize(grading_path: Path, reports_path: Path):
             if count_tests_complete:
                 count_tests_passed = len(filter_tests(student_summary.problems[problem_short].tasks_passed))
                 scores.append(count_tests_passed / count_tests_complete)
-                print(student_username, 100 * count_tests_passed / count_tests_complete)
+                # print(student_username, 100 * count_tests_passed / count_tests_complete)
 
         print(f"  Total scores: {len(scores)}")
         print(f"  Mean: {percent(statistics.mean(scores))}")
