@@ -134,11 +134,12 @@ def summarize(grading_path: Path, reports_path: Path):
 
     print("Problem reports:")
     for problem_short, problem_summary in summary.problems.items():
-        print(f"  Problem: {problem_short}")
+        print(f"Problem: {problem_short}")
+
+        print("  Problems")
         for task_name, task_summary in problem_summary.tasks.items():
             print(f"    {task_name}: {percent(len(task_summary.students_passed), len(task_summary.students_complete))} ({len(task_summary.students_timeout)} timeout)")
 
-    for problem_short in summary.problems.keys():
         scores = []
         for student_username, student_summary in summary.students.items():
             count_tests_complete = len(filter_tests(student_summary.problems[problem_short].tasks_complete))
@@ -147,8 +148,12 @@ def summarize(grading_path: Path, reports_path: Path):
                 scores.append(count_tests_passed / count_tests_complete)
                 # print(student_username, 100 * count_tests_passed / count_tests_complete)
 
-        print(f"  Total scores: {len(scores)}")
-        print(f"  Mean: {percent(statistics.mean(scores))}")
-        print(f"  Median: {percent(statistics.median(scores))}")
-        print(f"  Perfect: {percent(len(list(filter(lambda x: x == 1, scores))), len(scores))}")
-        print(f"  Scores: {list(scores)}")
+        print("  Statistics")
+        print(f"    Total scores: {len(scores)}")
+        print(f"    Mean: {percent(statistics.mean(scores))}")
+        print(f"    Median: {percent(statistics.median(scores))}")
+        print(f"    Perfect: {percent(len(list(filter(lambda x: x == 1, scores))), len(scores))}")
+        # print(f"    Scores: {list(scores)}")
+        for report_name in summary.failed_setup:
+            print(report_name)
+

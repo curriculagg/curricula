@@ -20,8 +20,8 @@ class CorrectnessResult(TestResult):
         passed_text = "passed" if self.passed else "failed"
         if runtime is not None:
             if runtime.error is not None:
-                return f"{runtime.error} in {round(runtime.elapsed, 5)} seconds"
-            return f"{passed_text} in {round(runtime.elapsed, 5)} seconds"
+                return f"{runtime.error} in {runtime.elapsed} seconds"
+            return f"{passed_text} in {runtime.elapsed} seconds"
         return passed_text
 
     def dump(self) -> dict:
