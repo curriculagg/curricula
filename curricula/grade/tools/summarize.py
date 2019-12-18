@@ -154,6 +154,7 @@ def summarize(grading_path: Path, reports_path: Path):
         print(f"    Median: {percent(statistics.median(scores))}")
         print(f"    Perfect: {percent(len(list(filter(lambda x: x == 1, scores))), len(scores))}")
         # print(f"    Scores: {list(scores)}")
-        for report_name in summary.failed_setup:
-            print(report_name)
+
+    for report_name in summary.failed_setup:
+        print(report_name)
 
