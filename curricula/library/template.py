@@ -1,15 +1,18 @@
 import jinja2
 from decimal import Decimal
 from pathlib import Path
+from typing import List
 
 root = Path(__file__).absolute().parent
 
 
-def percentage(d: float) -> str:
+def percentage(d: float, digits: int = 1) -> str:
+    """Convert a float to a nice-looking percentage."""
+
     converted = Decimal(str(d)) * 100
     if converted == converted.to_integral_value():
         return f"{int(converted)}%"
-    return f"{round(converted, 1)}%"
+    return f"{round(converted, digits)}%"
 
 
 JINJA2_FILTERS = {
@@ -19,15 +22,13 @@ JINJA2_FILTERS = {
 }
 
 
-def jinja2_create_environment(custom_template_path: Path = None, **options) -> jinja2.Environment:
+def jinja2_create_environment(template_path: Path, *template_paths: List[Path], **options) -> jinja2.Environment:
     """Configure a jinja2 environment."""
 
-    if custom_template_path is None:
-        loader = jinja2.FileSystemLoader(str(root))
-    else:
-        loader = jinja2.ChoiceLoader([
-            jinja2.FileSystemLoader(str(root)),
-            jinja2.FileSystemLoader(str(custom_template_path))])
+    print(str(template_path))
+    loader = jinja2.ChoiceLoader([
+        jinja2.FileSystemLoader(str(template_path)),
+        *map(lambda p: jinja2.FileSystemLoader(str(p)), template_paths)])
 
     environment = jinja2.Environment(
         loader=loader,
@@ -40,5 +41,8 @@ def jinja2_create_environment(custom_template_path: Path = None, **options) -> j
         autoescape=False,
         keep_trailing_newline=True,
         **options)
+
+    # Custom filters
     environment.filters.update(JINJA2_FILTERS)
+
     return environment

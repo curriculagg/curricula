@@ -4,7 +4,7 @@ from pathlib import Path
 from dataclasses import dataclass, field
 
 from ...template import jinja2_create_environment
-from ...mapping.shared import Files
+from ...core.shared import Files
 
 
 @dataclass

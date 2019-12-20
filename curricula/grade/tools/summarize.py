@@ -4,7 +4,7 @@ from typing import List, Dict, Iterable, Union, Set
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from ...mapping.shared import Files
+from ...core.shared import Files
 
 
 @dataclass

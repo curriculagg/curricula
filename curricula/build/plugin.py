@@ -5,7 +5,7 @@ from pathlib import Path
 
 from . import build
 from ..plugin import Plugin
-from ..mapping.validate import validate
+from ..core.validate import validate
 
 
 class BuildPlugin(Plugin):

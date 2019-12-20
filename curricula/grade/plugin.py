@@ -7,7 +7,7 @@ from .report import Report
 from .tools.summarize import summarize
 from .tools.format import format_report_markdown
 from .tools.compare import compare_output
-from ..mapping.serialization import dump
+from ..core.serialization import dump
 from ..plugin import Plugin, PluginException
 
 

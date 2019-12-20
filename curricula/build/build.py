@@ -4,12 +4,14 @@ from pathlib import Path
 from typing import Dict, Union, List, Callable
 from dataclasses import dataclass
 
-from ..template import jinja2_create_environment
-from ..mapping.models import Assignment, Problem
-from ..mapping.shared import Files, Paths
+from ..core.models import Assignment, Problem
+from ..core.shared import Files, Paths
 from ..grade.manager import generate_grading_schema
+from ..library.template import jinja2_create_environment
 from ..library import files
 from ..library.utility import timed
+
+root = Path(__file__).absolute().parent
 
 
 @dataclass(repr=False, eq=False)
@@ -17,7 +19,8 @@ class Context:
     """Build context."""
 
     environment: jinja2.Environment
-    material_path: Path
+    assignment_path: Path
+    artifacts_path: Path
     options: Dict[str, str]
 
 
@@ -91,19 +94,19 @@ def aggregate_contents(
     return copied_paths
 
 
-def build_instructions(context: Context, assignment: Assignment, path: Path):
+def build_instructions(context: Context, assignment: Assignment):
     """Build all site components."""
 
-    instructions_path = path.joinpath(Paths.INSTRUCTIONS)
+    instructions_path = context.artifacts_path.joinpath(Paths.INSTRUCTIONS)
     instructions_path.mkdir(exist_ok=True)
     compile_readme(context, assignment, "instructions/assignment.md", instructions_path)
     merge_contents(assignment, Paths.ASSETS, instructions_path.joinpath(Paths.ASSETS))
 
 
-def build_resources(context: Context, assignment: Assignment, path: Path):
+def build_resources(context: Context, assignment: Assignment):
     """Compile resources files."""
 
-    resources_path = path.joinpath(Paths.RESOURCES)
+    resources_path = context.artifacts_path.joinpath(Paths.RESOURCES)
     resources_path.mkdir(exist_ok=True)
     aggregate_contents(assignment, Paths.RESOURCES, resources_path)
 
@@ -129,10 +132,10 @@ def build_solution_code(assignment: Assignment, path: Path):
                 files.copy(relative_source_path, relative_destination_path)
 
 
-def build_solution(context: Context, assignment: Assignment, path: Path):
+def build_solution(context: Context, assignment: Assignment):
     """Compile cheatsheets."""
 
-    solution_path = path.joinpath(Paths.SOLUTION)
+    solution_path = context.artifacts_path.joinpath(Paths.SOLUTION)
     solution_path.mkdir(exist_ok=True)
     build_solution_readme(context, assignment, solution_path)
     build_solution_code(assignment, solution_path)
@@ -153,10 +156,10 @@ def build_grading_schema(assignment: Assignment, path: Path):
         json.dump(generate_grading_schema(path, assignment), file, indent=2)
 
 
-def build_grading(context: Context, assignment: Assignment, path: Path):
+def build_grading(context: Context, assignment: Assignment):
     """Compile rubrics."""
 
-    grading_path = path.joinpath(Paths.GRADING)
+    grading_path = context.artifacts_path.joinpath(Paths.GRADING)
     grading_path.mkdir(exist_ok=True)
     build_grading_readme(context, assignment, grading_path)
     copied_paths = aggregate_contents(
@@ -187,7 +190,7 @@ def get_readme(environment: jinja2.Environment, item: Union[Problem, Assignment]
     """Render a README with options for nested path."""
 
     context: Context = environment.globals["context"]  # Not jinja2 context, our context
-    readme_path = item.path.joinpath(*component, Files.README).relative_to(context.material_path)
+    readme_path = item.path.joinpath(*component, Files.README).relative_to(context.assignment_path)
 
     if isinstance(item, Assignment):
         return environment.get_template(str(readme_path)).render(assignment=item)
@@ -202,27 +205,21 @@ def has_readme(item: Union[Problem, Assignment], *component: str) -> bool:
 
 
 @timed("Build")
-def build(material_path: Path, **options):
+def build(assignment_path: Path, artifacts_path: Path, **options):
     """Build the assignment at a given path."""
 
-    if not material_path.is_dir():
-        raise ValueError("material path does not exist!")
+    if not assignment_path.is_dir():
+        raise ValueError("assignment path does not exist!")
 
-    environment = jinja2_create_environment(custom_template_path=material_path)
+    environment = jinja2_create_environment(assignment_path, root)
     environment.filters.update(get_readme=get_readme, has_readme=has_readme)
-    context = Context(environment, material_path, options)
+    context = Context(environment, assignment_path, artifacts_path, options)
     environment.globals["context"] = context
 
-    artifacts_path = material_path.parent.joinpath("artifacts")
-    artifacts_path.mkdir(exist_ok=True)
+    artifacts_path.mkdir(exist_ok=True, parents=True)
 
-    for assignment_path in Paths.glob_assignments(material_path):
-        if options.get("assignment") and assignment_path.parts[-1] not in options.get("assignment"):
-            continue
+    assignment = Assignment.load(assignment_path)
+    files.replace_directory(artifacts_path)
 
-        assignment = Assignment.load(assignment_path)
-        assignment_artifacts_path = artifacts_path.joinpath(assignment_path.parts[-1])
-        files.replace_directory(assignment_artifacts_path)
-
-        for step in BUILD_STEPS:
-            step(context, assignment, assignment_artifacts_path)
+    for step in BUILD_STEPS:
+        step(context, assignment)

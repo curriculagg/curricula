@@ -8,8 +8,8 @@ from dataclasses import dataclass
 from .grader import Grader
 from .report import Report
 from .resource import Context
-from ..mapping.shared import *
-from ..mapping.models import Assignment
+from ..core.shared import *
+from ..core.models import Assignment
 
 
 def import_grader(tests_path: Path, grader_name: str = "grader") -> Grader:
