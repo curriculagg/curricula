@@ -1,6 +1,6 @@
+import timeit
 from typing import Callable
 from functools import wraps
-import timeit
 
 
 def name_from_doc(test: Callable):
@@ -16,7 +16,7 @@ def name_from_doc(test: Callable):
     return None
 
 
-def timed(name: str = None):
+def timed(name: str = "", printer: Callable[[str], None] = print):
     """Add a timer around a function."""
 
     def wrapper(func):
@@ -26,7 +26,7 @@ def timed(name: str = None):
             start = timeit.default_timer()
             result = func(*args, **kwargs)
             elapsed = timeit.default_timer() - start
-            print((name + " f" if name is not None else "F") + "inished in", round(elapsed, 5), "seconds")
+            printer(f"{name} finished in {round(elapsed, 5)} seconds")
             return result
 
         return wrapped

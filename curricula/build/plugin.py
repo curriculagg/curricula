@@ -1,12 +1,14 @@
-import sys
 import argparse
 import jsonschema
+import logging
 from pathlib import Path
 
 from . import build
 from ..plugin import Plugin
 from ..core.validate import validate
 from ..library.log import add_logging_arguments, handle_logging_arguments
+
+log = logging.getLogger("curricula")
 
 
 class BuildPlugin(Plugin):
@@ -32,7 +34,7 @@ class BuildPlugin(Plugin):
         options = vars(args)
         options.pop("app")
 
-        assignment_path = Path(options.pop("assignment")).absolute()
+        assignment_path = Path(options.pop("assignment"))
         artifacts_path = Path().joinpath("artifacts").joinpath(assignment_path.parts[-1])
 
         try:
@@ -45,5 +47,5 @@ class BuildPlugin(Plugin):
         try:
             build.build(assignment_path, artifacts_path, **options)
         except ValueError as exception:
-            print(f"Build error: {exception}", file=sys.stderr)
+            log.error(exception)
             exit(1)

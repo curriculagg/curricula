@@ -1,9 +1,11 @@
 import jinja2
+import logging
 from decimal import Decimal
 from pathlib import Path
 from typing import List
 
 root = Path(__file__).absolute().parent
+log = logging.getLogger("curricula")
 
 
 def percentage(d: float, digits: int = 1) -> str:
@@ -25,11 +27,11 @@ JINJA2_FILTERS = {
 def jinja2_create_environment(template_path: Path, *template_paths: List[Path], **options) -> jinja2.Environment:
     """Configure a jinja2 environment."""
 
-    print(str(template_path))
+    log.debug("creating jinja2 environment")
+
     loader = jinja2.ChoiceLoader([
         jinja2.FileSystemLoader(str(template_path)),
         *map(lambda p: jinja2.FileSystemLoader(str(p)), template_paths)])
-
     environment = jinja2.Environment(
         loader=loader,
         block_start_string="[%",

@@ -37,6 +37,7 @@ def compile_readme(
     different if the provided destination is a directory.
     """
 
+    log.debug(f"compiling readme for {destination_path}")
     template = context.environment.get_template(f"template/{template_relative_path}")
     if destination_path.is_dir():
         destination_path = destination_path.joinpath(Files.README)
@@ -51,6 +52,8 @@ def merge_contents(
         destination_path: Path,
         filter_problems: Callable[[Problem], bool] = None):
     """Compile subdirectories from problems into a single directory."""
+
+    log.debug(f"merging contents to {destination_path}")
 
     destination_path.mkdir(exist_ok=True)
 
@@ -77,6 +80,8 @@ def aggregate_contents(
     copied into the destination.
     """
 
+    log.debug(f"aggregating contents to {destination_path}")
+
     destination_path.mkdir(exist_ok=True)
 
     # First compile assignment-wide assets
@@ -99,6 +104,7 @@ def aggregate_contents(
 def build_instructions(context: Context, assignment: Assignment):
     """Build all site components."""
 
+    log.debug("compiling instructions")
     instructions_path = context.artifacts_path.joinpath(Paths.INSTRUCTIONS)
     instructions_path.mkdir(exist_ok=True)
     compile_readme(context, assignment, "instructions/assignment.md", instructions_path)
@@ -108,6 +114,7 @@ def build_instructions(context: Context, assignment: Assignment):
 def build_resources(context: Context, assignment: Assignment):
     """Compile resources files."""
 
+    log.debug("compiling resources")
     resources_path = context.artifacts_path.joinpath(Paths.RESOURCES)
     resources_path.mkdir(exist_ok=True)
     aggregate_contents(assignment, Paths.RESOURCES, resources_path)
@@ -116,6 +123,7 @@ def build_resources(context: Context, assignment: Assignment):
 def build_solution_readme(context: Context, assignment: Assignment, path: Path):
     """Generate the composite README."""
 
+    log.debug("building cheat sheet")
     assignment_template = context.environment.get_template("template/solution/assignment.md")
     with path.joinpath(Files.README).open("w") as file:
         file.write(assignment_template.render(assignment=assignment))
@@ -124,6 +132,7 @@ def build_solution_readme(context: Context, assignment: Assignment, path: Path):
 def build_solution_code(assignment: Assignment, path: Path):
     """Compile only submission files of the solution."""
 
+    log.debug("assembling solution code")
     for problem in assignment.problems:
         problem_solution_path = problem.path.joinpath(Paths.SOLUTION)
         if problem_solution_path.exists() and problem.submission:
@@ -137,6 +146,7 @@ def build_solution_code(assignment: Assignment, path: Path):
 def build_solution(context: Context, assignment: Assignment):
     """Compile cheatsheets."""
 
+    log.debug("compiling solution")
     solution_path = context.artifacts_path.joinpath(Paths.SOLUTION)
     solution_path.mkdir(exist_ok=True)
     build_solution_readme(context, assignment, solution_path)
@@ -146,6 +156,7 @@ def build_solution(context: Context, assignment: Assignment):
 def build_grading_readme(context: Context, assignment: Assignment, path: Path):
     """Aggregate README for rubric."""
 
+    log.debug("building grading instructions")
     assignment_template = context.environment.get_template("template/grading/assignment.md")
     with path.joinpath(Files.README).open("w") as file:
         file.write(assignment_template.render(assignment=assignment))
@@ -154,12 +165,15 @@ def build_grading_readme(context: Context, assignment: Assignment, path: Path):
 def build_grading_schema(assignment: Assignment, path: Path):
     """Generate a JSON data file with grading metadata."""
 
+    log.debug("building grading schema")
     with path.joinpath(Files.GRADING).open("w") as file:
         json.dump(generate_grading_schema(path, assignment), file, indent=2)
 
 
 def build_grading(context: Context, assignment: Assignment):
     """Compile rubrics."""
+
+    log.debug("compiling grading")
 
     grading_path = context.artifacts_path.joinpath(Paths.GRADING)
     grading_path.mkdir(exist_ok=True)
@@ -177,14 +191,6 @@ def build_grading(context: Context, assignment: Assignment):
             files.delete(readme_path)
 
     build_grading_schema(assignment, grading_path)
-
-
-BUILD_STEPS = (
-    build_instructions,
-    build_resources,
-    build_solution,
-    build_grading
-)
 
 
 @jinja2.environmentfilter
@@ -206,14 +212,23 @@ def has_readme(item: Union[Problem, Assignment], *component: str) -> bool:
     return item.path.joinpath(*component, Files.README).exists()
 
 
-@timed("Build")
+BUILD_STEPS = (
+    build_instructions,
+    build_resources,
+    build_solution,
+    build_grading
+)
+
+
+@timed("build", printer=log.info)
 def build(assignment_path: Path, artifacts_path: Path, **options):
     """Build the assignment at a given path."""
+
+    log.info(f"building {assignment_path} to {artifacts_path}")
 
     if not assignment_path.is_dir():
         raise ValueError("assignment path does not exist!")
 
-    log.debug("creating jinja2 environment")
     environment = jinja2_create_environment(assignment_path, root)
     environment.filters.update(get_readme=get_readme, has_readme=has_readme)
 
