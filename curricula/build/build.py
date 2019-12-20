@@ -240,7 +240,6 @@ def build(assignment_path: Path, artifacts_path: Path, **options):
 
     log.debug("loading assignment")
     assignment = Assignment.load(assignment_path)
-    files.replace_directory(artifacts_path)
 
     for step in BUILD_STEPS:
         step(context, assignment)

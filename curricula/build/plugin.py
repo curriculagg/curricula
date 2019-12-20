@@ -21,8 +21,10 @@ class BuildPlugin(Plugin):
     def setup(cls, parser: argparse.ArgumentParser):
         """Create a subparser for the build app."""
 
-        parser.add_argument("assignment", help="Path to the root material directory")
-        parser.add_argument("-c", "--check", dest="check", action="store_true", help="Only check")
+        parser.add_argument("assignment", help="path to the assignment directory")
+        parser.add_argument("-c", "--check", action="store_true", help="only check JSON manifests")
+        parser.add_argument("-d", "--destination", help="a directory to write the artifacts to")
+        parser.add_argument("-i", "--inside", action="store_true", help="make the artifacts directory in destination")
         add_logging_arguments(parser)
 
     @classmethod
@@ -33,9 +35,10 @@ class BuildPlugin(Plugin):
 
         options = vars(args)
         options.pop("app")
-
         assignment_path = Path(options.pop("assignment"))
-        artifacts_path = Path().joinpath("artifacts").joinpath(assignment_path.parts[-1])
+        artifacts_path = Path(options.pop("destination"))
+        if options.pop("inside"):
+            artifacts_path = artifacts_path.joinpath(assignment_path.parts[-1])
 
         try:
             validate(assignment_path)
