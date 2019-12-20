@@ -50,8 +50,7 @@ def validate_assignment(assignment_path: Path):
     validate_assignment_json(assignment_path)
 
 
-def validate(material_path: Path):
+def validate(assignment_path: Path):
     """Do a bunch of checks """
 
-    for assignment_path in Paths.glob_assignments(material_path):
-        validate_assignment(assignment_path)
+    validate_assignment(assignment_path)

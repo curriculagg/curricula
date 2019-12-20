@@ -1,5 +1,6 @@
 import jinja2
 import json
+import logging
 from pathlib import Path
 from typing import Dict, Union, List, Callable
 from dataclasses import dataclass
@@ -12,6 +13,7 @@ from ..library import files
 from ..library.utility import timed
 
 root = Path(__file__).absolute().parent
+log = logging.getLogger("curricula")
 
 
 @dataclass(repr=False, eq=False)
@@ -211,13 +213,17 @@ def build(assignment_path: Path, artifacts_path: Path, **options):
     if not assignment_path.is_dir():
         raise ValueError("assignment path does not exist!")
 
+    log.debug("creating jinja2 environment")
     environment = jinja2_create_environment(assignment_path, root)
     environment.filters.update(get_readme=get_readme, has_readme=has_readme)
+
+    log.debug("setting context")
     context = Context(environment, assignment_path, artifacts_path, options)
     environment.globals["context"] = context
 
     artifacts_path.mkdir(exist_ok=True, parents=True)
 
+    log.debug("loading assignment")
     assignment = Assignment.load(assignment_path)
     files.replace_directory(artifacts_path)
 

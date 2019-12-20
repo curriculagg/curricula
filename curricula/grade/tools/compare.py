@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from curricula.template import jinja2_create_environment
+from ...library.template import jinja2_create_environment
 
 ROOT = Path(__file__).absolute().parent
 

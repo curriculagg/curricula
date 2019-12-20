@@ -3,8 +3,9 @@ from typing import Dict, List
 from pathlib import Path
 from dataclasses import dataclass, field
 
-from ...template import jinja2_create_environment
+from ...library.template import jinja2_create_environment
 from ...core.shared import Files
+from .. import root as grade_root
 
 
 @dataclass
@@ -46,7 +47,7 @@ def summarize(grading_schema: dict, report: dict) -> ReportSummary:
 def format_report_markdown(grading_path: Path, template_path: Path, report_path: Path) -> str:
     """Return a formatted markdown report."""
 
-    environment = jinja2_create_environment()
+    environment = jinja2_create_environment(grade_root)
     with grading_path.joinpath(Files.GRADING).open() as file:
         grading_schema = json.load(file)
     with report_path.open() as file:

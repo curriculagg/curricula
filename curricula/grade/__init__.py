@@ -5,3 +5,7 @@ correctness, efficiency, and style. It includes tools for testing the
 output of the code under various conditions, measuring its runtime
 performance and memory usage, and running style checks.
 """
+
+from pathlib import Path
+
+root = Path(__file__).absolute().parent
