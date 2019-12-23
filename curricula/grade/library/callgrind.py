@@ -1,11 +1,12 @@
 import os
 import tempfile
-
 from pathlib import Path
 from typing import Optional
 
 from . import process
 from ...library.files import delete_file
+
+__all__ = ("run",)
 
 
 def read_last_line(path: Path) -> str:
