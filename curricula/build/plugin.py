@@ -28,7 +28,7 @@ class BuildPlugin(Plugin):
         add_logging_arguments(parser)
 
     @classmethod
-    def main(cls, parser: argparse.ArgumentParser, args: argparse.Namespace):
+    def main(cls, parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
         """Run if the build app is chosen."""
 
         handle_logging_arguments(parser, args)
@@ -43,12 +43,12 @@ class BuildPlugin(Plugin):
         try:
             validate(assignment_path)
         except jsonschema.ValidationError:
-            return
+            return 1
         if options.pop("check"):
-            return
+            return 0
 
         try:
             build.build(assignment_path, artifacts_path, **options)
         except ValueError as exception:
             log.error(exception)
-            exit(1)
+            return 1

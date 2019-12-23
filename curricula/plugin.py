@@ -26,5 +26,5 @@ class Plugin(abc.ABC):
 
     @classmethod
     @abc.abstractmethod
-    def main(cls, parser: argparse.ArgumentParser, args: argparse.Namespace):
+    def main(cls, parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
         """Run if the build app is chosen."""
