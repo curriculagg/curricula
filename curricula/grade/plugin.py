@@ -9,7 +9,7 @@ from .tools.format import format_report_markdown
 from .tools.compare import compare_output
 from ..core.serialization import dump
 from ..plugin import Plugin, PluginException
-from ..library.log import add_logging_arguments, handle_logging_arguments
+from ..library.log import log
 
 
 def make_report_name(target_path: Path, extension: str) -> str:
@@ -59,8 +59,6 @@ class GradePlugin(Plugin):
         """Setup argument parser for grade command."""
 
         parser.add_argument("grading", help="built grading directory artifact")
-        add_logging_arguments(parser)
-
         subparsers = parser.add_subparsers(required=True, dest="command")
 
         run_parser = subparsers.add_parser("run")
@@ -91,8 +89,6 @@ class GradePlugin(Plugin):
     def main(cls, parser: argparse.ArgumentParser, args: argparse.Namespace):
         """Start the grader."""
 
-        handle_logging_arguments(parser, args)
-
         options = vars(args)
         options.pop("app")
 
@@ -121,6 +117,7 @@ class GradePlugin(Plugin):
     def run_single(cls, grading_path: Path, target_path: Path, options: dict):
         """Grade a single file, write to file output."""
 
+        log.debug(f"running single target {target_path}")
         manager = Manager.load(grading_path)
         reports = manager.run_single(target_path, **options)
         with path_from_options(options, make_report_name(target_path, "json"), batch=False).open("w") as file:
@@ -130,8 +127,13 @@ class GradePlugin(Plugin):
     def run_batch(cls, grading_path: Path, target_paths: Iterable[Path], options: dict):
         """Run a batch of reports."""
 
+        log.debug("running batch targets")
+
         manager = Manager.load(grading_path)
+
+        # Check which reports have already been run if flagged
         if options["skip"]:
+            log.debug("determining reports to skip")
             new_target_paths = []
             skip_count = 0
             for target_path in target_paths:
@@ -139,7 +141,7 @@ class GradePlugin(Plugin):
                     new_target_paths.append(target_path)
                 else:
                     skip_count += 1
-            print(f"Skipping {skip_count}")
+            log.info(f"found {skip_count} reports to skip")
             target_paths = new_target_paths
 
         for target_path, reports in manager.run_batch(target_paths, **options):
@@ -152,9 +154,11 @@ class GradePlugin(Plugin):
 
         template_path = Path(options.pop("template"))
         if len(options["reports"]) == 1:
+            log.debug(f"formatting report with template {template_path}")
             report_path = Path(options.pop("reports")[0])
             cls.format_single(grading_path, template_path, report_path, options)
         else:
+            log.debug(f"formatting reports with template {template_path}")
             cls.format_batch(grading_path, template_path, map(Path, options.pop("reports")), options)
 
     @classmethod

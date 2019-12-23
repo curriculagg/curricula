@@ -55,11 +55,15 @@ class Manager:
     def load(cls, grading_path: Path) -> Optional["Manager"]:
         """Load a manager from a grading artifact in the file system."""
 
+        log.debug(f"loading manager from {grading_path}")
+        log.debug("reading schema")
         with grading_path.joinpath(Files.GRADING).open() as file:
             schema = json.load(file)
 
+        log.debug("assembling graders")
         graders = {}
         for problem_short in schema["problems"]:
+            log.debug(f"importing grader for {problem_short}")
             grader = import_grader(grading_path.joinpath(problem_short, Files.TESTS))
 
             # Check dependencies

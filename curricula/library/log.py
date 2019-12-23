@@ -17,14 +17,16 @@ def add_logging_arguments(parser: argparse.ArgumentParser):
     parser.add_argument("-l", "--log", default=None)
 
 
-def handle_logging_arguments(parser: argparse.ArgumentParser, args: argparse.Namespace):
+def handle_logging_arguments(parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
     """Configure the logger according to arguments."""
 
     if not 0 <= args.verbose <= 3:
         parser.error("verbosity level may be 0 through 3")
-        exit(1)
+        return 1
     log.setLevel({0: logging.WARNING, 1: logging.INFO, 2: logging.DEBUG, 3: logging.NOTSET}[args.verbose])
 
     if args.log:
         handler_stream = logging.FileHandler(args.log)
         log.addHandler(handler_stream)
+
+    return 0

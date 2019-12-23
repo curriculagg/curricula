@@ -5,7 +5,7 @@ from pathlib import Path
 from . import build
 from ..plugin import Plugin
 from ..core.validate import validate
-from ..library.log import log, add_logging_arguments, handle_logging_arguments
+from ..library.log import log
 
 
 class BuildPlugin(Plugin):
@@ -22,13 +22,10 @@ class BuildPlugin(Plugin):
         parser.add_argument("-c", "--check", action="store_true", help="only check JSON manifests")
         parser.add_argument("-d", "--destination", help="a directory to write the artifacts to")
         parser.add_argument("-i", "--inside", action="store_true", help="make the artifacts directory in destination")
-        add_logging_arguments(parser)
 
     @classmethod
     def main(cls, parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
         """Run if the build app is chosen."""
-
-        handle_logging_arguments(parser, args)
 
         options = vars(args)
         options.pop("app")

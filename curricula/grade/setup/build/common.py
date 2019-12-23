@@ -13,17 +13,17 @@ def build_gpp_executable(
         source: Path,
         destination: Path,
         gpp_options: Iterable[str] = (),
-        log: Buffer = None,
+        output: Buffer = None,
         timeout: int = 5) -> Tuple[BuildResult, Optional[ExecutableFile]]:
     """Build a binary from a single C++ file with G++."""
 
     destination.parent.mkdir(parents=True, exist_ok=True)
     runtime = process.run("g++", *gpp_options, "-o", str(destination), str(source), timeout=timeout)
     if runtime.code != 0 or runtime.timeout is not None:
-        log and log[2](f"Failed to compile {source.parts[-1]}")
+        output and output[2](f"failed to compile {source.parts[-1]}")
         return BuildResult(passed=False, runtime=runtime.dump(), error="compilation failed"), None
     elif not destination.exists():
-        log and log[2](f"Build did not produce {destination.parts[-1]}")
+        output and output[2](f"build did not produce {destination.parts[-1]}")
         return BuildResult(passed=False, runtime=runtime.dump(), error="executable not found"), None
 
     return BuildResult(passed=True, runtime=runtime.dump()), ExecutableFile(destination)
@@ -32,13 +32,13 @@ def build_gpp_executable(
 def build_makefile_executable(
         target_path: Path,
         make_options: Iterable[str] = (),
-        log: Buffer = None,
+        output: Buffer = None,
         timeout: int = 30) -> BuildResult:
     """Run make on the target directory."""
 
     runtime = process.run("make", "-B", "-C", str(target_path), *make_options, timeout=timeout)
     if runtime.code != 0 or runtime.timeout is not None:
-        log and log[2](f"Failed to compile {target_path.parts[-1]}")
+        output and output[2](f"failed to make {target_path.parts[-1]}")
         return BuildResult(passed=False, runtime=runtime.dump(), error="compilation failed")
     return BuildResult(passed=True, runtime=runtime.dump())
 
