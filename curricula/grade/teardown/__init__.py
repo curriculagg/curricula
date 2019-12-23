@@ -1,19 +1,13 @@
-from dataclasses import dataclass, field
+from ..stage import GraderStage, Registrar
+from .cleanup import CleanupResult
 
-from ..task import Result
 
+class TeardownStage(GraderStage):
+    """Teardown endpoints."""
 
-@dataclass
-class TeardownResult(Result):
-    """The result of a teardown step."""
+    kind = "teardown"
 
-    details: dict = field(default_factory=dict)
+    def cleanup(self, **details) -> Registrar:
+        """Deleting files."""
 
-    def __init__(self, passed: bool = True, complete: bool = True, **details):
-        super().__init__(complete=complete, passed=passed)
-        self.details = details
-
-    def dump(self) -> dict:
-        dump = super().dump()
-        dump.update(kind="teardown", details=self.details)
-        return dump
+        return self.create_registrar(details, CleanupResult)

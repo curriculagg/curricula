@@ -10,28 +10,23 @@ class Result(abc.ABC):
 
     complete: bool
     passed: bool
+    details: dict = field(default_factory=dict)
+
     task: "Task" = field(init=False)
 
     def __str__(self):
         return "passed" if self.complete and self.passed else "failed"
 
     def dump(self) -> dict:
-        return dict(complete=self.complete, passed=self.passed, task=self.task.name)
-
-
-class Incomplete(Result):
-    """Used to represent a task that was never run."""
-
-    def __init__(self, task: "Task"):
-        self.task = task
-        self.complete = False
-        self.passed = False
-
-    def dump(self) -> dict:
         return dict(
-            complete=False,
-            passed=False,
-            details=dict(error="not completed because a dependency failed"))
+            complete=self.complete,
+            passed=self.passed,
+            task=self.task.name,
+            details=self.details)
+
+    @classmethod
+    def incomplete(cls):
+        return cls(complete=False, passed=False)
 
 
 TResult = TypeVar("TResult", bound=Result)
@@ -63,6 +58,7 @@ class Task(Generic[TResult]):
     dependencies: Collection[str]
     runnable: Runnable[Result]
     details: dict
+    result_type: Type[Result]
 
     def __str__(self):
         return self.name

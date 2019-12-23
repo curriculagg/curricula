@@ -1,7 +1,19 @@
-import abc
+from ..stage import GraderStage, Registrar
+from .check import CheckResult
+from .build import BuildResult
 
-from ..task import Result
 
+class SetupStage(GraderStage):
+    """Setup endpoints."""
 
-class SetupResult(Result, abc.ABC):
-    """The result of a setup step."""
+    kind = "setup"
+
+    def build(self, **details) -> Registrar:
+        """Compilation."""
+
+        return self.create_registrar(details, BuildResult)
+
+    def check(self, **details) -> Registrar:
+        """Passive checks."""
+
+        return self.create_registrar(details, CheckResult)

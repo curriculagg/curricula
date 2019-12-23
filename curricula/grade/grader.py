@@ -4,32 +4,12 @@ from dataclasses import dataclass, field
 
 from .report import Report
 from .resource import Logger
-from .task import Task, Runnable, Incomplete
+from .task import Task
 from ..library.utility import timed
 
-
-def create_registrar(kind: str, details: dict, container: List):
-    """A second-level decorator to reuse code."""
-
-    def decorator(runnable: Runnable) -> Runnable:
-        """Put the function in a correctness object."""
-
-        name = details.pop("name", runnable.__qualname__)
-        description = details.pop("description", runnable.__doc__)
-        dependencies = details.pop("dependencies", ())
-        if isinstance(dependencies, str):
-            dependencies = (dependencies,)
-
-        container.append(Task(
-            name=name,
-            description=description,
-            kind=kind,
-            dependencies=dependencies,
-            runnable=runnable,
-            details=details))
-        return runnable
-
-    return decorator
+from .setup import SetupStage
+from .test import TestStage
+from .teardown import TeardownStage
 
 
 class GraderException(Exception):
@@ -70,9 +50,10 @@ def topological_sort(*steps: List[Task]):
 def run_tasks(tasks: List[Task], report: Report, resources: dict = None):
     """Execute sorted tasks, skipping if missing dependencies."""
 
+    resources = resources or dict()
     for task in tasks:
         satisfied = all(report.check(dependency) for dependency in task.dependencies)
-        result = Incomplete(task) if not satisfied else task.run(resources or dict())
+        result = task.result_type.incomplete() if not satisfied else task.run(resources)
         report.add(result)
         if satisfied:
             symbol = "\u2713" if result.passed else "\u2717"
@@ -80,33 +61,18 @@ def run_tasks(tasks: List[Task], report: Report, resources: dict = None):
             resources["log"].print(prefix=" " * 2)
 
 
-@dataclass
+@dataclass(eq=False)
 class Grader:
     """A main class for grading runtime."""
 
-    setups: List[Task] = field(default_factory=list)
-    tests: List[Task] = field(default_factory=list)
-    teardowns: List[Task] = field(default_factory=list)
-
-    def setup(self, **details):
-        """Add a setup to the grader."""
-
-        return create_registrar("setup", details, self.setups)
-
-    def test(self, **details):
-        """Add a test to the grader."""
-
-        return create_registrar("test", details, self.tests)
-
-    def teardown(self, **details):
-        """Add a teardown to the grader."""
-
-        return create_registrar("teardown", details, self.teardowns)
+    setup: SetupStage = field(default_factory=SetupStage)
+    test: TestStage = field(default_factory=TestStage)
+    teardown: TeardownStage = field(default_factory=TeardownStage)
 
     def check(self):
         """Topologically sort tasks, checking for cycles."""
 
-        topological_sort(self.setups, self.tests, self.teardowns)
+        topological_sort(self.setup.tasks, self.test.tasks, self.teardown.tasks)
 
     @timed(name="Grader")
     def run(self, **resources) -> Report:
@@ -114,8 +80,9 @@ class Grader:
 
         report = Report()
         resources.update(report=report, log=Logger(), resources=resources)
+        zipped = (("setup", self.setup.tasks), ("test", self.test.tasks), ("teardown", self.teardown.tasks))
 
-        for name, tasks in (("setup", self.setups), ("tests", self.tests), ("teardown", self.teardowns)):
+        for name, tasks in zipped:
             if len(tasks) == 0:
                 continue
             print(f"Starting {name}")
@@ -126,4 +93,5 @@ class Grader:
     def dump(self) -> dict:
         """Dump the tasks to something JSON serializable."""
 
-        return {task.name: task.dump() for task in itertools.chain(self.setups, self.tests, self.teardowns)}
+        return {task.name: task.dump() for task in
+                itertools.chain(self.setup.tasks, self.test.tasks, self.teardown.tasks)}

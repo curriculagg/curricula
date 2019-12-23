@@ -1,7 +1,7 @@
-from .. import TestResult
+from ...task import Result
 
 
-class ComplexityResult(TestResult):
+class ComplexityResult(Result):
     """The result of a correctness case."""
 
     constrained: bool

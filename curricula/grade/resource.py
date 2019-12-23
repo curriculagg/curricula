@@ -13,7 +13,7 @@ class Resource:
     """A resource required for a test."""
 
 
-@dataclass
+@dataclass(eq=False)
 class Context(Resource):
     """The execution context of the tests."""
 
@@ -21,7 +21,7 @@ class Context(Resource):
     options: Dict[str, str] = field(default_factory=dict)
 
 
-@dataclass
+@dataclass(eq=False)
 class Logger(Resource):
     """A mutable message recipient.
 
@@ -63,14 +63,14 @@ class Logger(Resource):
         self.messages.clear()
 
 
-@dataclass
+@dataclass(eq=False)
 class File(Resource):
     """A resource corresponding to a file."""
 
     path: Path
 
 
-@dataclass
+@dataclass(eq=False)
 class Executable(Resource):
     """A runnable testing target program."""
 
@@ -90,7 +90,7 @@ class Executable(Resource):
         return callgrind.run(*self.args, *args, timeout=timeout)
 
 
-@dataclass
+@dataclass(eq=False)
 class ExecutableFile(Executable, File):
     """A local file that can be executed."""
 
@@ -98,9 +98,6 @@ class ExecutableFile(Executable, File):
         super().__init__()
         self.path = path
         self.args = (str(path),) + args
-
-    # TODO: fuck it, can't think of a worthwhile fancy way to keep the
-    # TODO: path updated and inside args[0]
 
     def execute(self, *args: str, timeout: float) -> process.Runtime:
         """Run the target with command line arguments."""

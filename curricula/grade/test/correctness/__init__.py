@@ -1,19 +1,18 @@
 from dataclasses import dataclass, field
 
-from .. import TestResult
+from ...task import Result
 
 # TODO: this is getting fucked up
 
 
 @dataclass
-class CorrectnessResult(TestResult):
+class CorrectnessResult(Result):
     """The result of a correctness case."""
 
     details: dict = field(default_factory=dict)
 
     def __init__(self, passed: bool, complete: bool = True, **details):
-        super().__init__(complete=complete, passed=passed)
-        self.details = details
+        super().__init__(complete=complete, passed=passed, details=details)
 
     def __str__(self):
         runtime = self.details.get("runtime")

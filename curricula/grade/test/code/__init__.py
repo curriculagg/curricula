@@ -2,7 +2,7 @@ from typing import Optional
 from dataclasses import dataclass
 from pathlib import Path
 
-from curricula.grade import TestResult
+from ...task import Result
 
 
 @dataclass
@@ -22,7 +22,7 @@ class CodeLocation:
 
 
 @dataclass
-class CodeResult(TestResult):
+class CodeResult(Result):
     """The result of a correctness case."""
 
     description: str
