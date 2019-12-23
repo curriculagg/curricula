@@ -1,12 +1,11 @@
-import sys
 from collections import deque
-from typing import Deque, Dict, Tuple
+from typing import Deque, Dict, Tuple, Callable
 from pathlib import Path
 from dataclasses import dataclass, field
 
 from .library import callgrind, process
 
-__all__ = ("Resource", "Context", "Logger", "File", "Executable", "ExecutableFile")
+__all__ = ("Resource", "Context", "Buffer", "File", "Executable", "ExecutableFile")
 
 
 class Resource:
@@ -22,13 +21,14 @@ class Context(Resource):
 
 
 @dataclass(eq=False)
-class Logger(Resource):
+class Buffer(Resource):
     """A mutable message recipient.
 
     This is used in tests so that when multiprocessing output is
     buffered and therefore kept  separate for independent test cases.
     """
 
+    printer: Callable[[str], None]
     messages: Deque[str] = field(default_factory=deque)
     indent: int = 0
 
@@ -38,7 +38,7 @@ class Logger(Resource):
         self.messages.append(" " * self.indent + sep.join(map(str, message)) + end)
         self.indent = 0
 
-    def __getitem__(self, count: int) -> "Logger":
+    def __getitem__(self, count: int) -> "Buffer":
         """Set indent."""
 
         self.indent = count
@@ -49,7 +49,7 @@ class Logger(Resource):
 
         self.messages.appendleft(" " * self.indent + sep.join(map(str, message)) + end)
 
-    def print(self, prefix="", file=sys.stdout):
+    def print(self, prefix=""):
         """Build the complete output as a string."""
 
         if not self.messages:
@@ -57,7 +57,8 @@ class Logger(Resource):
 
         out = "".join(message for message in self.messages)
         self.messages.clear()
-        print("\n".join(prefix + line for line in out.split("\n")).rstrip(), file=file)
+        for line in out.rstrip().split("\n"):
+            self.printer(prefix + line)
 
     def clear(self):
         self.messages.clear()

@@ -1,5 +1,5 @@
 from curricula.grade.library import process
-from curricula.grade.resource import Logger, ExecutableFile, File
+from curricula.grade.resource import Buffer, ExecutableFile, File
 from curricula.library.files import delete_file
 from . import BuildResult
 
@@ -13,7 +13,7 @@ def build_gpp_executable(
         source: Path,
         destination: Path,
         gpp_options: Iterable[str] = (),
-        log: Logger = None,
+        log: Buffer = None,
         timeout: int = 5) -> Tuple[BuildResult, Optional[ExecutableFile]]:
     """Build a binary from a single C++ file with G++."""
 
@@ -32,7 +32,7 @@ def build_gpp_executable(
 def build_makefile_executable(
         target_path: Path,
         make_options: Iterable[str] = (),
-        log: Logger = None,
+        log: Buffer = None,
         timeout: int = 30) -> BuildResult:
     """Run make on the target directory."""
 

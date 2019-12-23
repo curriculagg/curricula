@@ -2,11 +2,11 @@ import logging
 import argparse
 
 log = logging.getLogger("curricula")
-formatter = logging.Formatter(fmt="%(asctime)s %(levelname)s: %(message)s", datefmt="%m/%d/%y %I:%M:%S %p")
+log.propagate = False
 
+formatter = logging.Formatter(fmt="%(asctime)s %(levelname)s: %(message)s", datefmt="%m/%d/%y %I:%M:%S %p")
 handler = logging.StreamHandler()
 handler.setFormatter(formatter)
-
 log.addHandler(handler)
 
 

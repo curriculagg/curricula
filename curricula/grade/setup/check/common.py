@@ -1,13 +1,13 @@
 from typing import Optional
 from pathlib import Path
 
-from curricula.grade.resource import Logger
+from curricula.grade.resource import Buffer
 from . import CheckResult
 
 __all__ = ("check_file_exists", "check_makefile_exists", "search_file_by_name")
 
 
-def check_file_exists(*paths: Path, log: Logger = None) -> CheckResult:
+def check_file_exists(*paths: Path, log: Buffer = None) -> CheckResult:
     """Check if a file is present in the directory."""
 
     if not any(path.exists() for path in paths):
@@ -18,7 +18,7 @@ def check_file_exists(*paths: Path, log: Logger = None) -> CheckResult:
     return CheckResult(passed=True)
 
 
-def check_makefile_exists(path: Path, log: Logger = None) -> CheckResult:
+def check_makefile_exists(path: Path, log: Buffer = None) -> CheckResult:
     """Check whether there is a makefile in a directory."""
 
     lower_path = path.joinpath("makefile")

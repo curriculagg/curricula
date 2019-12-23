@@ -1,6 +1,5 @@
 import jinja2
 import json
-import logging
 from pathlib import Path
 from typing import Dict, Union, List, Callable
 from dataclasses import dataclass
@@ -11,9 +10,9 @@ from ..grade.manager import generate_grading_schema
 from ..library.template import jinja2_create_environment
 from ..library import files
 from ..library.utility import timed
+from ..library.log import log
 
 root = Path(__file__).absolute().parent
-log = logging.getLogger("curricula")
 
 
 @dataclass(repr=False, eq=False)

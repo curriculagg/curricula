@@ -1,11 +1,13 @@
 import itertools
+import logging
 from typing import List, Dict
 from dataclasses import dataclass, field
 
 from .report import Report
-from .resource import Logger
+from .resource import Buffer
 from .task import Task
 from ..library.utility import timed
+from ..library.log import log
 
 from .setup import SetupStage
 from .test import TestStage
@@ -21,8 +23,11 @@ def topological_sort_visit(task: Task, lookup: Dict[str, Task], marks: Dict[Task
 
     if marks[task] == 2:
         return
+
     if marks[task] == 1:
-        raise ValueError("Found cycle!")
+        log.error("found cycle in task dependencies")
+        raise ValueError()
+
     marks[task] = 1
     for dependency in task.dependencies:
         topological_sort_visit(lookup[dependency], lookup, marks, result)
@@ -47,18 +52,29 @@ def topological_sort(*steps: List[Task]):
         tasks.extend(result)
 
 
+PASSED = "\u2713"
+FAILED = "\u2717"
+
+
 def run_tasks(tasks: List[Task], report: Report, resources: dict = None):
     """Execute sorted tasks, skipping if missing dependencies."""
 
+    logging.debug("running tasks")
     resources = resources or dict()
     for task in tasks:
-        satisfied = all(report.check(dependency) for dependency in task.dependencies)
-        result = task.result_type.incomplete() if not satisfied else task.run(resources)
-        report.add(result)
-        if satisfied:
-            symbol = "\u2713" if result.passed else "\u2717"
-            resources["log"].sneak(f"{symbol} {task} {result}")
-            resources["log"].print(prefix=" " * 2)
+        buffer = resources["output"]
+
+        # If dependencies are satisfied, run
+        if all(report.check(dependency) for dependency in task.dependencies):
+            result = task.run(resources)
+            report.add(result)
+            buffer.sneak(f"{PASSED if result.passed else FAILED} {task} {result}")
+
+        # Otherwise add, don't bother printing (for now)
+        else:
+            report.add(task.result_type.incomplete())
+
+        buffer.print(prefix=" " * 2)
 
 
 @dataclass(eq=False)
@@ -72,21 +88,22 @@ class Grader:
     def check(self):
         """Topologically sort tasks, checking for cycles."""
 
+        log.debug("sorting grader tasks by dependency")
         topological_sort(self.setup.tasks, self.test.tasks, self.teardown.tasks)
 
     @timed(name="Grader")
     def run(self, **resources) -> Report:
         """Build and test."""
 
+        log.debug("setting up runtime")
         report = Report()
-        resources.update(report=report, log=Logger(), resources=resources)
-        zipped = (("setup", self.setup.tasks), ("test", self.test.tasks), ("teardown", self.teardown.tasks))
+        resources.update(report=report, output=Buffer(printer=log.info), resources=resources)
 
-        for name, tasks in zipped:
-            if len(tasks) == 0:
+        for stage in (self.setup, self.test, self.teardown):
+            if len(stage.tasks) == 0:
                 continue
-            print(f"Starting {name}")
-            run_tasks(tasks, report, resources)
+            log.info(f"starting stage {stage.kind}")
+            run_tasks(stage.tasks, report, resources)
 
         return report
 

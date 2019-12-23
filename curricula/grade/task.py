@@ -3,6 +3,8 @@ import inspect
 from typing import Dict, TypeVar, Generic, Any, Collection, Type
 from dataclasses import dataclass, field
 
+from ..library.log import log
+
 
 @dataclass
 class Result(abc.ABC):
@@ -70,7 +72,10 @@ class Task(Generic[TResult]):
         """Do the dependency injection for the runnable."""
 
         result = inject(resources, self.runnable)
-        assert result, "Task must return a result"
+        if result is None:
+            log.debug(f"task {self.name} did not return a result")
+            result = self.result_type()
+
         result.task = self
         return result
 

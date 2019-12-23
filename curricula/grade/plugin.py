@@ -9,6 +9,7 @@ from .tools.format import format_report_markdown
 from .tools.compare import compare_output
 from ..core.serialization import dump
 from ..plugin import Plugin, PluginException
+from ..library.log import add_logging_arguments, handle_logging_arguments
 
 
 def make_report_name(target_path: Path, extension: str) -> str:
@@ -58,7 +59,8 @@ class GradePlugin(Plugin):
         """Setup argument parser for grade command."""
 
         parser.add_argument("grading", help="built grading directory artifact")
-        parser.add_argument("-v", "--verbosity", action="count", default=0)
+        add_logging_arguments(parser)
+
         subparsers = parser.add_subparsers(required=True, dest="command")
 
         run_parser = subparsers.add_parser("run")
@@ -88,6 +90,8 @@ class GradePlugin(Plugin):
     @classmethod
     def main(cls, parser: argparse.ArgumentParser, args: argparse.Namespace):
         """Start the grader."""
+
+        handle_logging_arguments(parser, args)
 
         options = vars(args)
         options.pop("app")

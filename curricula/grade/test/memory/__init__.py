@@ -3,18 +3,16 @@ from dataclasses import dataclass
 
 from ...library.process import Runtime
 from ...library.valgrind import ValgrindReport
-from .. import TestResult
+from ...task import Result
 
 
-@dataclass
-class MemoryResult(TestResult):
+class MemoryResult(Result):
     """Result of a memory leak test."""
 
     runtime: Runtime
     error_count: Optional[int]
     leaked_blocks: Optional[int]
     leaked_bytes: Optional[int]
-    details: dict
 
     def __init__(self,
                  passed: bool,
@@ -24,12 +22,11 @@ class MemoryResult(TestResult):
                  leaked_blocks: int = None,
                  leaked_bytes: int = None,
                  **details):
-        super().__init__(complete=complete, passed=passed)
+        super().__init__(complete=complete, passed=passed, details=details)
         self.runtime = runtime
         self.error_count = error_count
         self.leaked_blocks = leaked_blocks
         self.leaked_bytes = leaked_bytes
-        self.details = details
 
     @classmethod
     def from_valgrind_report(cls, report: ValgrindReport, **details) -> "MemoryResult":

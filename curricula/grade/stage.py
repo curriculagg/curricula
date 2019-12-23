@@ -1,12 +1,13 @@
+import logging
 from typing import List, Type, Callable
 
 from .task import Task, Runnable, Result
-from .grader import GraderException
+from ..library.log import log
+
+__all__ = ("GraderStage", "Registrar")
 
 Registrar = Callable[[Runnable], Runnable]
 RegistrarFactory = Callable[[dict, Type[Result]], Registrar]
-
-__all__ = ("GraderStage", "Registrar")
 
 
 def create_registrar_factory(kind: str, task_list: List) -> RegistrarFactory:
@@ -24,10 +25,11 @@ def create_registrar_factory(kind: str, task_list: List) -> RegistrarFactory:
             # Get dependencies
             if "dependencies" in details:
                 if "dependency" in details:
-                    raise GraderException("only one of dependency and dependencies may be specified")
+                    log.error("only one of dependency and dependencies may be specified")
+                    raise ValueError()
                 dependencies = details.pop("dependencies")
             elif "dependency" in details:
-                dependencies = (details.pop("dependencies"),)
+                dependencies = (details.pop("dependency"),)
             else:
                 dependencies = ()
 

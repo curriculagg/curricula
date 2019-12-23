@@ -1,14 +1,11 @@
 import argparse
 import jsonschema
-import logging
 from pathlib import Path
 
 from . import build
 from ..plugin import Plugin
 from ..core.validate import validate
-from ..library.log import add_logging_arguments, handle_logging_arguments
-
-log = logging.getLogger("curricula")
+from ..library.log import log, add_logging_arguments, handle_logging_arguments
 
 
 class BuildPlugin(Plugin):
@@ -36,7 +33,13 @@ class BuildPlugin(Plugin):
         options = vars(args)
         options.pop("app")
         assignment_path = Path(options.pop("assignment"))
-        artifacts_path = Path(options.pop("destination"))
+
+        if options["destination"]:
+            artifacts_path = Path(options.pop("destination"))
+        else:
+            artifacts_path = Path().joinpath("artifacts", assignment_path.parts[-1])
+            options.pop("destination")
+
         if options.pop("inside"):
             artifacts_path = artifacts_path.joinpath(assignment_path.parts[-1])
 

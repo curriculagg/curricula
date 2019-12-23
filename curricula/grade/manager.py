@@ -1,7 +1,7 @@
 import importlib.util
 import json
 import sys
-from typing import Dict, List, Iterable, Iterator, Tuple
+from typing import Dict, Optional, Iterable, Iterator, Tuple
 from pathlib import Path
 from dataclasses import dataclass
 
@@ -10,6 +10,7 @@ from .report import Report
 from .resource import Context
 from ..core.shared import *
 from ..core.models import Assignment
+from ..library.log import log
 
 
 def import_grader(tests_path: Path, grader_name: str = "grader") -> Grader:
@@ -44,14 +45,14 @@ def generate_grading_schema(grading_path: Path, assignment: Assignment) -> dict:
     return result
 
 
-@dataclass
+@dataclass(eq=False)
 class Manager:
     """A container for multiple graders in an assignment."""
 
     graders: Dict[str, Grader]
 
     @classmethod
-    def load(cls, grading_path: Path) -> "Manager":
+    def load(cls, grading_path: Path) -> Optional["Manager"]:
         """Load a manager from a grading artifact in the file system."""
 
         with grading_path.joinpath(Files.GRADING).open() as file:
@@ -59,7 +60,16 @@ class Manager:
 
         graders = {}
         for problem_short in schema["problems"]:
-            graders[problem_short] = import_grader(grading_path.joinpath(problem_short, Files.TESTS))
+            grader = import_grader(grading_path.joinpath(problem_short, Files.TESTS))
+
+            # Check dependencies
+            try:
+                grader.check()
+            except ValueError:
+                log.error(f"grader for {problem_short} failed to check")
+                return None
+
+            graders[problem_short] = grader
 
         return Manager(graders)
 

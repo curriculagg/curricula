@@ -9,7 +9,7 @@ GPP_OPTIONS = ("-Wall", "-std=c++11")
 grader = Grader()
 
 
-@grader.setup()
+@grader.setup.check()
 def check_hello_world(context: Context, resources: dict) -> CheckResult:
     """Check whether hello_world.cpp has been submitted."""
 
@@ -20,7 +20,7 @@ def check_hello_world(context: Context, resources: dict) -> CheckResult:
     return CheckResult(passed=True)
 
 
-@grader.setup(dependencies="check_hello_world")
+@grader.setup.build(dependency="check_hello_world")
 def build_hello_world(hello_world_source_path: Path, resources: dict) -> BuildResult:
     """Compile the program with gcc."""
 
@@ -32,7 +32,7 @@ def build_hello_world(hello_world_source_path: Path, resources: dict) -> BuildRe
     return result
 
 
-@grader.test(dependencies="build_hello_world")
+@grader.test.correctness(dependency="build_hello_world")
 def test_output(hello_world: Executable) -> CorrectnessResult:
     """Check if the program outputs as expected."""
 
@@ -40,7 +40,7 @@ def test_output(hello_world: Executable) -> CorrectnessResult:
     return CorrectnessResult(passed=runtime.stdout.strip() == b"Hello, world!", runtime=runtime)
 
 
-@grader.teardown(dependencies="test_output")
+@grader.teardown.cleanup(dependency="build_hello_world")
 def cleanup(hello_world_path: Path):
     """Clean up executables."""
 
