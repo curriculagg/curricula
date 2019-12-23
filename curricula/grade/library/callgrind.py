@@ -1,28 +1,32 @@
 import os
 import tempfile
 
+from pathlib import Path
 from typing import Optional
 
 from . import process
+from ...library.files import delete_file
 
 
-def read_last_line(path: str) -> str:
+def read_last_line(path: Path) -> str:
     """IR count appears at the end of the callgrind output."""
 
-    with open(path, "rb") as file:
+    with path.open("rb") as file:
+        file.seek(0)
         file.seek(-2, os.SEEK_END)
         while file.read(1) != b"\n":
             file.seek(-2, os.SEEK_CUR)
-        return file.readline().decode()
+        return file.readlines()[-1].decode()
 
 
 def run(*args: str, timeout: float) -> Optional[int]:
     """Run callgrind on the program and return IR count."""
 
-    path = tempfile.mkstemp()
-    process.run("valgrind", "--tool=callgrind", f"--callgrind-out-file=\"{path}\"", *args, timeout=timeout)
-    if os.path.exists(path):
-        result = int(read_last_line(path).rsplit(maxsplit=1)[1])
-        os.remove(path)
+    _, out_path = tempfile.mkstemp(dir=Path().absolute())
+    out_path = Path(out_path)
+    process.run("valgrind", "--tool=callgrind", f"--callgrind-out-file={out_path.parts[-1]}", *args, timeout=timeout)
+    if out_path.exists():
+        result = int(read_last_line(out_path).rsplit(maxsplit=1)[1])
+        delete_file(out_path)
         return result
     return None

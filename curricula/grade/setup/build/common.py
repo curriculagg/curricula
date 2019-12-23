@@ -3,7 +3,7 @@ from curricula.grade.resource import Logger, ExecutableFile, File
 from curricula.library.files import delete_file
 from . import BuildResult
 
-from typing import Iterable, Optional
+from typing import Iterable, Optional, Tuple
 from pathlib import Path
 
 __all__ = ("build_gpp_executable", "build_makefile_executable", "build_harness_library")
@@ -14,7 +14,7 @@ def build_gpp_executable(
         destination: Path,
         gpp_options: Iterable[str] = (),
         log: Logger = None,
-        timeout: int = 5) -> (BuildResult, Optional[ExecutableFile]):
+        timeout: int = 5) -> Tuple[BuildResult, Optional[ExecutableFile]]:
     """Build a binary from a single C++ file with G++."""
 
     destination.parent.mkdir(parents=True, exist_ok=True)
