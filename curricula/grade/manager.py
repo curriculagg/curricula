@@ -1,6 +1,7 @@
 import importlib.util
 import json
 import sys
+from collections import Counter
 from typing import Dict, Optional, Iterable, Iterator, Tuple
 from pathlib import Path
 from dataclasses import dataclass
@@ -11,6 +12,9 @@ from .resource import Context
 from ..core.shared import *
 from ..core.models import Assignment
 from ..library.log import log
+
+PASSED = "\u2713"
+FAILED = "\u2717"
 
 
 def import_grader(tests_path: Path, grader_name: str = "grader") -> Grader:
@@ -43,6 +47,16 @@ def generate_grading_schema(grading_path: Path, assignment: Assignment) -> dict:
                 percentage=problem.percentage,
                 tasks=grader.dump())
     return result
+
+
+def print_reports(target_path: Path, reports: Dict[str, Report]):
+    """Print reports to terminal."""
+
+    print(f"{target_path}")
+    for problem_short, report in reports.items():
+        print(f"  {problem_short}: {report.statistics()}")
+        for result in report.results:
+            print(f"    {PASSED if result.complete and result.passed else FAILED} {result.task.name}")
 
 
 @dataclass(eq=False)
@@ -82,10 +96,15 @@ class Manager:
 
         log.info(f"running {target_path}")
         reports = {}
+
         for problem_short, grader in self.graders.items():
             log.debug(f"running problem {problem_short}")
             context = Context(target_path, problem_short, options)
             reports[problem_short] = grader.run(context=context)
+
+        if options.get("report"):
+            print_reports(target_path, reports)
+
         return reports
 
     def run_batch(self, target_paths: Iterable[Path], **options) -> Iterator[Tuple[Path, Dict[str, Report]]]:

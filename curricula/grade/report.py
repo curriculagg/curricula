@@ -5,7 +5,27 @@ from .resource import Resource
 from .task import Result
 
 
-@dataclass
+@dataclass(eq=False)
+class ReportStatistics:
+    """Rudimentary sums from the report results."""
+
+    tasks_total: int = 0
+    tasks_complete: int = 0
+    tasks_passed: int = 0
+    tests_total: int = 0
+    tests_complete: int = 0
+    tests_passed: int = 0
+
+    def __str__(self) -> str:
+        """Format nicely."""
+
+        tasks_percentage = round(self.tasks_complete/(self.tasks_complete or 1) * 100, 2)
+        tests_percentage = round(self.tests_passed/(self.tests_complete or 1) * 100, 2)
+        return (f"{self.tasks_complete}/{self.tasks_complete} tasks complete ({tasks_percentage}%), "
+                f"{self.tests_passed}/{self.tests_total} tests passed ({tests_percentage}%)")
+
+
+@dataclass(eq=False)
 class Report(Resource):
     """The final report returned by the testing framework."""
 
@@ -22,9 +42,27 @@ class Report(Resource):
         """Add a result to the report."""
 
         self.lookup[result.task.name] = result
-        return self.results.append(result)
+        self.results.append(result)
 
     def dump(self) -> dict:
         """Dump the result to a serializable format."""
 
         return {result.task.name: result.dump() for result in self.results}
+
+    def statistics(self) -> ReportStatistics:
+        """Run the numbers."""
+
+        statistics = ReportStatistics()
+        for result in self.results:
+            statistics.tasks_total += 1
+            if result.complete:
+                statistics.tasks_complete += 1
+            if result.passed:
+                statistics.tasks_passed += 1
+            if result.task.stage == "test":
+                statistics.tests_total += 1
+                if result.complete:
+                    statistics.tests_complete += 1
+                if result.passed:
+                    statistics.tests_passed += 1
+        return statistics
