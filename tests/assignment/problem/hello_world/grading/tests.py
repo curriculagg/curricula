@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from curricula.grade.shortcuts import *
+from curricula.grade.setup.check.common import check_file_exists
 from curricula.grade.setup.build.common import build_gpp_executable
 from curricula.library import files
 
@@ -13,22 +14,19 @@ grader = Grader()
 def check_hello_world(context: Context, resources: dict) -> CheckResult:
     """Check whether hello_world.cpp has been submitted."""
 
-    source_path = context.target_path.joinpath("hello_world", "hello_world.cpp")
-    if not source_path.exists():
-        return CheckResult(passed=False, error="missing hello_world.cpp")
-    resources["hello_world_source_path"] = source_path
-    return CheckResult(passed=True)
+    resources["hello_world_source_path"] = context.target_path.joinpath("hello_world", "hello_world.cpp")
+    return check_file_exists(resources["hello_world_source_path"])
 
 
 @grader.setup.build(dependency="check_hello_world")
 def build_hello_world(hello_world_source_path: Path, resources: dict) -> BuildResult:
     """Compile the program with gcc."""
 
-    executable_path = Path("/tmp", "hello_world", "hello_world")
-    files.replace_directory(executable_path.parent)
-    result, executable = build_gpp_executable(hello_world_source_path, executable_path, GPP_OPTIONS)
-    resources["hello_world_path"] = executable_path
-    resources["hello_world"] = executable
+    resources["hello_world_path"] = Path("/tmp", "hello_world", "hello_world")
+    result, resources["hello_world"] = build_gpp_executable(
+        source_path=hello_world_source_path,
+        destination_path=resources["hello_world_path"],
+        gpp_options=GPP_OPTIONS)
     return result
 
 
