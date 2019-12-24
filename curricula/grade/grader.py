@@ -63,9 +63,10 @@ def run_tasks(tasks: List[Task], report: Report, resources: dict = None):
     for task in tasks:
         if all(report.check(dependency) for dependency in task.dependencies):
             result = task.run(resources)
-            report.add(result)
         else:
-            report.add(task.result_type.incomplete())
+            result = task.result_type.incomplete()
+        result.task = task
+        report.add(result)
 
 
 @dataclass(eq=False)
@@ -92,9 +93,9 @@ class Grader:
 
         for stage in (self.setup, self.test, self.teardown):
             if len(stage.tasks) == 0:
-                log.debug(f"skipping stage {stage.kind}")
+                log.debug(f"skipping stage {stage.name}")
                 continue
-            log.info(f"starting stage {stage.kind}")
+            log.debug(f"starting stage {stage.name}")
             run_tasks(stage.tasks, report, resources)
 
         return report

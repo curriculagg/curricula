@@ -6,7 +6,7 @@ from .build import BuildResult
 class SetupStage(GraderStage):
     """Setup endpoints."""
 
-    kind = "setup"
+    name = "setup"
 
     def build(self, **details) -> Registrar:
         """Compilation."""

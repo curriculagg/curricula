@@ -14,6 +14,7 @@ class Result(abc.ABC):
     passed: bool
     details: dict = field(default_factory=dict)
 
+    kind: str = field(init=False)
     task: "Task" = field(init=False)
 
     def __str__(self):
@@ -56,6 +57,7 @@ class Task(Generic[TResult]):
 
     name: str
     description: str
+    stage: str
     kind: str
     dependencies: Collection[str]
     runnable: Runnable[Result]
@@ -75,8 +77,6 @@ class Task(Generic[TResult]):
         if result is None:
             log.debug(f"task {self.name} did not return a result")
             result = self.result_type()
-
-        result.task = self
         return result
 
     def dump(self):
@@ -85,6 +85,7 @@ class Task(Generic[TResult]):
         return dict(
             name=self.name,
             description=self.description,
+            stage=self.stage,
             kind=self.kind,
             dependencies=self.dependencies,
             details=self.details)

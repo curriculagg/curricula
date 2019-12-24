@@ -1,5 +1,4 @@
 from typing import Optional
-from dataclasses import dataclass
 
 from ...library.process import Runtime
 from ...library.valgrind import ValgrindReport
@@ -8,6 +7,8 @@ from ...task import Result
 
 class MemoryResult(Result):
     """Result of a memory leak test."""
+
+    kind = "memory"
 
     runtime: Runtime
     error_count: Optional[int]
@@ -55,7 +56,6 @@ class MemoryResult(Result):
     def dump(self) -> dict:
         dump = super().dump()
         dump.update(
-            kind="memory",
             runtime=self.runtime.dump(),
             error_count=self.error_count,
             leaked_blocks=self.leaked_blocks,

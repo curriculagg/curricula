@@ -5,20 +5,29 @@ from dataclasses import dataclass, asdict
 
 
 @dataclass(eq=False)
+class RuntimeException:
+    """Error that occurs during process runtime."""
+
+    description: str
+    error_number: Optional[int] = None
+
+
+@dataclass(eq=False)
 class Runtime:
     """Runtime data extracted from running an external process."""
 
     args: Tuple[str]
     timeout: float  # Populated if timed out
 
-    elapsed: Optional[float] = None
     code: Optional[int] = None
+    elapsed: Optional[float] = None
+    stdin: Optional[bytes] = None
     stdout: Optional[bytes] = None
     stderr: Optional[bytes] = None
 
     timed_out: bool = False
     raised_exception: bool = False
-    exception: Optional[str] = None
+    exception: Optional[RuntimeException] = None
 
     def dump(self) -> dict:
         dump = asdict(self)
@@ -46,11 +55,13 @@ def run(*args: str, stdin: bytes = None, timeout: float = None) -> Runtime:
 
     # Catch common errors
     except OSError as error:
-        exception = "executable format error" if error.errno == 8 else "failed to run executable"
-        return Runtime(args=args, timeout=timeout, raised_exception=True, exception=exception)
+        exception = RuntimeException(
+            description="executable format error" if error.errno == 8 else "failed to run executable",
+            error_number=error.errno)
+        return Runtime(args=args, timeout=timeout, stdin=stdin, raised_exception=True, exception=exception)
     except ValueError:
-        exception = "failed to open process"
-        return Runtime(args=args, timeout=timeout, raised_exception=True, exception=exception)
+        exception = RuntimeException(description="failed to open process")
+        return Runtime(args=args, timeout=timeout, stdin=stdin, raised_exception=True, exception=exception)
 
     # Wait for the process to finish with timeout
     start = timeit.default_timer()
@@ -58,9 +69,16 @@ def run(*args: str, stdin: bytes = None, timeout: float = None) -> Runtime:
         stdout, stderr = process.communicate(input=stdin, timeout=timeout)
     except subprocess.TimeoutExpired:
         process.kill()
-        stdout, stderr = process.communicate(timeout=timeout)
-        return Runtime(args=args, timeout=timeout, stdout=stdout, stderr=stderr, timed_out=True)
+        stdout, stderr = process.communicate()
+        return Runtime(args=args, timeout=timeout, stdin=stdin, stdout=stdout, stderr=stderr, timed_out=True)
 
     # Check elapsed
     elapsed = timeit.default_timer() - start
-    return Runtime(args=args, timeout=timeout, code=process.returncode, stdout=stdout, stderr=stderr, elapsed=elapsed)
+    return Runtime(
+        args=args,
+        timeout=timeout,
+        code=process.returncode,
+        elapsed=elapsed,
+        stdin=stdin,
+        stdout=stdout,
+        stderr=stderr)

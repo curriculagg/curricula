@@ -49,8 +49,8 @@ def compare_stdout(runtime: Runtime, test_out_line_lists: List[List[bytes]]) -> 
     method first checks whether any error was raised during runtime.
     """
 
-    if runtime.error is not None:
-        return CorrectnessResult(complete=False, passed=False, runtime=runtime)
+    if runtime.raised_exception is not None:
+        return CorrectnessResult(complete=True, passed=False, runtime=runtime)
 
     out_lines = runtime.stdout.strip().split(b"\n")
     passed = any(lines_match(out_lines, test_out_lines) for test_out_lines in test_out_line_lists)

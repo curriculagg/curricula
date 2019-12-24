@@ -8,7 +8,7 @@ from .memory import MemoryResult
 class TestStage(GraderStage):
     """Test endpoints."""
 
-    kind = "test"
+    name = "test"
 
     # def code(self, **details):
     #     """Code quality."""

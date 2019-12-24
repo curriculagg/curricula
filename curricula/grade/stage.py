@@ -10,7 +10,7 @@ Registrar = Callable[[Runnable], Runnable]
 RegistrarFactory = Callable[[dict, Type[Result]], Registrar]
 
 
-def create_registrar_factory(kind: str, task_list: List) -> RegistrarFactory:
+def create_registrar_factory(stage: str, task_list: List) -> RegistrarFactory:
     """A third-level decorator to reuse code."""
 
     def create_registrar(details: dict, result_type: Type[Result]) -> Registrar:
@@ -37,7 +37,8 @@ def create_registrar_factory(kind: str, task_list: List) -> RegistrarFactory:
             task_list.append(Task(
                 name=name,
                 description=description,
-                kind=kind,
+                stage=stage,
+                kind=result_type.kind,
                 dependencies=dependencies,
                 runnable=runnable,
                 details=details,
@@ -52,10 +53,10 @@ def create_registrar_factory(kind: str, task_list: List) -> RegistrarFactory:
 class GraderStage:
     """Management for setup, test, and teardown stages."""
 
-    kind: str
+    name: str
     tasks: List[Task]
     create_registrar: RegistrarFactory
 
     def __init__(self):
         self.tasks = []
-        self.create_registrar = create_registrar_factory(kind=self.kind, task_list=self.tasks)
+        self.create_registrar = create_registrar_factory(stage=self.name, task_list=self.tasks)

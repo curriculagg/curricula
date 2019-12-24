@@ -5,7 +5,7 @@ from .cleanup import CleanupResult
 class TeardownStage(GraderStage):
     """Teardown endpoints."""
 
-    kind = "teardown"
+    name = "teardown"
 
     def cleanup(self, **details) -> Registrar:
         """Deleting files."""
