@@ -1,7 +1,6 @@
 import importlib.util
 import json
 import sys
-from collections import Counter
 from typing import Dict, Optional, Iterable, Iterator, Tuple
 from pathlib import Path
 from dataclasses import dataclass
@@ -11,6 +10,7 @@ from .report import Report
 from .resource import Context
 from ..core.shared import *
 from ..core.models import Assignment
+from ..library.utility import timed
 from ..library.log import log
 
 PASSED = "\u2713"
@@ -91,6 +91,7 @@ class Manager:
 
         return Manager(graders)
 
+    @timed(name="run", printer=log.info)
     def run_single(self, target_path: Path, **options) -> Dict[str, Report]:
         """Run all tests on a submission and return a dict of results."""
 
@@ -107,6 +108,7 @@ class Manager:
 
         return reports
 
+    @timed(name="batch", printer=log.info)
     def run_batch(self, target_paths: Iterable[Path], **options) -> Iterator[Tuple[Path, Dict[str, Report]]]:
         """Run multiple reports, map directory to report."""
 

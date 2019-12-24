@@ -1,11 +1,9 @@
 import itertools
-import logging
 from typing import List, Dict
 from dataclasses import dataclass, field
 
 from .report import Report
 from .task import Task
-from ..library.utility import timed
 from ..library.log import log
 
 from .setup import SetupStage
@@ -80,7 +78,6 @@ class Grader:
         log.debug("sorting grader tasks by dependency")
         topological_sort(self.setup.tasks, self.test.tasks, self.teardown.tasks)
 
-    @timed(name="grader", printer=log.debug)
     def run(self, **resources) -> Report:
         """Build and test."""
 
