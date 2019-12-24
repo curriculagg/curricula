@@ -197,10 +197,13 @@ def get_readme(environment: jinja2.Environment, item: Union[Problem, Assignment]
     context: Context = environment.globals["context"]  # Not jinja2 context, our context
     readme_path = item.path.joinpath(*component, Files.README).relative_to(context.assignment_path)
 
-    if isinstance(item, Assignment):
-        return environment.get_template(str(readme_path)).render(assignment=item)
-    elif isinstance(item, Problem):
-        return environment.get_template(str(readme_path)).render(assignment=item.assignment, problem=item)
+    try:
+        if isinstance(item, Assignment):
+            return environment.get_template(str(readme_path)).render(assignment=item)
+        elif isinstance(item, Problem):
+            return environment.get_template(str(readme_path)).render(assignment=item.assignment, problem=item)
+    except jinja2.exceptions.TemplateNotFound:
+        return "No README included.\n"
 
 
 def has_readme(item: Union[Problem, Assignment], *component: str) -> bool:

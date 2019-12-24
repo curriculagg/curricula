@@ -1,5 +1,5 @@
 {
-  "title": "More Cases...",
+  "title": "Only Grading?",
   "authors": [
     {
       "name": "Noah Kim",
@@ -7,8 +7,8 @@
     }
   ],
   "topics": [
-    "more",
-    "cases"
+    "only",
+    "grading"
   ],
   "grading": {
     "minutes": 5,

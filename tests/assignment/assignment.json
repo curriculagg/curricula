@@ -13,11 +13,15 @@
   "problems": [
     {
       "path": "problem/hello_world",
-      "percentage": 0.5
+      "percentage": 0.1
     },
     {
       "path": "problem/more_cases",
-      "percentage": 0.5
+      "percentage": 0.1
+    },
+    {
+      "path": "problem/only_grading",
+      "percentage": 0.1
     }
   ]
 }
