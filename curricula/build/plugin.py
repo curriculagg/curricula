@@ -31,15 +31,23 @@ class BuildPlugin(Plugin):
         options.pop("app")
         assignment_path = Path(options.pop("assignment"))
 
+        # Sanity check
+        if not assignment_path.is_dir():
+            log.error("assignment path does not exist!")
+            return 1
+
+        # If no explicit destination, put inside a custom artifacts directory
         if options["destination"]:
             artifacts_path = Path(options.pop("destination"))
         else:
             artifacts_path = Path().joinpath("artifacts", assignment_path.parts[-1])
             options.pop("destination")
 
+        # Nest inside directory if flagged
         if options.pop("inside"):
             artifacts_path = artifacts_path.joinpath(assignment_path.parts[-1])
 
+        # Validate the assignments and problems, return if only checking
         try:
             validate(assignment_path)
         except jsonschema.ValidationError:
@@ -47,8 +55,5 @@ class BuildPlugin(Plugin):
         if options.pop("check"):
             return 0
 
-        try:
-            build.build(assignment_path, artifacts_path, **options)
-        except ValueError as exception:
-            log.error(exception)
-            return 1
+        build.build(assignment_path, artifacts_path, **options)
+        return 0

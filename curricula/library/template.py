@@ -29,9 +29,13 @@ def jinja2_create_environment(template_path: Path, *template_paths: List[Path], 
 
     log.debug("creating jinja2 environment")
 
+    # Create a loader in the order of arguments
     loader = jinja2.ChoiceLoader([
         jinja2.FileSystemLoader(str(template_path)),
         *map(lambda p: jinja2.FileSystemLoader(str(p)), template_paths)])
+
+    # Actually create the environment, we use square brackets to avoid
+    # clashing with Jekyll
     environment = jinja2.Environment(
         loader=loader,
         block_start_string="[%",

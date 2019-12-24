@@ -31,7 +31,7 @@ def descend_and_truncate(o: Any, length: int, append: str = "..."):
 def dump(o: Any, file: TextIO, **options):
     """Write an object to a file."""
 
-    descend_and_truncate(o, 10_000)
+    descend_and_truncate(o, 100_000)
     json.dump(o, file, **options)
 
 

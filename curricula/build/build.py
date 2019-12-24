@@ -17,7 +17,11 @@ root = Path(__file__).absolute().parent
 
 @dataclass(repr=False, eq=False)
 class Context:
-    """Build context."""
+    """Build context.
+
+    The build context is simply a container for information about the
+    build that's passed to each step.
+    """
 
     environment: jinja2.Environment
     assignment_path: Path
@@ -75,7 +79,8 @@ def aggregate_contents(
         filter_problems: Callable[[Problem], bool] = None) -> List[Path]:
     """Compile subdirectories from problems to respective directories.
 
-    This method returns a list of the resultant folders that were
+    Different from merge in that the result is a directory of
+    directories. Returns a list of the resultant folders that were
     copied into the destination.
     """
 
@@ -101,7 +106,7 @@ def aggregate_contents(
 
 
 def build_instructions(context: Context, assignment: Assignment):
-    """Build all site components."""
+    """Compile instruction readme and assets."""
 
     log.debug("compiling instructions")
     instructions_path = context.artifacts_path.joinpath(Paths.INSTRUCTIONS)
@@ -120,7 +125,7 @@ def build_resources(context: Context, assignment: Assignment):
 
 
 def build_solution_readme(context: Context, assignment: Assignment, path: Path):
-    """Generate the composite README."""
+    """Generate the composite cheat sheet README."""
 
     log.debug("building cheat sheet")
     assignment_template = context.environment.get_template("template/solution/assignment.md")
@@ -218,20 +223,22 @@ def build(assignment_path: Path, artifacts_path: Path, **options):
 
     log.info(f"building {assignment_path} to {artifacts_path}")
 
-    if not assignment_path.is_dir():
-        raise ValueError("assignment path does not exist!")
-
+    # Set up templating
     environment = jinja2_create_environment(assignment_path, root)
     environment.filters.update(get_readme=get_readme, has_readme=has_readme)
 
+    # Define context
     log.debug("setting context")
     context = Context(environment, assignment_path, artifacts_path, options)
     environment.globals["context"] = context
 
+    # Create output directory
     artifacts_path.mkdir(exist_ok=True, parents=True)
 
+    # Load the assignment object
     log.debug("loading assignment")
     assignment = Assignment.load(assignment_path)
 
+    # Build
     for step in BUILD_STEPS:
         step(context, assignment)

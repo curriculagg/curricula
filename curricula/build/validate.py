@@ -6,11 +6,11 @@ from pathlib import Path
 from .models import Assignment
 from ..shared import *
 
-ROOT = Path(__file__).absolute().parent
+root = Path(__file__).absolute().parent
 
-with ROOT.joinpath("schema", "assignment.schema.json").open() as _file:
+with root.joinpath("schema", "assignment.schema.json").open() as _file:
     ASSIGNMENT_SCHEMA = json.load(_file)
-with ROOT.joinpath("schema", "problem.schema.json").open() as _file:
+with root.joinpath("schema", "problem.schema.json").open() as _file:
     PROBLEM_SCHEMA = json.load(_file)
 
 
