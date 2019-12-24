@@ -80,6 +80,7 @@ class Manager:
     def run_single(self, target_path: Path, **options) -> Dict[str, Report]:
         """Run all tests on a submission and return a dict of results."""
 
+        log.info(f"running {target_path}")
         reports = {}
         for problem_short, grader in self.graders.items():
             context = Context(target_path, options)

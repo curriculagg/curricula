@@ -15,7 +15,7 @@ for plugin in PLUGINS:
     plugin.setup(subparsers.add_parser(plugin.name, help=plugin.help))
 
 args = parser.parse_args()
-if handle_logging_arguments(parser, args) != 0:
+if handle_logging_arguments(args) != 0:
     exit(1)
 
 status = {plugin.name: plugin.main for plugin in PLUGINS}[args.app](parser, args)

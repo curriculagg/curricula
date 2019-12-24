@@ -18,13 +18,22 @@ def build_gpp_executable(
 
     destination.parent.mkdir(parents=True, exist_ok=True)
     runtime = process.run("g++", *gpp_options, "-o", str(destination), str(source), timeout=timeout)
-    if runtime.code != 0 or runtime.timeout is not None:
+
+    error = None
+    if runtime.code != 0:
         error = f"failed to compile {source.parts[-1]}"
-        return BuildResult(passed=False, runtime=runtime.dump(), error=error), None
+    elif runtime.timed_out:
+        error = f"timed out while compiling {source.parts[-1]}"
+    elif runtime.raised_exception:
+        error = f"error invoking compilation of {source.parts[-1]}: {runtime.exception.description}"
     elif not destination.exists():
         error = f"build did not produce {destination.parts[-1]}"
+
+    # If the build failed
+    if error:
         return BuildResult(passed=False, runtime=runtime.dump(), error=error), None
 
+    # Otherwise
     return BuildResult(passed=True, runtime=runtime.dump()), ExecutableFile(destination)
 
 
