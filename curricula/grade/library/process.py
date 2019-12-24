@@ -1,40 +1,24 @@
 import subprocess
-import multiprocessing
 import timeit
-from typing import Optional
+from typing import Optional, Tuple
 from dataclasses import dataclass, asdict
 
 
-# TODO: Process runtime and method runtime
-
-@dataclass
+@dataclass(eq=False)
 class Runtime:
     """Runtime data extracted from running an external process."""
 
-    command: str
-    timeout: Optional[float]  # Populated if timed out
-    code: Optional[int]
-    stdout: Optional[bytes]
-    stderr: Optional[bytes]
-    elapsed: Optional[float]
-    error: Optional[str]
+    args: Tuple[str]
+    timeout: float  # Populated if timed out
 
-    def __init__(self,
-                 command: str,
-                 *,
-                 timeout: float = None,
-                 code: int = None,
-                 stdout: bytes = None,
-                 stderr: bytes = None,
-                 elapsed: float = None,
-                 error: str = None):
-        self.command = command
-        self.timeout = timeout
-        self.code = code
-        self.stdout = stdout
-        self.stderr = stderr
-        self.elapsed = elapsed
-        self.error = error
+    elapsed: Optional[float] = None
+    code: Optional[int] = None
+    stdout: Optional[bytes] = None
+    stderr: Optional[bytes] = None
+
+    timed_out: bool = False
+    raised_exception: bool = False
+    exception: Optional[str] = None
 
     def dump(self) -> dict:
         dump = asdict(self)
@@ -45,7 +29,7 @@ class Runtime:
         return dump
 
 
-def run(*args: str, timeout: float) -> Runtime:
+def run(*args: str, stdin: bytes = None, timeout: float = None) -> Runtime:
     """Run an executable with a list of command line arguments.
 
     The provided path must be absolute in order to properly execute
@@ -55,25 +39,28 @@ def run(*args: str, timeout: float) -> Runtime:
 
     # Spawn the process, access stdout and stderr
     try:
-        process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    except OSError as e:
-        message = "executable error"
-        if e.errno == 8:
-            message = "executable format error"
-        return Runtime(" ".join(args), error=message, elapsed=0)
+        if stdin:
+            process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)
+        else:
+            process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    # Catch common errors
+    except OSError as error:
+        exception = "executable format error" if error.errno == 8 else "failed to run executable"
+        return Runtime(args=args, timeout=timeout, raised_exception=True, exception=exception)
+    except ValueError:
+        exception = "failed to open process"
+        return Runtime(args=args, timeout=timeout, raised_exception=True, exception=exception)
 
     # Wait for the process to finish with timeout
     start = timeit.default_timer()
     try:
-        stdout, stderr = process.communicate(timeout=timeout)
+        stdout, stderr = process.communicate(input=stdin, timeout=timeout)
     except subprocess.TimeoutExpired:
         process.kill()
-        # TODO: include any stdout and stderr that made it into the buffer
-        return Runtime(" ".join(args), timeout=timeout, error="timeout")
-    elapsed = timeit.default_timer() - start
+        stdout, stderr = process.communicate(timeout=timeout)
+        return Runtime(args=args, timeout=timeout, stdout=stdout, stderr=stderr, timed_out=True)
 
-    return Runtime(" ".join(args),
-                   code=process.returncode,
-                   stdout=stdout,
-                   stderr=stderr,
-                   elapsed=elapsed)
+    # Check elapsed
+    elapsed = timeit.default_timer() - start
+    return Runtime(args=args, timeout=timeout, code=process.returncode, stdout=stdout, stderr=stderr, elapsed=elapsed)
