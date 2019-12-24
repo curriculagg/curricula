@@ -16,6 +16,7 @@ class Context(Resource):
     """The execution context of the tests."""
 
     target_path: Path
+    problem_short: str
     options: Dict[str, str] = field(default_factory=dict)
 
 
@@ -55,12 +56,12 @@ class ExecutableFile(Executable, File):
         self.path = path
         self.args = (str(path),) + args
 
-    def execute(self, *args: str, timeout: float) -> process.Runtime:
+    def execute(self, *args: str, stdin: bytes = None, timeout: float = None) -> process.Runtime:
         """Run the target with command line arguments."""
 
-        return process.run(*self.args, *args, timeout=timeout)
+        return process.run(*self.args, *args, stdin=stdin, timeout=timeout)
 
-    def count(self, *args: str, timeout: float) -> int:
+    def count(self, *args: str, timeout: float = None) -> int:
         """Count the instructions executed during runtime."""
 
         return callgrind.run(*self.args, *args, timeout=timeout)

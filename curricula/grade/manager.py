@@ -83,7 +83,8 @@ class Manager:
         log.info(f"running {target_path}")
         reports = {}
         for problem_short, grader in self.graders.items():
-            context = Context(target_path, options)
+            log.debug(f"running problem {problem_short}")
+            context = Context(target_path, problem_short, options)
             reports[problem_short] = grader.run(context=context)
         return reports
 

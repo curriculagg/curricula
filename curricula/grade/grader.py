@@ -51,16 +51,13 @@ def topological_sort(*steps: List[Task]):
         tasks.extend(result)
 
 
-PASSED = "\u2713"
-FAILED = "\u2717"
-
-
 def run_tasks(tasks: List[Task], report: Report, resources: dict = None):
     """Execute sorted tasks, skipping if missing dependencies."""
 
-    logging.debug("running tasks")
+    log.debug("running tasks")
     resources = resources or dict()
     for task in tasks:
+        log.debug(f"running task {task.name}")
         if all(report.check(dependency) for dependency in task.dependencies):
             result = task.run(resources)
         else:
@@ -83,7 +80,7 @@ class Grader:
         log.debug("sorting grader tasks by dependency")
         topological_sort(self.setup.tasks, self.test.tasks, self.teardown.tasks)
 
-    @timed(name="Grader")
+    @timed(name="grader", printer=log.debug)
     def run(self, **resources) -> Report:
         """Build and test."""
 

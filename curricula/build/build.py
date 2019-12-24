@@ -132,14 +132,7 @@ def build_solution_code(assignment: Assignment, path: Path):
     """Compile only submission files of the solution."""
 
     log.debug("assembling solution code")
-    for problem in assignment.problems:
-        problem_solution_path = problem.path.joinpath(Paths.SOLUTION)
-        if problem_solution_path.exists() and problem.submission:
-            for submission_path in map(Path, problem.submission):
-                relative_source_path = problem.path.joinpath(Paths.SOLUTION, *submission_path.parts[1:])
-                relative_destination_path = path.joinpath(problem.short, *submission_path.parts[1:])
-                relative_destination_path.parent.mkdir(parents=True, exist_ok=True)
-                files.copy(relative_source_path, relative_destination_path)
+    aggregate_contents(assignment, Paths.SOLUTION, path)
 
 
 def build_solution(context: Context, assignment: Assignment):

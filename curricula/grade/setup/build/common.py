@@ -10,37 +10,37 @@ __all__ = ("build_gpp_executable", "build_makefile_executable", "build_harness_l
 
 
 def build_gpp_executable(
-        source: Path,
-        destination: Path,
+        source_path: Path,
+        destination_path: Path,
         gpp_options: Iterable[str] = (),
-        timeout: int = 5) -> Tuple[BuildResult, Optional[ExecutableFile]]:
+        timeout: float = None) -> Tuple[BuildResult, Optional[ExecutableFile]]:
     """Build a binary from a single C++ file with G++."""
 
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    runtime = process.run("g++", *gpp_options, "-o", str(destination), str(source), timeout=timeout)
+    destination_path.parent.mkdir(parents=True, exist_ok=True)
+    runtime = process.run("g++", *gpp_options, "-o", str(destination_path), str(source_path), timeout=timeout)
 
     error = None
     if runtime.code != 0:
-        error = f"failed to compile {source.parts[-1]}"
+        error = f"failed to compile {source_path.parts[-1]}"
     elif runtime.timed_out:
-        error = f"timed out while compiling {source.parts[-1]}"
+        error = f"timed out while compiling {source_path.parts[-1]}"
     elif runtime.raised_exception:
-        error = f"error invoking compilation of {source.parts[-1]}: {runtime.exception.description}"
-    elif not destination.exists():
-        error = f"build did not produce {destination.parts[-1]}"
+        error = f"error invoking compilation of {source_path.parts[-1]}: {runtime.exception.description}"
+    elif not destination_path.exists():
+        error = f"build did not produce {destination_path.parts[-1]}"
 
     # If the build failed
-    if error:
+    if error is not None:
         return BuildResult(passed=False, runtime=runtime.dump(), error=error), None
 
     # Otherwise
-    return BuildResult(passed=True, runtime=runtime.dump()), ExecutableFile(destination)
+    return BuildResult(passed=True, runtime=runtime.dump()), ExecutableFile(destination_path)
 
 
 def build_makefile_executable(
         target_path: Path,
         make_options: Iterable[str] = (),
-        timeout: int = 30) -> BuildResult:
+        timeout: float = None) -> BuildResult:
     """Run make on the target directory."""
 
     runtime = process.run("make", "-B", "-C", str(target_path), *make_options, timeout=timeout)
