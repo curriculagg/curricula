@@ -21,12 +21,12 @@ def check_hello_world(context: Context, resources: dict) -> CheckResult:
 
 
 @grader.setup.build(dependency="check_hello_world")
-def build_hello_world(hello_world_source_path: Path, output: Buffer, resources: dict) -> BuildResult:
+def build_hello_world(hello_world_source_path: Path, resources: dict) -> BuildResult:
     """Compile the program with gcc."""
 
     executable_path = Path("/tmp", "hello_world", "hello_world")
     files.replace_directory(executable_path.parent)
-    result, executable = build_gpp_executable(hello_world_source_path, executable_path, GPP_OPTIONS, output=output)
+    result, executable = build_gpp_executable(hello_world_source_path, executable_path, GPP_OPTIONS)
     resources["hello_world_path"] = executable_path
     resources["hello_world"] = executable
     return result

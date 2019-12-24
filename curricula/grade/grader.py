@@ -4,7 +4,6 @@ from typing import List, Dict
 from dataclasses import dataclass, field
 
 from .report import Report
-from .resource import Buffer
 from .task import Task
 from ..library.utility import timed
 from ..library.log import log
@@ -62,19 +61,11 @@ def run_tasks(tasks: List[Task], report: Report, resources: dict = None):
     logging.debug("running tasks")
     resources = resources or dict()
     for task in tasks:
-        buffer = resources["output"]
-
-        # If dependencies are satisfied, run
         if all(report.check(dependency) for dependency in task.dependencies):
             result = task.run(resources)
             report.add(result)
-            buffer.sneak(f"{PASSED if result.passed else FAILED} {task} {result}")
-
-        # Otherwise add, don't bother printing (for now)
         else:
             report.add(task.result_type.incomplete())
-
-        buffer.print(prefix=" " * 2)
 
 
 @dataclass(eq=False)
@@ -97,10 +88,11 @@ class Grader:
 
         log.debug("setting up runtime")
         report = Report()
-        resources.update(report=report, output=Buffer(printer=log.info), resources=resources)
+        resources.update(report=report, resources=resources)
 
         for stage in (self.setup, self.test, self.teardown):
             if len(stage.tasks) == 0:
+                log.debug(f"skipping stage {stage.kind}")
                 continue
             log.info(f"starting stage {stage.kind}")
             run_tasks(stage.tasks, report, resources)

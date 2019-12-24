@@ -1,11 +1,10 @@
-from collections import deque
-from typing import Deque, Dict, Tuple, Callable
+from typing import Dict, Tuple
 from pathlib import Path
 from dataclasses import dataclass, field
 
 from .library import callgrind, process
 
-__all__ = ("Resource", "Context", "Buffer", "File", "Executable", "ExecutableFile")
+__all__ = ("Resource", "Context", "File", "Executable", "ExecutableFile")
 
 
 class Resource:
@@ -18,50 +17,6 @@ class Context(Resource):
 
     target_path: Path
     options: Dict[str, str] = field(default_factory=dict)
-
-
-@dataclass(eq=False)
-class Buffer(Resource):
-    """A mutable message recipient.
-
-    This is used in tests so that when multiprocessing output is
-    buffered and therefore kept  separate for independent test cases.
-    """
-
-    printer: Callable[[str], None]
-    messages: Deque[str] = field(default_factory=deque)
-    indent: int = 0
-
-    def __call__(self, *message, sep: str = " ", end: str = "\n"):
-        """Place a message on the queue."""
-
-        self.messages.append(" " * self.indent + sep.join(map(str, message)) + end)
-        self.indent = 0
-
-    def __getitem__(self, count: int) -> "Buffer":
-        """Set indent."""
-
-        self.indent = count
-        return self
-
-    def sneak(self, *message, sep: str = " ", end: str = "\n"):
-        """Sneak in a message at the head."""
-
-        self.messages.appendleft(" " * self.indent + sep.join(map(str, message)) + end)
-
-    def print(self, prefix=""):
-        """Build the complete output as a string."""
-
-        if not self.messages:
-            return
-
-        out = "".join(message for message in self.messages)
-        self.messages.clear()
-        for line in out.rstrip().split("\n"):
-            self.printer(prefix + line)
-
-    def clear(self):
-        self.messages.clear()
 
 
 @dataclass(eq=False)
