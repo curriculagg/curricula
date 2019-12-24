@@ -4,8 +4,8 @@ from pathlib import Path
 from typing import Dict, Union, List, Callable
 from dataclasses import dataclass
 
-from ..core.models import Assignment, Problem
-from ..core.shared import Files, Paths
+from .models import Assignment, Problem
+from ..shared import Files, Paths
 from ..grade.manager import generate_grading_schema
 from ..library.template import jinja2_create_environment
 from ..library import files

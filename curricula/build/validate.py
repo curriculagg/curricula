@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 
 from .models import Assignment
-from .shared import *
+from ..shared import *
 
 ROOT = Path(__file__).absolute().parent
 

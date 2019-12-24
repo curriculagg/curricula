@@ -4,7 +4,7 @@ from pathlib import Path
 from dataclasses import dataclass
 from typing import Optional, List
 
-from .shared import *
+from ..shared import *
 
 
 @dataclass

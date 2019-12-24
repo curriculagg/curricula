@@ -4,7 +4,7 @@ from pathlib import Path
 from dataclasses import dataclass, field
 
 from ...library.template import jinja2_create_environment
-from ...core.shared import Files
+from ...shared import Files
 from .. import root as grade_root
 
 

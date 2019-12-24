@@ -3,8 +3,8 @@ import jsonschema
 from pathlib import Path
 
 from . import build
+from .validate import validate
 from ..plugin import Plugin
-from ..core.validate import validate
 from ..library.log import log
 
 

@@ -8,8 +8,8 @@ from dataclasses import dataclass
 from .grader import Grader
 from .report import Report
 from .resource import Context
-from ..core.shared import *
-from ..core.models import Assignment
+from ..shared import *
+from ..build.models import Assignment
 from ..library.utility import timed
 from ..library.log import log
 
