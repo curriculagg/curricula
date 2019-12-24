@@ -137,7 +137,13 @@ def build_solution_code(assignment: Assignment, path: Path):
     """Compile only submission files of the solution."""
 
     log.debug("assembling solution code")
-    aggregate_contents(assignment, Paths.SOLUTION, path)
+    copied_paths = aggregate_contents(assignment, Paths.SOLUTION, path)
+
+    # Delete extra READMEs
+    for copied_path in copied_paths:
+        readme_path = copied_path.joinpath(Files.README)
+        if readme_path.exists():
+            files.delete(readme_path)
 
 
 def build_solution(context: Context, assignment: Assignment):
