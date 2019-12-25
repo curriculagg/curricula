@@ -5,6 +5,7 @@ from pathlib import Path
 
 from .models import Assignment
 from ..shared import *
+from ..library.log import log
 
 root = Path(__file__).absolute().parent
 
@@ -23,7 +24,7 @@ def validate_json(path: Path, schema: dict):
     try:
         jsonschema.validate(problem_json, schema)
     except jsonschema.ValidationError as e:
-        print(f"Error in {path}")
+        log.error(f"invalid schema in {path}")
         print(e, file=sys.stderr)
         raise
 

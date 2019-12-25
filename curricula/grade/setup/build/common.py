@@ -21,7 +21,7 @@ def build_gpp_executable(
 
     error = None
     if runtime.code != 0:
-        error = f"failed to compile {source_path.parts[-1]}"
+        error = runtime.stderr.decode(errors="replace")
     elif runtime.timed_out:
         error = f"timed out while compiling {source_path.parts[-1]}"
     elif runtime.raised_exception:

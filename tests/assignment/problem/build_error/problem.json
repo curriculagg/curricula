@@ -1,0 +1,20 @@
+{
+  "title": "Build Error!",
+  "authors": [
+    {
+      "name": "Noah Kim",
+      "email": "noahbkim@gmail.edu"
+    }
+  ],
+  "topics": [
+    "build",
+    "error"
+  ],
+  "grading": {
+    "minutes": 5,
+    "process": [
+      "automated",
+      "review"
+    ]
+  }
+}

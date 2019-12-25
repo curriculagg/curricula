@@ -1,24 +1,40 @@
 import json
-from typing import Dict, List
+from typing import Dict, List, Optional
 from pathlib import Path
 from dataclasses import dataclass, field
 
+from .. import root as grade_root
+from ..task import Task
 from ...library.template import jinja2_create_environment
 from ...shared import Files
-from .. import root as grade_root
 
 
-@dataclass
+@dataclass(eq=False)
 class ProblemSummary:
+    """A summary of the results from a problem's cases."""
+
+    # Main tests
     tests_total: int = 0
-    tests_correct: int = 0
-    tests_incorrect: List[str] = field(default_factory=list)
-    failed_setup: bool = False
-    build_error: str = ""
+    tests_correct: List[Task] = field(default_factory=list)
+    tests_incorrect: List[Task] = field(default_factory=list)
+
+    # Setup problems
+    setup_failed: bool = False
+    setup_error: Optional[str] = None
+
+    @property
+    def tests_percentage(self):
+        """Compute the percentage."""
+
+        if self.tests_total == 0:
+            return 1
+        return len(self.tests_correct) / self.tests_total
 
 
-@dataclass
+@dataclass(eq=False)
 class ReportSummary:
+    """Summary of problems."""
+
     problems: Dict[str, ProblemSummary] = field(default_factory=dict)
 
 
@@ -30,17 +46,21 @@ def summarize(grading_schema: dict, report: dict) -> ReportSummary:
         problem_summary = summary.problems[problem_short] = ProblemSummary()
         for task_name, task in problem["tasks"].items():
             result = report[problem_short][task_name]
-            if task["kind"] == "setup":
+
+            # Diagnose any issues in setup
+            if task["stage"] == "setup":
                 if not result["complete"] or not result["passed"]:
-                    problem_summary.failed_setup = True
-                if "kind" in result and result["kind"] == "build" and not result["passed"] and "runtime" in result["details"]:
-                    problem_summary.build_error = result["details"]["runtime"]["stderr"]
-            elif task["kind"] == "test":
+                    problem_summary.setup_failed = True
+                    problem_summary.setup_error = result["details"]["error"]
+
+            # Problem summary
+            elif task["stage"] == "test":
                 problem_summary.tests_total += 1
                 if result["complete"] and result["passed"]:
-                    problem_summary.tests_correct += 1
+                    problem_summary.tests_correct.append(task)
                 else:
-                    problem_summary.tests_incorrect.append(task_name)
+                    problem_summary.tests_incorrect.append(task)
+
     return summary
 
 

@@ -22,6 +22,10 @@
     {
       "path": "problem/only_grading",
       "percentage": 0.1
+    },
+    {
+      "path": "problem/build_error",
+      "percentage": 0.1
     }
   ]
 }
