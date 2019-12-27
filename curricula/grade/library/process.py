@@ -31,10 +31,9 @@ class Runtime:
 
     def dump(self) -> dict:
         dump = asdict(self)
-        if self.stdout is not None:
-            dump["stdout"] = self.stdout.decode(errors="replace")
-        if self.stderr is not None:
-            dump["stderr"] = self.stderr.decode(errors="replace")
+        for field in "stdout", "stdin", "stderr":
+            if dump[field] is not None:
+                dump[field] = dump[field].decode(errors="replace")
         return dump
 
 

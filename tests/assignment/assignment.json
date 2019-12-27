@@ -26,6 +26,10 @@
     {
       "path": "problem/build_error",
       "percentage": 0.1
+    },
+    {
+      "path": "problem/with_stdin",
+      "percentage": 0.1
     }
   ]
 }
