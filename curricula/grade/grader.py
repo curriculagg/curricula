@@ -49,19 +49,42 @@ def topological_sort(*steps: List[Task]):
         tasks.extend(result)
 
 
-def run_tasks(tasks: List[Task], report: Report, resources: dict = None):
+def fulfills_dependencies(task: Task, report: Report):
+    """Convenience."""
+
+    return all(report.check(dependency) for dependency in task.dependencies)
+
+
+def sanity_enabled_and_not_sanity(task: Task, resources: dict):
+    """Convenience."""
+
+    context = resources["context"]
+    if "sanity" not in context.options or not context.options["sanity"]:
+        return False
+    if "sanity" in task.details and task.details["sanity"]:
+        return False
+    return True
+
+
+def run_tasks(tasks: List[Task], report: Report, resources: dict):
     """Execute sorted tasks, skipping if missing dependencies."""
 
     log.debug("running tasks")
-    resources = resources or dict()
     for task in tasks:
         log.debug(f"running task {task.name}")
-        if all(report.check(dependency) for dependency in task.dependencies):
+
+        # Check conditions for whether this case is visible
+        hidden = sanity_enabled_and_not_sanity(task, resources)
+
+        # Run task if not hidden and dependencies are met
+        if not hidden and fulfills_dependencies(task, report):
             result = task.run(resources)
         else:
             result = task.result_type.incomplete()
+
+        # Set the origin task and add to report
         result.task = task
-        report.add(result)
+        report.add(result, hidden=hidden)
 
 
 @dataclass(eq=False)

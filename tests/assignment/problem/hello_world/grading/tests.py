@@ -10,7 +10,7 @@ GPP_OPTIONS = ("-Wall", "-std=c++11")
 grader = Grader()
 
 
-@grader.setup.check()
+@grader.setup.check(sanity=True)
 def check_hello_world(context: Context, resources: dict) -> CheckResult:
     """Check whether hello_world.cpp has been submitted."""
 
@@ -18,7 +18,7 @@ def check_hello_world(context: Context, resources: dict) -> CheckResult:
     return check_file_exists(resources["hello_world_source_path"])
 
 
-@grader.setup.build(dependency="check_hello_world")
+@grader.setup.build(dependency="check_hello_world", sanity=True)
 def build_hello_world(hello_world_source_path: Path, resources: dict) -> BuildResult:
     """Compile the program with gcc."""
 

@@ -11,7 +11,7 @@ GPP_OPTIONS = ("-Wall", "-std=c++11")
 grader = Grader()
 
 
-@grader.setup.check()
+@grader.setup.check(sanity=True)
 def check_with_stdin(context: Context, resources: dict) -> CheckResult:
     """Check whether with_stdin.cpp has been submitted."""
 
@@ -19,7 +19,7 @@ def check_with_stdin(context: Context, resources: dict) -> CheckResult:
     return check_file_exists(resources["with_stdin_source_path"])
 
 
-@grader.setup.build(dependency="check_with_stdin")
+@grader.setup.build(dependency="check_with_stdin", sanity=True)
 def build_with_stdin(with_stdin_source_path: Path, resources: dict) -> BuildResult:
     """Compile the program with gcc."""
 

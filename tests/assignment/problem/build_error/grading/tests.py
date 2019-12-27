@@ -7,7 +7,7 @@ from curricula.grade.setup.build.common import build_gpp_executable
 grader = Grader()
 
 
-@grader.setup.build()
+@grader.setup.build(sanity=True)
 def check_build_error(context: Context, resources: dict):
     """Check if the program exists."""
 
@@ -15,7 +15,7 @@ def check_build_error(context: Context, resources: dict):
     return check_file_exists(resources["build_error_source_path"])
 
 
-@grader.setup.check(dependency="check_build_error")
+@grader.setup.check(dependency="check_build_error", sanity=True)
 def build_build_error(context: Context, build_error_source_path: Path):
     """Build the script."""
 

@@ -62,8 +62,9 @@ class GradePlugin(Plugin):
         subparsers = parser.add_subparsers(required=True, dest="command")
 
         run_parser = subparsers.add_parser("run")
-        run_parser.add_argument("-s", "--skip", action="store_true", help="skip reports that have already been run")
-        run_parser.add_argument("-r", "--report", action="store_true", help="whether to log test results")
+        run_parser.add_argument("--skip", action="store_true", help="skip reports that have already been run")
+        run_parser.add_argument("--report", action="store_true", help="whether to log test results")
+        run_parser.add_argument("--sanity", action="store_true", help="only do sanity checks")
         to_group = run_parser.add_mutually_exclusive_group(required=True)
         to_group.add_argument("-f", "--file", dest="file", help="output file for single report")
         to_group.add_argument("-d", "--directory", dest="directory", help="where to write reports to if batched")

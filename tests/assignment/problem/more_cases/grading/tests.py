@@ -11,7 +11,7 @@ GPP_OPTIONS = ("-Wall", "-std=c++11")
 grader = Grader()
 
 
-@grader.setup.check()
+@grader.setup.check(sanity=True)
 def check_more_cases(context: Context, resources: dict):
     """Check if the program exists."""
 
@@ -19,7 +19,7 @@ def check_more_cases(context: Context, resources: dict):
     return check_file_exists(resources["more_cases_source_path"])
 
 
-@grader.setup.build(dependency="check_more_cases")
+@grader.setup.build(dependency="check_more_cases", sanity=True)
 def build_more_cases(context: Context, more_cases_source_path: Path, resources: dict):
     """Build the program."""
 
@@ -31,7 +31,7 @@ def build_more_cases(context: Context, more_cases_source_path: Path, resources: 
     return result
 
 
-@grader.test.correctness(dependency="build_more_cases")
+@grader.test.correctness(dependency="build_more_cases", sanity=True)
 def test_pass(more_cases: ExecutableFile):
     """Test basic pass."""
 

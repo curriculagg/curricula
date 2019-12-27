@@ -38,11 +38,12 @@ class Report(Resource):
         result = self.lookup[task_name]
         return result.complete and result.passed
 
-    def add(self, result: Result):
+    def add(self, result: Result, hidden: bool = False):
         """Add a result to the report."""
 
         self.lookup[result.task.name] = result
-        self.results.append(result)
+        if not hidden:
+            self.results.append(result)
 
     def dump(self) -> dict:
         """Dump the result to a serializable format."""
