@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/curricula.iml" filepath="$PROJECT_DIR$/.idea/curricula.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../curricula-docker/.idea/curricula-docker.iml" filepath="$PROJECT_DIR$/../curricula-docker/.idea/curricula-docker.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../curricula-web/.idea/curricula-web.iml" filepath="$PROJECT_DIR$/../curricula-web/.idea/curricula-web.iml" />
+    </modules>
+  </component>
+</project>
