@@ -30,6 +30,10 @@
     {
       "path": "problem/with_stdin",
       "percentage": 0.1
+    },
+    {
+      "path": "problem/exploits",
+      "percentage": 0.1
     }
   ]
 }

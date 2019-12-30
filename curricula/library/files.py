@@ -62,3 +62,9 @@ def replace_directory(path: Path):
     if path.exists():
         delete(path)
     path.mkdir(parents=True)
+
+
+def add_mode(path: Path, mode: int):
+    """Do chmod and add a mode."""
+
+    os.chmod(str(path), os.stat(str(path)).st_mode | mode)

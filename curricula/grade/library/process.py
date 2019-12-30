@@ -1,6 +1,6 @@
 import subprocess
 import timeit
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Callable, List
 from dataclasses import dataclass, asdict
 
 
@@ -30,11 +30,23 @@ class Runtime:
     exception: Optional[RuntimeException] = None
 
     def dump(self) -> dict:
+        """Make the runtime JSON serializable."""
+
         dump = asdict(self)
         for field in "stdout", "stdin", "stderr":
             if dump[field] is not None:
                 dump[field] = dump[field].decode(errors="replace")
         return dump
+
+
+process_setup_steps: List[Callable[[], None]] = []
+
+
+def process_setup():
+    """Run the process setup steps."""
+
+    for step in process_setup_steps:
+        step()
 
 
 def run(*args: str, stdin: bytes = None, timeout: float = None) -> Runtime:
@@ -48,9 +60,18 @@ def run(*args: str, stdin: bytes = None, timeout: float = None) -> Runtime:
     # Spawn the process, access stdout and stderr
     try:
         if stdin:
-            process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)
+            process = subprocess.Popen(
+                args,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                stdin=subprocess.PIPE,
+                preexec_fn=process_setup)
         else:
-            process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            process = subprocess.Popen(
+                args,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                preexec_fn=process_setup)
 
     # Catch common errors
     except OSError as error:
@@ -60,6 +81,9 @@ def run(*args: str, stdin: bytes = None, timeout: float = None) -> Runtime:
         return Runtime(args=args, timeout=timeout, stdin=stdin, raised_exception=True, exception=exception)
     except ValueError:
         exception = RuntimeException(description="failed to open process")
+        return Runtime(args=args, timeout=timeout, stdin=stdin, raised_exception=True, exception=exception)
+    except subprocess.SubprocessError as exception:
+        exception = RuntimeException(description=str(exception))
         return Runtime(args=args, timeout=timeout, stdin=stdin, raised_exception=True, exception=exception)
 
     # Wait for the process to finish with timeout

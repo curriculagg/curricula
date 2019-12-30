@@ -1,10 +1,11 @@
-from curricula.grade.library import process
-from curricula.grade.resource import ExecutableFile, File
-from curricula.library.files import delete_file
-from . import BuildResult
-
+import stat
 from typing import Iterable, Optional, Tuple
 from pathlib import Path
+
+from ...library import process
+from ...resource import ExecutableFile, File
+from ....library.files import delete_file, add_mode
+from . import BuildResult
 
 __all__ = ("build_gpp_executable", "build_makefile_executable", "build_harness_library")
 
@@ -20,18 +21,24 @@ def build_gpp_executable(
     runtime = process.run("g++", *gpp_options, "-o", str(destination_path), str(source_path), timeout=timeout)
 
     error = None
-    if runtime.code != 0:
-        error = runtime.stderr.decode(errors="replace")
+    if runtime.raised_exception:
+        error = f"error invoking compilation of {source_path.parts[-1]}: {runtime.exception.description}"
     elif runtime.timed_out:
         error = f"timed out while compiling {source_path.parts[-1]}"
-    elif runtime.raised_exception:
-        error = f"error invoking compilation of {source_path.parts[-1]}: {runtime.exception.description}"
+    elif runtime.code != 0:
+        if runtime.stderr:
+            error = runtime.stderr.decode(errors="replace")
+        else:
+            error = "nonzero status code"
     elif not destination_path.exists():
         error = f"build did not produce {destination_path.parts[-1]}"
 
     # If the build failed
     if error is not None:
         return BuildResult(passed=False, runtime=runtime.dump(), error=error), None
+
+    # Chmod
+    add_mode(destination_path, stat.S_IXOTH)
 
     # Otherwise
     return BuildResult(passed=True, runtime=runtime.dump()), ExecutableFile(destination_path)

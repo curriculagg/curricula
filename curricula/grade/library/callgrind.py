@@ -20,12 +20,18 @@ def read_last_line(path: Path) -> str:
         return file.readlines()[-1].decode()
 
 
-def run(*args: str, timeout: float) -> Optional[int]:
+def run(*args: str, stdin: bytes = None, timeout: float = None) -> Optional[int]:
     """Run callgrind on the program and return IR count."""
 
     _, out_path = tempfile.mkstemp(dir=Path().absolute())
     out_path = Path(out_path)
-    process.run("valgrind", "--tool=callgrind", f"--callgrind-out-file={out_path.parts[-1]}", *args, timeout=timeout)
+    process.run(
+        "valgrind",
+        "--tool=callgrind",
+        f"--callgrind-out-file={out_path.parts[-1]}",
+        *args,
+        stdin=stdin,
+        timeout=timeout)
     if out_path.exists():
         result = int(read_last_line(out_path).rsplit(maxsplit=1)[1])
         delete_file(out_path)

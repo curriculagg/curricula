@@ -1,14 +1,16 @@
 import itertools
 from typing import List, Dict
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 
 from .report import Report
 from .task import Task
+from .extra import Extra
 from ..library.log import log
 
 from .setup import SetupStage
 from .test import TestStage
 from .teardown import TeardownStage
+from .extra.sandbox import Sandbox
 
 
 class GraderException(Exception):
@@ -95,6 +97,8 @@ class Grader:
     test: TestStage = field(default_factory=TestStage)
     teardown: TeardownStage = field(default_factory=TeardownStage)
 
+    sandbox: Sandbox = field(default_factory=Sandbox)
+
     def check(self):
         """Topologically sort tasks, checking for cycles."""
 
@@ -108,12 +112,21 @@ class Grader:
         report = Report()
         resources.update(report=report, resources=resources)
 
+        log.debug("enabling extras")
+        extras = filter(lambda value: isinstance(value, Extra), (getattr(self, f.name) for f in fields(self)))
+        for extra in extras:
+            extra.apply()
+
         for stage in (self.setup, self.test, self.teardown):
             if len(stage.tasks) == 0:
                 log.debug(f"skipping stage {stage.name}")
                 continue
             log.debug(f"starting stage {stage.name}")
             run_tasks(stage.tasks, report, resources)
+
+        log.debug("reverting extras")
+        for extra in extras:
+            extra.revert()
 
         return report
 
