@@ -10,7 +10,7 @@ from ...library.log import log
 def demote_user(user_uid: int, user_gid: int):
     """Set the user of the process."""
 
-    # os.setgid(user_gid)
+    os.setgid(user_gid)
     os.setuid(user_uid)
 
 
@@ -47,3 +47,4 @@ class Sandbox(Extra):
         if self.user_demotion_enabled:
             log.debug("reverting user demotion")
             process.process_setup_steps.remove(self.user_demotion_step)
+            del self.user_demotion_step
