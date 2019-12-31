@@ -48,7 +48,7 @@ def topological_sort(stage_tasks: Iterable[List[Task]]):
         tasks.extend(result)
 
 
-def collapse_tasks(stages: List[GraderStage]) -> Iterable[Task]:
+def collapse_tasks(stages: Iterable[GraderStage]) -> Iterable[Task]:
     """Wrapper for topological_sort."""
 
     return itertools.chain(*(stage.tasks for stage in stages))
@@ -82,18 +82,16 @@ class Grader:
     sandbox: SandboxConfiguration = field(default_factory=SandboxConfiguration)
     output: OutputConfiguration = field(default_factory=OutputConfiguration)
 
-    def __post_init__(self):
-        """Set stage and configurator lists."""
-
-        self.stages = [self.setup, self.test, self.teardown]
-        self.configurations = [self.sandbox]
+    @property
+    def stages(self):
+        return self.setup, self.test, self.teardown
 
     def check(self):
         """Topologically sort tasks, checking for cycles."""
 
         # Check dependencies
         log.debug("sorting grader tasks by dependency")
-        topological_sort((stage.tasks for stage in self.stages))
+        topological_sort(stage.tasks for stage in self.stages)
 
         # Check task details
         for task in collapse_tasks(self.stages):
