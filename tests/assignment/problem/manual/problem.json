@@ -1,5 +1,5 @@
 {
-  "title": "Build Error!",
+  "title": "No Automated Grading",
   "authors": [
     {
       "name": "Noah Kim",
@@ -7,13 +7,12 @@
     }
   ],
   "topics": [
-    "build",
-    "error"
+    "manual"
   ],
   "grading": {
     "minutes": 5,
-    "automated": true,
-    "review": true,
-    "manual": false
+    "automated": false,
+    "review": false,
+    "manual": true
   }
 }

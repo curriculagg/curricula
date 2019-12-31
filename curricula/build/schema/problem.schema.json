@@ -31,20 +31,21 @@
         "minutes": {
           "type": "number"
         },
-        "process": {
-          "type": "array",
-          "items": {
-            "enum": [
-              "automated",
-              "review",
-              "manual"
-            ]
-          }
+        "automated": {
+          "type": "boolean"
+        },
+        "review": {
+          "type": "boolean"
+        },
+        "manual": {
+          "type": "boolean"
         }
       },
       "required": [
         "minutes",
-        "process"
+        "automated",
+        "review",
+        "manual"
       ]
     },
     "topics": {

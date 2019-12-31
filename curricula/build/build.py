@@ -6,11 +6,12 @@ from dataclasses import dataclass
 
 from .models import Assignment, Problem
 from ..shared import Files, Paths
-from ..grade.manager import generate_grading_schema
 from ..library.template import jinja2_create_environment
 from ..library import files
 from ..library.utility import timed
 from ..library.log import log
+
+from ..grade.manager import import_grader
 
 root = Path(__file__).absolute().parent
 
@@ -165,6 +166,25 @@ def build_grading_readme(context: Context, assignment: Assignment, path: Path):
         file.write(assignment_template.render(assignment=assignment))
 
 
+def generate_grading_schema(grading_path: Path, assignment: Assignment) -> dict:
+    """Generate a JSON schema describing the grading package.
+
+    This method requires the grading artifact to already have been
+    aggregated, as it has to access the individual problem graders to
+    dump their task summaries.
+    """
+
+    schema = dict(title=assignment.title, short=assignment.short, problems=dict())
+    for problem in assignment.problems:
+        if problem.grading.automated:
+            grader = import_grader(grading_path.joinpath(problem.short, Files.TESTS))
+            schema["problems"][problem.short] = dict(
+                title=problem.title,
+                percentage=problem.percentage,
+                tasks=grader.dump())
+    return schema
+
+
 def build_grading_schema(assignment: Assignment, path: Path):
     """Generate a JSON data file with grading metadata."""
 
@@ -185,7 +205,7 @@ def build_grading(context: Context, assignment: Assignment):
         assignment,
         Paths.GRADING,
         grading_path,
-        filter_problems=lambda p: "automated" in p.grading.process)
+        filter_problems=lambda p: p.grading.automated)
 
     # Delete extra READMEs
     for copied_path in copied_paths:
@@ -194,6 +214,14 @@ def build_grading(context: Context, assignment: Assignment):
             files.delete(readme_path)
 
     build_grading_schema(assignment, grading_path)
+
+
+def build_index(context: Context, assignment: Assignment):
+    """Dump the assignment into the artifacts."""
+
+    log.debug("writing index to artifacts")
+    with context.artifacts_path.joinpath("index.json").open("w") as file:
+        json.dump(assignment.dump(), file, indent=2)
 
 
 @jinja2.environmentfilter
@@ -222,8 +250,8 @@ BUILD_STEPS = (
     build_instructions,
     build_resources,
     build_solution,
-    build_grading
-)
+    build_grading,
+    build_index)
 
 
 @timed("build", printer=log.info)

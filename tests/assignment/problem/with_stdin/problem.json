@@ -12,9 +12,8 @@
   ],
   "grading": {
     "minutes": 5,
-    "process": [
-      "automated",
-      "review"
-    ]
+    "automated": true,
+    "review": true,
+    "manual": false
   }
 }

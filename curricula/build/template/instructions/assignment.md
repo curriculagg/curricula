@@ -5,7 +5,7 @@ title: [[ assignment.title ]]
 ---
 
 - Assigned: [[ assignment.dates.assigned | date ]] PST
-- Due: [[ assignment.dates.deadline | datetime ]] PST
+- Due: [[ assignment.dates.due | datetime ]] PST
 - Directory name in your github repository for this homework (case sensitive): `[[ assignment.short ]]`
    - Once you have cloned your `{{ site.data.material.urls.github }}/hw-username` repo, create this `[[ assignment.short ]]` folder underneath it (i.e. `hw-username/[[ assignment.short ]]`).
    - Skeleton code for this assignment is available in `homework_resources/[[ assignment.short ]]`.

@@ -10,7 +10,6 @@ from .report import Report
 from .resource import Context
 from .exception import GraderException
 from ..shared import *
-from ..build.models import Assignment
 from ..library.utility import timed
 from ..library.log import log
 
@@ -29,25 +28,6 @@ def import_grader(tests_path: Path, grader_name: str = "grader") -> Grader:
     sys.path.pop(0)
 
     return grader
-
-
-def generate_grading_schema(grading_path: Path, assignment: Assignment) -> dict:
-    """Generate a JSON schema describing the grading package.
-
-    This method requires the grading artifact to already have been
-    aggregated, as it has to access the individual problem graders to
-    dump their task summaries.
-    """
-
-    result = dict(title=assignment.title, problems=dict())
-    for problem in assignment.problems:
-        if "automated" in problem.grading.process:
-            grader = import_grader(grading_path.joinpath(problem.short, Files.TESTS))
-            result["problems"][problem.short] = dict(
-                title=problem.title,
-                percentage=problem.percentage,
-                tasks=grader.dump())
-    return result
 
 
 def print_reports(target_path: Path, reports: Dict[str, Report]):

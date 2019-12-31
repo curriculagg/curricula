@@ -1,7 +1,7 @@
 import datetime
 import json
 from pathlib import Path
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from typing import Optional, List
 
 from ..shared import *
@@ -14,19 +14,27 @@ class Author:
     name: str
     email: str
 
+    def dump(self) -> dict:
+        return asdict(self)
+
 
 @dataclass
 class Dates:
     """Assignment dates."""
 
     assigned: datetime.datetime
-    deadline: datetime.datetime
+    due: datetime.datetime
 
-    def __init__(self, assigned: str, deadline: str):
+    def __init__(self, assigned: str, due: str):
         """Convert to datetime."""
 
         self.assigned = datetime.datetime.strptime(assigned, "%Y-%m-%d %H:%M:%S")
-        self.deadline = datetime.datetime.strptime(deadline, "%Y-%m-%d %H:%M:%S")
+        self.due = datetime.datetime.strptime(due, "%Y-%m-%d %H:%M:%S")
+
+    def dump(self) -> dict:
+        return dict(
+            assigned=self.assigned.strftime("%Y-%m-%d %H:%M:%S"),
+            due=self.due.strftime("%Y-%m-%d %H:%M:%S"))
 
 
 @dataclass
@@ -34,7 +42,12 @@ class Grading:
     """Grading description."""
 
     minutes: int
-    process: List[str]
+    automated: bool
+    review: bool
+    manual: bool
+
+    def dump(self) -> dict:
+        return asdict(self)
 
 
 @dataclass
@@ -51,10 +64,9 @@ class Problem:
     title: str
     authors: List[Author]
     topics: List[str]
+    grading: Grading
     notes: Optional[str] = None
     difficulty: Optional[str] = None
-    submission: Optional[List[str]] = None
-    grading: Optional[Grading] = None
 
     @classmethod
     def load(cls, assignment: "Assignment", root: Path, reference: dict, number: int) -> "Problem":
@@ -66,9 +78,20 @@ class Problem:
             data = json.load(file)
 
         authors = list(Author(**author) for author in data.pop("authors"))
-        grading = Grading(**data.pop("grading")) if "grading" in data else None
+        grading = Grading(**data.pop("grading"))
         percentage = reference["percentage"]
         return cls(assignment, path, short, number, percentage, authors=authors, grading=grading, **data)
+
+    def dump(self) -> dict:
+        return dict(
+            short=self.short,
+            percentage=self.percentage,
+            title=self.title,
+            authors=[author.dump() for author in self.authors],
+            topics=self.topics,
+            notes=self.notes,
+            difficulty=self.difficulty,
+            grading=self.grading.dump())
 
 
 @dataclass
@@ -107,3 +130,19 @@ class Assignment:
             self.problems.append(Problem.load(self, path, reference, number))
 
         return self
+
+    def dump(self) -> dict:
+        """Dump the assignment to JSON.
+
+        This method is not symmetric to load, and should therefore
+        probably not be called dump. It is intended for use in
+        generating the grading schema.
+        """
+
+        return dict(
+            short=self.short,
+            title=self.title,
+            authors=[author.dump() for author in self.authors],
+            dates=self.dates.dump(),
+            problems=[problem.dump() for problem in self.problems],
+            notes=self.notes)
