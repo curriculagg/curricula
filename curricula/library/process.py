@@ -1,7 +1,8 @@
 import subprocess
 import timeit
-from typing import Optional, Tuple, Callable, List
-from dataclasses import dataclass, asdict
+import os
+from typing import Optional, Tuple, Callable
+from dataclasses import dataclass, asdict, field
 
 
 @dataclass(eq=False)
@@ -33,20 +34,61 @@ class Runtime:
         """Make the runtime JSON serializable."""
 
         dump = asdict(self)
-        for field in "stdout", "stdin", "stderr":
-            if dump[field] is not None:
-                dump[field] = dump[field].decode(errors="replace")
+        for field_name in "stdout", "stdin", "stderr":
+            if dump[field_name] is not None:
+                dump[field_name] = dump[field_name].decode(errors="replace")
         return dump
 
 
-process_setup_steps: List[Callable[[], None]] = []
+def demote_user(user_uid: int, user_gid: int):
+    """Set the user of the process."""
+
+    os.setgid(user_gid)
+    os.setuid(user_uid)
 
 
-def process_setup():
-    """Run the process setup steps."""
+@dataclass(eq=False)
+class SubprocessConfiguration:
+    """Global settings."""
 
-    for step in process_setup_steps:
-        step()
+    custom_process_setup: Optional[Callable[[], None]] = None
+
+    demote_user_enabled: bool = False
+    demote_user_uid: int = field(init=False)
+    demote_user_gid: int = field(init=False)
+
+    def set_custom_process_setup(self, custom_process_setup: Callable[[], None]):
+        """Can be used as a decorator."""
+
+        self.custom_process_setup = custom_process_setup
+
+    def clear_custom_process_setup(self):
+        """Return to default."""
+
+        self.custom_process_setup = None
+
+    def enable_demote_user(self, uid: int, gid: int):
+        """Globally enable user demotion in run."""
+
+        self.demote_user_enabled = True
+        self.demote_user_uid = uid
+        self.demote_user_gid = gid
+
+    def disable_demote_user(self):
+        """Globally disable user demotion."""
+
+        self.demote_user_enabled = False
+
+    def process_setup(self):
+        """Do not overwrite."""
+
+        if self.custom_process_setup is not None:
+            self.custom_process_setup()
+        if self.demote_user_enabled:
+            demote_user(self.demote_user_uid, self.demote_user_gid)
+
+
+config = SubprocessConfiguration()
 
 
 def run(*args: str, stdin: bytes = None, timeout: float = None) -> Runtime:
@@ -55,23 +97,26 @@ def run(*args: str, stdin: bytes = None, timeout: float = None) -> Runtime:
     The provided path must be absolute in order to properly execute
     the program. Args provided are passed as they would be from the
     command line. The timeout is measured in seconds.
+
+    The process_setup callable is invoked within the spawned process
+    prior to the execution of the command.
     """
 
     # Spawn the process, access stdout and stderr
     try:
-        if stdin:
+        if stdin is not None:
             process = subprocess.Popen(
                 args,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 stdin=subprocess.PIPE,
-                preexec_fn=process_setup)
+                preexec_fn=config.process_setup)
         else:
             process = subprocess.Popen(
                 args,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                preexec_fn=process_setup)
+                preexec_fn=config.process_setup)
 
     # Catch common errors
     except OSError as error:

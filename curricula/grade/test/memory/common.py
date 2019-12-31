@@ -1,4 +1,4 @@
-from ...library import valgrind
+from library import valgrind
 from . import MemoryResult
 
 

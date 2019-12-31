@@ -2,7 +2,8 @@ from typing import Dict, Tuple
 from pathlib import Path
 from dataclasses import dataclass, field
 
-from .library import callgrind, process
+from ..library import process
+from ..library import callgrind
 
 __all__ = ("Resource", "Context", "File", "Executable", "ExecutableFile")
 
@@ -44,7 +45,7 @@ class Executable(Resource):
     def count(self, *args: str, stdin: bytes = None, timeout: float) -> int:
         """Count the instructions executed during runtime."""
 
-        return callgrind.run(*self.args, *args, stdin=stdin, timeout=timeout)
+        return callgrind.count(*self.args, *args, stdin=stdin, timeout=timeout)
 
 
 @dataclass(eq=False)
@@ -64,4 +65,4 @@ class ExecutableFile(Executable, File):
     def count(self, *args: str, timeout: float = None) -> int:
         """Count the instructions executed during runtime."""
 
-        return callgrind.run(*self.args, *args, timeout=timeout)
+        return callgrind.count(*self.args, *args, timeout=timeout)

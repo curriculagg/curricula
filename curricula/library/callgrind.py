@@ -4,9 +4,9 @@ from pathlib import Path
 from typing import Optional
 
 from . import process
-from ...library.files import delete_file
+from .files import delete_file
 
-__all__ = ("run",)
+__all__ = ("count",)
 
 
 def read_last_line(path: Path) -> str:
@@ -20,7 +20,7 @@ def read_last_line(path: Path) -> str:
         return file.readlines()[-1].decode()
 
 
-def run(*args: str, stdin: bytes = None, timeout: float = None) -> Optional[int]:
+def count(*args: str, stdin: bytes = None, timeout: float = None) -> Optional[int]:
     """Run callgrind on the program and return IR count."""
 
     _, out_path = tempfile.mkstemp(dir=Path().absolute())

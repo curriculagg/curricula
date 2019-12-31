@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from .grader import Grader
 from .report import Report
 from .resource import Context
+from .exception import GraderException
 from ..shared import *
 from ..build.models import Assignment
 from ..library.utility import timed
@@ -83,7 +84,7 @@ class Manager:
             # Check dependencies
             try:
                 grader.check()
-            except ValueError:
+            except GraderException:
                 log.error(f"grader for {problem_short} failed to check")
                 return None
 
@@ -101,7 +102,11 @@ class Manager:
         for problem_short, grader in self.graders.items():
             log.debug(f"running problem {problem_short}")
             context = Context(target_path, problem_short, options)
-            reports[problem_short] = grader.run(context=context)
+
+            try:
+                reports[problem_short] = grader.run(context=context)
+            except GraderException:
+                return reports
 
         if options.get("report"):
             print_reports(target_path, reports)

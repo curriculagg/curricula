@@ -1,10 +1,8 @@
-"""Convenience functions for output manipulation."""
-
-from ...library.process import Runtime
-from . import CorrectnessResult
-
 from typing import List, Iterable, AnyStr, Union, Sized, Callable
 from pathlib import Path
+
+from . import CorrectnessResult
+from ....library.process import Runtime
 
 __all__ = (
     "as_lines",

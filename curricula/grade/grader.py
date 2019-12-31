@@ -1,20 +1,17 @@
 import itertools
-from typing import List, Dict
-from dataclasses import dataclass, field, fields
+from typing import List, Dict, Iterable
+from dataclasses import dataclass, field
 
 from .report import Report
 from .task import Task
-from .extra import Extra
+from .stage import GraderStage
 from ..library.log import log
 
 from .setup import SetupStage
 from .test import TestStage
 from .teardown import TeardownStage
-from .extra.sandbox import Sandbox
-
-
-class GraderException(Exception):
-    """Thrown during checks, builds, tests."""
+from .configuration.sandbox import SandboxConfiguration
+from .configuration.output import OutputConfiguration
 
 
 def topological_sort_visit(task: Task, lookup: Dict[str, Task], marks: Dict[Task, int], result: List[Task]):
@@ -34,12 +31,12 @@ def topological_sort_visit(task: Task, lookup: Dict[str, Task], marks: Dict[Task
     result.append(task)
 
 
-def topological_sort(*steps: List[Task]):
+def topological_sort(stage_tasks: Iterable[List[Task]]):
     """Order tasks by dependency."""
 
     lookup = {}
     marks = {}
-    for tasks in steps:
+    for tasks in stage_tasks:
         result = []
         for task in tasks:
             marks[task] = 0
@@ -49,6 +46,12 @@ def topological_sort(*steps: List[Task]):
                 topological_sort_visit(task, lookup, marks, result)
         tasks.clear()
         tasks.extend(result)
+
+
+def collapse_tasks(stages: List[GraderStage]) -> Iterable[Task]:
+    """Wrapper for topological_sort."""
+
+    return itertools.chain(*(stage.tasks for stage in stages))
 
 
 def fulfills_dependencies(task: Task, report: Report):
@@ -68,27 +71,6 @@ def sanity_enabled_and_not_sanity(task: Task, resources: dict):
     return True
 
 
-def run_tasks(tasks: List[Task], report: Report, resources: dict):
-    """Execute sorted tasks, skipping if missing dependencies."""
-
-    log.debug("running tasks")
-    for task in tasks:
-        log.debug(f"running task {task.name}")
-
-        # Check conditions for whether this case is visible
-        hidden = sanity_enabled_and_not_sanity(task, resources)
-
-        # Run task if not hidden and dependencies are met
-        if not hidden and fulfills_dependencies(task, report):
-            result = task.run(resources)
-        else:
-            result = task.result_type.incomplete()
-
-        # Set the origin task and add to report
-        result.task = task
-        report.add(result, hidden=hidden)
-
-
 @dataclass(eq=False)
 class Grader:
     """A main class for grading runtime."""
@@ -97,13 +79,46 @@ class Grader:
     test: TestStage = field(default_factory=TestStage)
     teardown: TeardownStage = field(default_factory=TeardownStage)
 
-    sandbox: Sandbox = field(default_factory=Sandbox)
+    sandbox: SandboxConfiguration = field(default_factory=SandboxConfiguration)
+    output: OutputConfiguration = field(default_factory=OutputConfiguration)
+
+    def __post_init__(self):
+        """Set stage and configurator lists."""
+
+        self.stages = [self.setup, self.test, self.teardown]
+        self.configurations = [self.sandbox]
 
     def check(self):
         """Topologically sort tasks, checking for cycles."""
 
+        # Check dependencies
         log.debug("sorting grader tasks by dependency")
-        topological_sort(self.setup.tasks, self.test.tasks, self.teardown.tasks)
+        topological_sort((stage.tasks for stage in self.stages))
+
+        # Check task details
+        for task in collapse_tasks(self.stages):
+            self.output.check_task(task)
+
+    def __run(self, tasks: List[Task], report: Report, resources: dict):
+        """Execute sorted tasks, skipping if missing dependencies."""
+
+        log.debug("running tasks")
+        for task in tasks:
+            log.debug(f"running task {task.name}")
+
+            # Check conditions for whether this case is visible
+            hidden = sanity_enabled_and_not_sanity(task, resources)
+
+            # Run task if not hidden and dependencies are met
+            run_task = not hidden and fulfills_dependencies(task, report)
+            result = task.run(resources) if run_task else task.result_type.incomplete()
+            result.task = task
+
+            # Check result
+            self.output.check_result(result)
+
+            # Add to report
+            report.add(result, hidden=hidden)
 
     def run(self, **resources) -> Report:
         """Build and test."""
@@ -112,26 +127,25 @@ class Grader:
         report = Report()
         resources.update(report=report, resources=resources)
 
-        log.debug("enabling extras")
-        extras = filter(lambda value: isinstance(value, Extra), (getattr(self, f.name) for f in fields(self)))
-        for extra in extras:
-            extra.apply()
+        # Apply configuration
+        log.debug("enabling configurators")
+        self.sandbox.apply()
 
-        for stage in (self.setup, self.test, self.teardown):
-            if len(stage.tasks) == 0:
-                log.debug(f"skipping stage {stage.name}")
-                continue
-            log.debug(f"starting stage {stage.name}")
-            run_tasks(stage.tasks, report, resources)
+        # Run each stage
+        for stage in self.stages:
+            if len(stage.tasks) > 0:
+                log.debug(f"starting stage {stage.name}")
+                self.__run(stage.tasks, report, resources)
+            else:
+                log.debug(f"no tasks for stage {stage.name}")
 
-        log.debug("reverting extras")
-        for extra in extras:
-            extra.revert()
+        # Revert, trusting plugin
+        log.debug("reverting configurators")
+        self.sandbox.revert()
 
         return report
 
     def dump(self) -> dict:
         """Dump the tasks to something JSON serializable."""
 
-        return {task.name: task.dump() for task in
-                itertools.chain(self.setup.tasks, self.test.tasks, self.teardown.tasks)}
+        return {task.name: task.dump() for task in collapse_tasks(self.stages)}

@@ -1,7 +1,7 @@
 from typing import Optional
 
-from ...library.process import Runtime
-from ...library.valgrind import ValgrindReport
+from ....library.process import Runtime
+from ....library.valgrind import ValgrindReport
 from ...task import Result
 
 
@@ -15,14 +15,15 @@ class MemoryResult(Result):
     leaked_blocks: Optional[int]
     leaked_bytes: Optional[int]
 
-    def __init__(self,
-                 passed: bool,
-                 runtime: Runtime,
-                 complete: bool = True,
-                 error_count: int = None,
-                 leaked_blocks: int = None,
-                 leaked_bytes: int = None,
-                 **details):
+    def __init__(
+            self,
+             passed: bool,
+             runtime: Runtime,
+             complete: bool = True,
+             error_count: int = None,
+             leaked_blocks: int = None,
+             leaked_bytes: int = None,
+             **details):
         super().__init__(complete=complete, passed=passed, details=details)
         self.runtime = runtime
         self.error_count = error_count

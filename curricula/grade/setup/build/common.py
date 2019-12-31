@@ -2,10 +2,10 @@ import stat
 from typing import Iterable, Optional, Tuple
 from pathlib import Path
 
-from ...library import process
-from ...resource import ExecutableFile, File
-from ....library.files import delete_file, add_mode
 from . import BuildResult
+from ...resource import ExecutableFile, File
+from ....library import process
+from ....library.files import delete_file, add_mode
 
 __all__ = ("build_gpp_executable", "build_makefile_executable", "build_harness_library")
 

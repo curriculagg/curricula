@@ -68,3 +68,9 @@ def add_mode(path: Path, mode: int):
     """Do chmod and add a mode."""
 
     os.chmod(str(path), os.stat(str(path)).st_mode | mode)
+
+
+def subtract_mode(path: Path, mode: int):
+    """Do chmod and subtract a mode."""
+
+    os.chmod(str(path), os.stat(str(path)).st_mode & ~mode)

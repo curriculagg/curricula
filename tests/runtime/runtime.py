@@ -10,9 +10,6 @@ sys.path.append(str(repository))
 
 # Import stuff from curricula here, some useful examples are included
 from curricula.grade.setup.build.common import build_gpp_executable
-from curricula.grade.library import callgrind
-from curricula.library.files import delete_file
-from curricula.library.utility import timed
 
 
 def example():
