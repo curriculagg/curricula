@@ -15,7 +15,7 @@ grader = Grader()
 def check_with_stdin(context: Context, resources: dict) -> CheckResult:
     """Check whether with_stdin.cpp has been submitted."""
 
-    resources["with_stdin_source_path"] = context.target_path.joinpath(context.problem_short, "with_stdin.cpp")
+    resources["with_stdin_source_path"] = context.problem_directory.joinpath("with_stdin.cpp")
     return check_file_exists(resources["with_stdin_source_path"])
 
 
@@ -23,7 +23,7 @@ def check_with_stdin(context: Context, resources: dict) -> CheckResult:
 def build_with_stdin(with_stdin_source_path: Path, resources: dict) -> BuildResult:
     """Compile the program with gcc."""
 
-    resources["with_stdin_path"] = Path("/tmp", "with_stdin", "with_stdin")
+    resources["with_stdin_path"] = Path("/tmp", "with_stdin")
     result, resources["with_stdin"] = build_gpp_executable(
         source_path=with_stdin_source_path,
         destination_path=resources["with_stdin_path"],

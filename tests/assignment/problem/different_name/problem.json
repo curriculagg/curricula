@@ -1,0 +1,20 @@
+{
+  "title": "Name Different?",
+  "authors": [
+    {
+      "name": "Noah Kim",
+      "email": "noahbkim@gmail.edu"
+    }
+  ],
+  "topics": [
+    "name",
+    "different"
+  ],
+  "directory": "name_different/",
+  "grading": {
+    "minutes": 5,
+    "automated": true,
+    "review": true,
+    "manual": false
+  }
+}

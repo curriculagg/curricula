@@ -77,7 +77,8 @@ def aggregate_contents(
         assignment: Assignment,
         contents_relative_path: Path,
         destination_path: Path,
-        filter_problems: Callable[[Problem], bool] = None) -> List[Path]:
+        filter_problems: Callable[[Problem], bool] = None,
+        rename: Callable[[Problem], str] = None) -> List[Path]:
     """Compile subdirectories from problems to respective directories.
 
     Different from merge in that the result is a directory of
@@ -99,7 +100,7 @@ def aggregate_contents(
     for problem in filter(filter_problems, assignment.problems):
         problem_contents_path = problem.path.joinpath(contents_relative_path)
         if problem_contents_path.exists():
-            problem_destination_path = destination_path.joinpath(problem.short)
+            problem_destination_path = destination_path.joinpath(problem.short if rename is None else rename(problem))
             copied_paths.append(problem_destination_path)
             files.copy_directory(problem_contents_path, problem_destination_path)
 
@@ -138,7 +139,7 @@ def build_solution_code(assignment: Assignment, path: Path):
     """Compile only submission files of the solution."""
 
     log.debug("assembling solution code")
-    copied_paths = aggregate_contents(assignment, Paths.SOLUTION, path)
+    copied_paths = aggregate_contents(assignment, Paths.SOLUTION, path, rename=lambda p: p.directory)
 
     # Delete extra READMEs
     for copied_path in copied_paths:
@@ -180,6 +181,7 @@ def generate_grading_schema(grading_path: Path, assignment: Assignment) -> dict:
             grader = import_grader(grading_path.joinpath(problem.short, Files.TESTS))
             schema["problems"][problem.short] = dict(
                 title=problem.title,
+                directory=problem.directory,
                 percentage=problem.percentage,
                 tasks=grader.dump())
     return schema

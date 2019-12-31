@@ -11,7 +11,7 @@ grader = Grader()
 def check_build_error(context: Context, resources: dict):
     """Check if the program exists."""
 
-    resources["build_error_source_path"] = context.target_path.joinpath(context.problem_short, "build_error.cpp")
+    resources["build_error_source_path"] = context.problem_directory.joinpath("build_error.cpp")
     return check_file_exists(resources["build_error_source_path"])
 
 
@@ -21,5 +21,5 @@ def build_build_error(context: Context, build_error_source_path: Path):
 
     result, _ = build_gpp_executable(
         source_path=build_error_source_path,
-        destination_path=context.target_path.joinpath(context.problem_short, "build_error"))
+        destination_path=Path("/tmp", "build_error"))
     return result

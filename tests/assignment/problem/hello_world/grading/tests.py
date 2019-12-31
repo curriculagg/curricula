@@ -14,7 +14,7 @@ grader = Grader()
 def check_hello_world(context: Context, resources: dict) -> CheckResult:
     """Check whether hello_world.cpp has been submitted."""
 
-    resources["hello_world_source_path"] = context.target_path.joinpath("hello_world", "hello_world.cpp")
+    resources["hello_world_source_path"] = context.problem_directory.joinpath("hello_world.cpp")
     return check_file_exists(resources["hello_world_source_path"])
 
 
@@ -22,7 +22,7 @@ def check_hello_world(context: Context, resources: dict) -> CheckResult:
 def build_hello_world(hello_world_source_path: Path, resources: dict) -> BuildResult:
     """Compile the program with gcc."""
 
-    resources["hello_world_path"] = Path("/tmp", "hello_world", "hello_world")
+    resources["hello_world_path"] = Path("/tmp", "hello_world")
     result, resources["hello_world"] = build_gpp_executable(
         source_path=hello_world_source_path,
         destination_path=resources["hello_world_path"],

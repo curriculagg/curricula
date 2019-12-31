@@ -18,6 +18,7 @@ class Context(Resource):
 
     target_path: Path
     problem_short: str
+    problem_directory: Path
     options: Dict[str, str] = field(default_factory=dict)
 
 

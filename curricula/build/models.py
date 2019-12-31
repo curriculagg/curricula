@@ -65,6 +65,7 @@ class Problem:
     authors: List[Author]
     topics: List[str]
     grading: Grading
+    directory: str  # Most specific directory containing relevant files
     notes: Optional[str] = None
     difficulty: Optional[str] = None
 
@@ -80,7 +81,18 @@ class Problem:
         authors = list(Author(**author) for author in data.pop("authors"))
         grading = Grading(**data.pop("grading"))
         percentage = reference["percentage"]
-        return cls(assignment, path, short, number, percentage, authors=authors, grading=grading, **data)
+        directory = data.pop("directory") if "directory" in data else short
+
+        return cls(
+            assignment=assignment,
+            path=path,
+            short=short,
+            number=number,
+            percentage=percentage,
+            authors=authors,
+            grading=grading,
+            directory=directory,
+            **data)
 
     def dump(self) -> dict:
         return dict(
@@ -91,7 +103,8 @@ class Problem:
             topics=self.topics,
             notes=self.notes,
             difficulty=self.difficulty,
-            grading=self.grading.dump())
+            grading=self.grading.dump(),
+            directory=self.directory)
 
 
 @dataclass

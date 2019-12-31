@@ -34,6 +34,10 @@
     {
       "path": "problem/exploits",
       "percentage": 0.1
+    },
+    {
+      "path": "problem/different_name",
+      "percentage": 0.1
     }
   ]
 }

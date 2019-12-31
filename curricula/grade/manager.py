@@ -45,6 +45,7 @@ class Manager:
     """A container for multiple graders in an assignment."""
 
     graders: Dict[str, Grader]
+    schema: dict
 
     @classmethod
     def load(cls, grading_path: Path) -> Optional["Manager"]:
@@ -70,7 +71,7 @@ class Manager:
 
             graders[problem_short] = grader
 
-        return Manager(graders)
+        return Manager(graders=graders, schema=schema)
 
     @timed(name="run", printer=log.info)
     def run_single(self, target_path: Path, **options) -> Dict[str, Report]:
@@ -81,7 +82,12 @@ class Manager:
 
         for problem_short, grader in self.graders.items():
             log.debug(f"running problem {problem_short}")
-            context = Context(target_path, problem_short, options)
+            problem_schema = self.schema["problems"][problem_short]
+            context = Context(
+                target_path=target_path,
+                problem_short=problem_short,
+                problem_directory=target_path.joinpath(problem_schema["directory"]),
+                options=options)
 
             try:
                 reports[problem_short] = grader.run(context=context)
