@@ -10,7 +10,6 @@
     "name",
     "different"
   ],
-  "directory": "name_different/",
   "grading": {
     "minutes": 5,
     "automated": true,

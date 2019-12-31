@@ -123,7 +123,7 @@ def build_resources(context: Context, assignment: Assignment):
     log.debug("compiling resources")
     resources_path = context.artifacts_path.joinpath(Paths.RESOURCES)
     resources_path.mkdir(exist_ok=True)
-    aggregate_contents(assignment, Paths.RESOURCES, resources_path)
+    aggregate_contents(assignment, Paths.RESOURCES, resources_path, rename=lambda p: p.directory)
 
 
 def build_solution_readme(context: Context, assignment: Assignment, path: Path):

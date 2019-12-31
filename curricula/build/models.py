@@ -60,12 +60,12 @@ class Problem:
     short: str
     number: int
     percentage: float
+    directory: str  # Most specific directory containing relevant files
 
     title: str
     authors: List[Author]
     topics: List[str]
     grading: Grading
-    directory: str  # Most specific directory containing relevant files
     notes: Optional[str] = None
     difficulty: Optional[str] = None
 
@@ -81,7 +81,7 @@ class Problem:
         authors = list(Author(**author) for author in data.pop("authors"))
         grading = Grading(**data.pop("grading"))
         percentage = reference["percentage"]
-        directory = data.pop("directory") if "directory" in data else short
+        directory = reference["directory"] if "directory" in reference else short
 
         return cls(
             assignment=assignment,
