@@ -11,6 +11,6 @@ Please do not use or redistribute this document if you are not part of the CSCI 
 
 [% for problem in assignment.problems -%]
 [% if problem | has_readme("solution") -%]
-[%- include "template/solution/problem.md" -%]
+[%- include "template:build/solution/problem.md" -%]
 [% endif %]
 [% endfor -%]

@@ -13,8 +13,6 @@ from ..library.log import log
 
 from ..grade.manager import import_grader
 
-root = Path(__file__).absolute().parent
-
 
 @dataclass(repr=False, eq=False)
 class Context:
@@ -42,7 +40,7 @@ def compile_readme(
     """
 
     log.debug(f"compiling readme for {destination_path}")
-    template = context.environment.get_template(f"template/{template_relative_path}")
+    template = context.environment.get_template(f"template:build/{template_relative_path}")
     if destination_path.is_dir():
         destination_path = destination_path.joinpath(Files.README)
     with destination_path.open("w") as file:
@@ -130,7 +128,7 @@ def build_solution_readme(context: Context, assignment: Assignment, path: Path):
     """Generate the composite cheat sheet README."""
 
     log.debug("building cheat sheet")
-    assignment_template = context.environment.get_template("template/solution/assignment.md")
+    assignment_template = context.environment.get_template("template:build/solution/assignment.md")
     with path.joinpath(Files.README).open("w") as file:
         file.write(assignment_template.render(assignment=assignment))
 
@@ -162,7 +160,7 @@ def build_grading_readme(context: Context, assignment: Assignment, path: Path):
     """Aggregate README for rubric."""
 
     log.debug("building grading instructions")
-    assignment_template = context.environment.get_template("template/grading/assignment.md")
+    assignment_template = context.environment.get_template("template:build/grading/assignment.md")
     with path.joinpath(Files.README).open("w") as file:
         file.write(assignment_template.render(assignment=assignment))
 
@@ -235,9 +233,10 @@ def get_readme(environment: jinja2.Environment, item: Union[Problem, Assignment]
 
     try:
         if isinstance(item, Assignment):
-            return environment.get_template(str(readme_path)).render(assignment=item)
+            return environment.get_template(f"assignment:{readme_path}").render(assignment=item)
         elif isinstance(item, Problem):
-            return environment.get_template(str(readme_path)).render(assignment=item.assignment, problem=item)
+            return environment.get_template(f"assignment:{readme_path}").render(
+                assignment=item.assignment, problem=item)
     except jinja2.exceptions.TemplateNotFound:
         return "No README included.\n"
 
@@ -257,13 +256,13 @@ BUILD_STEPS = (
 
 
 @timed("build", printer=log.info)
-def build(assignment_path: Path, artifacts_path: Path, **options):
+def build(template_path: Path, assignment_path: Path, artifacts_path: Path, **options):
     """Build the assignment at a given path."""
 
     log.info(f"building {assignment_path} to {artifacts_path}")
 
     # Set up templating
-    environment = jinja2_create_environment(assignment_path, root)
+    environment = jinja2_create_environment(assignment=assignment_path, template=template_path)
     environment.filters.update(get_readme=get_readme, has_readme=has_readme)
 
     # Define context

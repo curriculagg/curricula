@@ -18,6 +18,7 @@ class BuildPlugin(Plugin):
     def setup(cls, parser: argparse.ArgumentParser):
         """Create a subparser for the build app."""
 
+        parser.add_argument("template", help="generator template directory")
         parser.add_argument("assignment", help="path to the assignment directory")
         parser.add_argument("-c", "--check", action="store_true", help="only check JSON manifests")
         parser.add_argument("-d", "--destination", help="a directory to write the artifacts to")
@@ -29,6 +30,7 @@ class BuildPlugin(Plugin):
 
         options = vars(args)
         options.pop("app")
+        template_path = Path(options.pop("template"))
         assignment_path = Path(options.pop("assignment"))
 
         # Sanity check
@@ -55,5 +57,5 @@ class BuildPlugin(Plugin):
         if options.pop("check"):
             return 0
 
-        build.build(assignment_path, artifacts_path, **options)
+        build.build(template_path, assignment_path, artifacts_path, **options)
         return 0

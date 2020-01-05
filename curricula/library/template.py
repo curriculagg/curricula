@@ -2,7 +2,7 @@ import jinja2
 import logging
 from decimal import Decimal
 from pathlib import Path
-from typing import List
+from typing import Dict
 
 root = Path(__file__).absolute().parent
 log = logging.getLogger("curricula")
@@ -24,15 +24,15 @@ JINJA2_FILTERS = {
 }
 
 
-def jinja2_create_environment(template_path: Path, *template_paths: List[Path], **options) -> jinja2.Environment:
+def jinja2_create_environment(**template_paths: Path) -> jinja2.Environment:
     """Configure a jinja2 environment."""
 
     log.debug("creating jinja2 environment")
 
     # Create a loader in the order of arguments
-    loader = jinja2.ChoiceLoader([
-        jinja2.FileSystemLoader(str(template_path)),
-        *map(lambda p: jinja2.FileSystemLoader(str(p)), template_paths)])
+    loader = jinja2.PrefixLoader({
+        key: jinja2.FileSystemLoader(str(path)) for key, path in template_paths.items()
+    }, delimiter=":")
 
     # Actually create the environment, we use square brackets to avoid
     # clashing with Jekyll
@@ -45,8 +45,7 @@ def jinja2_create_environment(template_path: Path, *template_paths: List[Path], 
         comment_start_string="[#",
         comment_end_string="#]",
         autoescape=False,
-        keep_trailing_newline=True,
-        **options)
+        keep_trailing_newline=True)
 
     # Custom filters
     environment.filters.update(JINJA2_FILTERS)

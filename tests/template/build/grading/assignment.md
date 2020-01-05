@@ -10,7 +10,7 @@ This rubric consists of two parts: the assignment-specific rubric and the genera
 
 [% for problem in assignment.problems -%]
 [% if problem | has_readme("grading") -%]
-[%- include "template/grading/problem.md" -%]
+[%- include "template:build/grading/problem.md" -%]
 [% endif %]
 [%- endfor %]
 
