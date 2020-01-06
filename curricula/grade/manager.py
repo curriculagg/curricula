@@ -6,7 +6,7 @@ from pathlib import Path
 from dataclasses import dataclass
 
 from .grader import Grader
-from .report import Report
+from .report import AssignmentReport, ProblemReport
 from .resource import Context
 from .exception import GraderException
 from ..shared import *
@@ -30,7 +30,7 @@ def import_grader(tests_path: Path, grader_name: str = "grader") -> Grader:
     return grader
 
 
-def print_reports(target_path: Path, reports: Dict[str, Report]):
+def print_reports(target_path: Path, reports: Dict[str, ProblemReport]):
     """Print reports to terminal."""
 
     print(f"{target_path}")
@@ -74,11 +74,11 @@ class Manager:
         return Manager(graders=graders, schema=schema)
 
     @timed(name="run", printer=log.info)
-    def run_single(self, target_path: Path, **options) -> Dict[str, Report]:
+    def run_single(self, target_path: Path, **options) -> AssignmentReport:
         """Run all tests on a submission and return a dict of results."""
 
         log.info(f"running {target_path}")
-        reports = {}
+        reports = AssignmentReport()
 
         for problem_short, grader in self.graders.items():
             log.debug(f"running problem {problem_short}")
@@ -100,7 +100,7 @@ class Manager:
         return reports
 
     @timed(name="batch", printer=log.info)
-    def run_batch(self, target_paths: Iterable[Path], **options) -> Iterator[Tuple[Path, Dict[str, Report]]]:
+    def run_batch(self, target_paths: Iterable[Path], **options) -> Iterator[Tuple[Path, AssignmentReport]]:
         """Run multiple reports, map directory to report."""
 
         report_tree = {}

@@ -2,7 +2,7 @@ import itertools
 from typing import List, Dict, Iterable
 from dataclasses import dataclass, field
 
-from .report import Report
+from .report import ProblemReport
 from .task import Task
 from .stage import GraderStage
 from ..log import log
@@ -54,7 +54,7 @@ def collapse_tasks(stages: Iterable[GraderStage]) -> Iterable[Task]:
     return itertools.chain(*(stage.tasks for stage in stages))
 
 
-def fulfills_dependencies(task: Task, report: Report):
+def fulfills_dependencies(task: Task, report: ProblemReport):
     """Convenience."""
 
     return all(report.check(dependency) for dependency in task.dependencies)
@@ -97,7 +97,7 @@ class Grader:
         for task in collapse_tasks(self.stages):
             self.output.check_task(task)
 
-    def __run(self, tasks: List[Task], report: Report, resources: dict):
+    def __run(self, tasks: List[Task], report: ProblemReport, resources: dict):
         """Execute sorted tasks, skipping if missing dependencies."""
 
         log.debug("running tasks")
@@ -118,11 +118,11 @@ class Grader:
             # Add to report
             report.add(result, hidden=hidden)
 
-    def run(self, **resources) -> Report:
+    def run(self, **resources) -> ProblemReport:
         """Build and test."""
 
         log.debug("setting up runtime")
-        report = Report()
+        report = ProblemReport()
         resources.update(report=report, resources=resources)
 
         # Apply configuration

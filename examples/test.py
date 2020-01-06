@@ -30,7 +30,7 @@ def main():
     report_path = root.joinpath("reports", "report.json")
     report_path.parent.mkdir(parents=True, exist_ok=True)
     with report_path.open("w") as file:
-        json.dump({problem_short: problem_report.dump() for problem_short, problem_report in report.items()}, file)
+        json.dump(report.dump(), file)
     with report_path.parent.joinpath("report.md").open("w") as file:
         file.write(format_report_markdown(
             grading_path=artifacts_path.joinpath(Paths.GRADING),

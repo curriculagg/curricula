@@ -6,7 +6,7 @@ from .task import Result
 
 
 @dataclass(eq=False)
-class ReportStatistics:
+class ProblemReportStatistics:
     """Rudimentary sums from the report results."""
 
     tasks_total: int = 0
@@ -26,7 +26,7 @@ class ReportStatistics:
 
 
 @dataclass(eq=False)
-class Report(Resource):
+class ProblemReport(Resource):
     """The final report returned by the testing framework."""
 
     lookup: Dict[str, Result] = field(default_factory=dict)
@@ -50,10 +50,10 @@ class Report(Resource):
 
         return {result.task.name: result.dump() for result in self.results}
 
-    def statistics(self) -> ReportStatistics:
+    def statistics(self) -> ProblemReportStatistics:
         """Run the numbers."""
 
-        statistics = ReportStatistics()
+        statistics = ProblemReportStatistics()
         for result in self.results:
             statistics.tasks_total += 1
             if result.complete:
@@ -67,3 +67,10 @@ class Report(Resource):
                 if result.passed:
                     statistics.tests_passed += 1
         return statistics
+
+
+class AssignmentReport(dict):
+    """Aggregation of problem reports."""
+
+    def dump(self) -> dict:
+        return {problem_short: problem_report.dump() for problem_short, problem_report in self.items()}
