@@ -24,7 +24,7 @@ The assignment builder works on an assignment bases, with build targets being fu
 ### Writing an Assignment
 
 Assignments consist of a set of general instructions and a schema.
-A full example can be found in [example/assignment/](example/assignment).
+An example can be found in [example/assignment/](example/assignment).
 Problems can be specified inside or outside of an assignment's directory.
 The `assignment.json` file must include the following fields:
 
@@ -36,8 +36,8 @@ The `assignment.json` file must include the following fields:
 
 ### Writing a Problem
 
-Problems are where the bulk of the content is located.
-A full example can be found in [example/assignment/problem/hello_world/](example/assignment/problem/hello_world).
+Problems contain the bulk of the content.
+An example can be found in [example/assignment/problem/hello_world/](example/assignment/problem/hello_world).
 Problems also use a schema for metadata.
 The `problem.json` file must include the following fields:
 
@@ -152,7 +152,7 @@ def build_hello_world(hello_world_source_path: Path, resources: dict):
 
 This segment builds the submitted `hello_world.cpp` file with `g++`.
 As specified by the registration decorator, this task depends on `check_hello_world` passing.
-If a task has more than one dependencies, `dependencies=["check_hello_world", ...]` may be used instead.
+If a task has multiple dependencies, `dependencies=["check_hello_world", ...]` may be used instead.
 In the task method, a custom `ExecutableFile` will be inserted into `resources`, and the `BuildResult` from the build function will be returned to the grader.
 Note that both [`build_gpp_exectuable`](curricula/grade/setup/build/common.py) and [`check_file_exists`](curricula/grade/setup/check/common.py) are just convenience methods that reduce code.
 
