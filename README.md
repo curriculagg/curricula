@@ -33,6 +33,14 @@ The `assignment.json` file must include the following fields:
 - `dates` is an object containing two fields, `assigned` and `due`, with dates formatted as strings `YYYY-MM-DD HH:MM`.
 - `problems` is a list of objects containing a relative `path` to each problem directory and a `percentage` representing its weight in the assignment.
   Note that problems are included in the instructions (and other composite documents) in the order of this list.
+  Consider the item in the example that includes the `hello_world` problem, noting that `0.1` corresponds to 10%:
+
+```json
+{
+  "path": "problem/hello_world",
+  "percentage": 0.1
+}
+```
 
 ### Writing a Problem
 
