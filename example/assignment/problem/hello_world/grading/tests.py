@@ -31,7 +31,7 @@ def build_hello_world(hello_world_source_path: Path, resources: dict) -> BuildRe
 
 
 @grader.test.correctness(dependency="build_hello_world")
-def test_output(hello_world: Executable) -> CorrectnessResult:
+def test_hello_world_output(hello_world: ExecutableFile) -> CorrectnessResult:
     """Check if the program outputs as expected."""
 
     runtime = hello_world.execute(timeout=1)
@@ -39,7 +39,7 @@ def test_output(hello_world: Executable) -> CorrectnessResult:
 
 
 @grader.teardown.cleanup(dependency="build_hello_world")
-def cleanup(hello_world_path: Path):
+def cleanup_hello_world(hello_world_path: Path):
     """Clean up executables."""
 
     if hello_world_path.is_file():
