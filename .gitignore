@@ -19,3 +19,7 @@ __pycache__
 *.report.json
 artifacts/
 reports/
+
+# Build
+dist/
+*.egg-info
