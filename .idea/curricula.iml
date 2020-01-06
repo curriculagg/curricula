@@ -6,10 +6,7 @@
       <excludeFolder url="file://$MODULE_DIR$/artifacts" />
       <excludeFolder url="file://$MODULE_DIR$/tests/artifacts" />
     </content>
-    <orderEntry type="jdk" jdkName="Python 3.7 (material-wqKdE9gy) (2)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Python 3.7 (curricula-shell-_gJOgtC6)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module" module-name="curricula-web" />
-    <orderEntry type="module" module-name="docker" />
-    <orderEntry type="module" module-name="manage" />
   </component>
 </module>

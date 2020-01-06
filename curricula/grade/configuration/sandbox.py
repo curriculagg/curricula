@@ -2,7 +2,7 @@ import pwd
 
 from . import GraderConfiguration
 from ...library import process
-from ...library.log import log
+from ...log import log
 
 
 class SandboxConfiguration(GraderConfiguration):

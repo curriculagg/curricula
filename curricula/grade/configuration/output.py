@@ -4,7 +4,7 @@ from typing import Dict, Any
 from . import GraderConfiguration
 from ..exception import GraderException
 from ..task import Task, Result
-from ...library.log import log
+from ...log import log
 
 Nothing = object()
 

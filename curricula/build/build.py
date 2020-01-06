@@ -9,7 +9,7 @@ from ..shared import Files, Paths
 from ..library.template import jinja2_create_environment
 from ..library import files
 from ..library.utility import timed
-from ..library.log import log
+from ..log import log
 
 from ..grade.manager import import_grader
 

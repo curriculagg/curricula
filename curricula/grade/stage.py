@@ -1,8 +1,7 @@
-import logging
 from typing import List, Type, Callable
 
 from .task import Task, Runnable, Result
-from ..library.log import log
+from ..log import log
 
 __all__ = ("GraderStage", "Registrar")
 

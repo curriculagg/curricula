@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from .report import Report
 from .task import Task
 from .stage import GraderStage
-from ..library.log import log
+from ..log import log
 
 from .setup import SetupStage
 from .test import TestStage

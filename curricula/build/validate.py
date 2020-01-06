@@ -5,7 +5,7 @@ from pathlib import Path
 
 from .models import Assignment
 from ..shared import *
-from ..library.log import log
+from ..log import log
 
 root = Path(__file__).absolute().parent
 

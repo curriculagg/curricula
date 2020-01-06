@@ -11,7 +11,7 @@ from .resource import Context
 from .exception import GraderException
 from ..shared import *
 from ..library.utility import timed
-from ..library.log import log
+from ..log import log
 
 PASSED = "\u2713"
 FAILED = "\u2717"

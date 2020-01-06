@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/curricula.iml" filepath="$PROJECT_DIR$/.idea/curricula.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../curricula-shell/.idea/curricula-shell.iml" filepath="$PROJECT_DIR$/../curricula-shell/.idea/curricula-shell.iml" />
       <module fileurl="file://$PROJECT_DIR$/../curricula-web/.idea/curricula-web.iml" filepath="$PROJECT_DIR$/../curricula-web/.idea/curricula-web.iml" />
       <module fileurl="file://$PROJECT_DIR$/../docker/.idea/docker.iml" filepath="$PROJECT_DIR$/../docker/.idea/docker.iml" />
       <module fileurl="file://$PROJECT_DIR$/../manage/.idea/manage.iml" filepath="$PROJECT_DIR$/../manage/.idea/manage.iml" />

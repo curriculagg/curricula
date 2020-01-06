@@ -3,7 +3,7 @@ import inspect
 from typing import Dict, TypeVar, Generic, Any, Collection, Type
 from dataclasses import dataclass, field
 
-from ..library.log import log
+from ..log import log
 
 
 @dataclass
