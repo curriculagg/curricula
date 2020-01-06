@@ -1,5 +1,4 @@
 import sys
-import json
 from pathlib import Path
 
 root = Path(__file__).absolute().parent
@@ -9,6 +8,7 @@ from curricula.build import build
 from curricula.grade.manager import Manager
 from curricula.grade.tools.format import format_report_markdown
 from curricula.shared import Paths
+from curricula.library.serialization import dump
 
 
 def main():
@@ -30,7 +30,7 @@ def main():
     report_path = root.joinpath("reports", "report.json")
     report_path.parent.mkdir(parents=True, exist_ok=True)
     with report_path.open("w") as file:
-        json.dump(report.dump(), file)
+        dump(report.dump(), file)
     with report_path.parent.joinpath("report.md").open("w") as file:
         file.write(format_report_markdown(
             grading_path=artifacts_path.joinpath(Paths.GRADING),

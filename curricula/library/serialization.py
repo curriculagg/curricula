@@ -28,10 +28,11 @@ def descend_and_truncate(o: Any, length: int, append: str = "..."):
     return o
 
 
-def dump(o: Any, file: TextIO, **options):
+def dump(o: Any, file: TextIO, no_truncate: bool = False, **options):
     """Write an object to a file."""
 
-    descend_and_truncate(o, 100_000)
+    if not no_truncate:
+        descend_and_truncate(o, 100_000)
     json.dump(o, file, **options)
 
 
