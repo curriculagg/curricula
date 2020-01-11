@@ -7,6 +7,7 @@
       <module fileurl="file://$PROJECT_DIR$/../curricula-web/.idea/curricula-web.iml" filepath="$PROJECT_DIR$/../curricula-web/.idea/curricula-web.iml" />
       <module fileurl="file://$PROJECT_DIR$/../docker/.idea/docker.iml" filepath="$PROJECT_DIR$/../docker/.idea/docker.iml" />
       <module fileurl="file://$PROJECT_DIR$/../manage/.idea/manage.iml" filepath="$PROJECT_DIR$/../manage/.idea/manage.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../material/.idea/material.iml" filepath="$PROJECT_DIR$/../material/.idea/material.iml" />
     </modules>
   </component>
 </project>

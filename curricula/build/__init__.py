@@ -261,17 +261,17 @@ def build_index(context: Context, assignment: Assignment):
 def get_readme(environment: jinja2.Environment, item: Union[Problem, Assignment], *component: str) -> str:
     """Render a README with options for nested path."""
 
-    context: Context = environment.globals["context"]  # Not jinja2 context, our context
-    readme_path = item.path.joinpath(*component, Files.README).relative_to(context.assignment_path)
+    readme_path = Path(*component, Files.README)
 
     try:
         if isinstance(item, Assignment):
             return environment.get_template(f"assignment:{readme_path}").render(assignment=item)
         elif isinstance(item, Problem):
-            return environment.get_template(f"assignment:{readme_path}").render(
+            return environment.get_template(f"problem/{item.short}:{readme_path}").render(
                 assignment=item.assignment, problem=item)
-    except jinja2.exceptions.TemplateNotFound:
-        return "No README included.\n"
+    except jinja2.exceptions.TemplateNotFound as exception:
+        log.error(f"error finding {exception}")
+        return ""
 
 
 def has_readme(item: Union[Problem, Assignment], *component: str) -> bool:
@@ -294,8 +294,16 @@ def build(template_path: Path, assignment_path: Path, artifacts_path: Path, **op
 
     log.info(f"building {assignment_path} to {artifacts_path}")
 
+    # Load the assignment object
+    log.debug("loading assignment")
+    assignment = Assignment.load(assignment_path)
+
     # Set up templating
-    environment = jinja2_create_environment(assignment=assignment_path, template=template_path)
+    problem_template_paths = {f"problem/{problem.short}": problem.path for problem in assignment.problems}
+    environment = jinja2_create_environment(
+        template=template_path,
+        assignment=assignment_path,
+        **problem_template_paths)
     environment.filters.update(get_readme=get_readme, has_readme=has_readme)
 
     # Define context
@@ -305,10 +313,6 @@ def build(template_path: Path, assignment_path: Path, artifacts_path: Path, **op
 
     # Create output directory
     artifacts_path.mkdir(exist_ok=True, parents=True)
-
-    # Load the assignment object
-    log.debug("loading assignment")
-    assignment = Assignment.load(assignment_path)
 
     # Build
     for step in BUILD_STEPS:
