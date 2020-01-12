@@ -1,8 +1,12 @@
-import pwd
-
 from . import GraderConfiguration
 from ...library import process
 from ...log import log
+
+try:
+    import pwd
+except ImportError:
+    pwd = None
+    log.warning("pwd module is unavailable on this platform")
 
 
 class SandboxConfiguration(GraderConfiguration):
