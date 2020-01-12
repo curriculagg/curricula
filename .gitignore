@@ -4,6 +4,8 @@
 .idea/**/usage.statistics.xml
 .idea/**/dictionaries
 .idea/**/shelf
+.idea/**/vcs.xml
+.idea/**/curricula.iml
 
 # Generated files
 .idea/**/contentModel.xml
