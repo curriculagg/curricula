@@ -14,7 +14,7 @@ Setup failed:
 ```
 [% else %]
 [%- for test_missed in problem_summary.tests_incorrect %]
-- -[[ test_missed.details.weight ]] for [[ test_missed.name ]]
+- -[[ test_missed["details"].get("weight", 1) ]] for [[ test_missed.name ]]
 [%- endfor -%]
 [%- endif -%]
 [%- endfor -%]
