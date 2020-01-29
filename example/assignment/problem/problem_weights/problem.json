@@ -1,0 +1,19 @@
+{
+  "title": "Problem Weights...",
+  "authors": [
+    {
+      "name": "Noah Kim",
+      "email": "noahbkim@gmail.edu"
+    }
+  ],
+  "topics": [
+    "problem",
+    "weights"
+  ],
+  "grading": {
+    "minutes": 5,
+    "automated": true,
+    "review": true,
+    "manual": false
+  }
+}

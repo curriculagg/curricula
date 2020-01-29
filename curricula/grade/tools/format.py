@@ -1,11 +1,15 @@
 import json
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Iterable
 from pathlib import Path
 from dataclasses import dataclass, field
+from decimal import Decimal
 
-from ..task import Task
 from ...library.template import jinja2_create_environment
 from ...shared import Files
+
+
+def sum_weights(tasks: Iterable[dict]) -> float:
+    return sum(Decimal(str(task["details"].get("weight", "1"))) for task in tasks)
 
 
 @dataclass(eq=False)
@@ -14,20 +18,30 @@ class ProblemSummary:
 
     # Main tests
     tests_total: int = 0
-    tests_correct: List[Task] = field(default_factory=list)
-    tests_incorrect: List[Task] = field(default_factory=list)
+    tests_correct: List[dict] = field(default_factory=list)
+    tests_incorrect: List[dict] = field(default_factory=list)
 
     # Setup problems
     setup_failed: bool = False
     setup_error: Optional[str] = None
 
     @property
-    def tests_percentage(self):
+    def tests_fraction(self) -> str:
+        """Format a fraction."""
+
+        numerator = sum_weights(self.tests_correct)
+        denominator = numerator + sum_weights(self.tests_incorrect)
+        return f"{numerator}/{denominator}"
+
+    @property
+    def tests_percentage(self) -> Decimal:
         """Compute the percentage."""
 
         if self.tests_total == 0:
-            return 1
-        return len(self.tests_correct) / self.tests_total
+            return Decimal("0")
+        numerator = sum_weights(self.tests_correct)
+        denominator = numerator + sum_weights(self.tests_incorrect)
+        return Decimal(numerator) / Decimal(denominator)
 
 
 @dataclass(eq=False)

@@ -2,15 +2,17 @@ import jinja2
 import logging
 from decimal import Decimal
 from pathlib import Path
+from typing import Any
 
 root = Path(__file__).absolute().parent
 log = logging.getLogger("curricula")
 
 
-def percentage(d: float, digits: int = 1) -> str:
+def percentage(d: Any, digits: int = 1) -> str:
     """Convert a float to a nice-looking percentage."""
 
-    converted = Decimal(str(d)) * 100
+    converted = d if isinstance(d, Decimal) else Decimal(str(d))
+    converted *= 100
     if converted == converted.to_integral_value():
         return f"{int(converted)}%"
     return f"{round(converted, digits)}%"

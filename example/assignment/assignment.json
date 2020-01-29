@@ -39,6 +39,10 @@
       "path": "problem/different_name",
       "percentage": 0.1,
       "directory": "name_different/"
+    },
+    {
+      "path": "problem/problem_weights",
+      "percentage": 0.1
     }
   ]
 }
