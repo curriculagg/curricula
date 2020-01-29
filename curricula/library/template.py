@@ -2,7 +2,6 @@ import jinja2
 import logging
 from decimal import Decimal
 from pathlib import Path
-from typing import Dict
 
 root = Path(__file__).absolute().parent
 log = logging.getLogger("curricula")

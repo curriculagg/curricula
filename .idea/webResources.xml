@@ -5,7 +5,7 @@
       <entry url="file://$PROJECT_DIR$/../curricula-web">
         <entryData>
           <resourceRoots>
-            <path value="file://$PROJECT_DIR$/../curricula-web/core/static/css" />
+            <path value="file://$PROJECT_DIR$/../curricula-web/shared/css" />
           </resourceRoots>
         </entryData>
       </entry>

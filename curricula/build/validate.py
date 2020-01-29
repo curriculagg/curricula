@@ -1,7 +1,6 @@
 import json
 import jsonschema
 from pathlib import Path
-from typing import Any
 
 from .models import Assignment
 from ..shared import *
