@@ -3,7 +3,7 @@ from pathlib import Path
 from curricula.grade.shortcuts import *
 from curricula.grade.setup.check.common import check_file_exists
 from curricula.grade.setup.build.common import build_gpp_executable
-from curricula.grade.test.correctness.common import compare_stdout
+from curricula.grade.test.correctness.common import make_stdout_test
 from curricula.library import files
 
 GPP_OPTIONS = ("-Wall", "-std=c++11")
@@ -31,11 +31,14 @@ def build_with_stdin(with_stdin_source_path: Path, resources: dict) -> BuildResu
     return result
 
 
+test_hello = make_stdout_test(out_transform=bytes.strip, test_out=b"Hello!")
+
+
 @grader.test.correctness(dependency="build_with_stdin")
 def test_with_stdin(with_stdin: ExecutableFile) -> CorrectnessResult:
     """Test a problem with stdin."""
 
-    return compare_stdout(with_stdin.execute(stdin=b"Hello!"), [[b"Hello!"]])
+    return test_hello(with_stdin.execute(stdin=b"Hello!"))
 
 
 @grader.teardown.cleanup(dependency="build_with_stdin")

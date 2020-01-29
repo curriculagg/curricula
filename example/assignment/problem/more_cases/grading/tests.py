@@ -3,7 +3,7 @@ from pathlib import Path
 from curricula.grade.shortcuts import *
 from curricula.grade.setup.check.common import check_file_exists
 from curricula.grade.setup.build.common import build_gpp_executable
-from curricula.grade.test.correctness.common import compare_stdout
+from curricula.grade.test.correctness.common import make_stdout_test
 from curricula.library import files
 
 GPP_OPTIONS = ("-Wall", "-std=c++11")
@@ -31,28 +31,31 @@ def build_more_cases(more_cases_source_path: Path, resources: dict):
     return result
 
 
+test_stdout_pass = make_stdout_test(out_transform=bytes.strip, test_out=b"pass")
+
+
 @grader.test.correctness(dependency="build_more_cases", sanity=True)
 def test_pass(more_cases: ExecutableFile):
     """Test basic pass."""
 
-    runtime = more_cases.execute("pass", timeout=1)
-    return compare_stdout(runtime, [[b"pass"]])
+    runtime = more_cases.execute("pass")
+    return test_stdout_pass(runtime)
 
 
 @grader.test.correctness(dependency="build_more_cases")
 def test_fail(more_cases: ExecutableFile):
     """Test basic fail."""
 
-    runtime = more_cases.execute("fail", timeout=1)
-    return compare_stdout(runtime, [[b"pass"]])
+    runtime = more_cases.execute("fail")
+    return test_stdout_pass(runtime)
 
 
 @grader.test.correctness(dependency="build_more_cases")
 def test_fault(more_cases: ExecutableFile):
     """Test basic fail."""
 
-    runtime = more_cases.execute("fault", timeout=1)
-    return compare_stdout(runtime, [[b"pass"]])
+    runtime = more_cases.execute("fault")
+    return test_stdout_pass(runtime)
 
 
 @grader.test.correctness(dependency="build_more_cases")
@@ -60,7 +63,7 @@ def test_hang(more_cases: ExecutableFile):
     """Test basic fail."""
 
     runtime = more_cases.execute("hang", timeout=1)
-    return compare_stdout(runtime, [[b"pass"]])
+    return test_stdout_pass(runtime)
 
 
 @grader.teardown.cleanup(dependency="build_more_cases")

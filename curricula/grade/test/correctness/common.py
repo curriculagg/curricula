@@ -136,18 +136,30 @@ def make_exit_test(executable_name: str, *args: str, timeout: float = None):
     return test
 
 
+def test_runtime_failed(runtime):
+    """See if the runtime raised exceptions or returned status code."""
+
+    if runtime.raised_exception:
+        return CorrectnessResult(passed=False, runtime=runtime.dump(), error=runtime.exception.description)
+    elif runtime.timed_out:
+        return CorrectnessResult(passed=False, runtime=runtime.dump(), error="timed out")
+    elif runtime.code != 0:
+        return CorrectnessResult(passed=False, runtime=runtime.dump(), error="expected status code of zero")
+    return CorrectnessResult(passed=True)
+
+
 def wrap_runtime_test(executable_name: str, *args: str, runtime_test: RuntimeTest, timeout: float = None):
     """Make a simple stdout test."""
 
     def test(resources: dict) -> CorrectnessResult:
         executable = resources[executable_name]
         runtime = executable.execute(*args, timeout=timeout)
-        if runtime.raised_exception:
-            return CorrectnessResult(passed=False, runtime=runtime.dump(), error=runtime.exception.description)
-        elif runtime.timed_out:
-            return CorrectnessResult(passed=False, runtime=runtime.dump(), error="timed out")
-        elif runtime.code != 0:
-            return CorrectnessResult(passed=False, runtime=runtime.dump(), error="expected status code of zero")
+
+        # Check fail
+        result = test_runtime_failed(runtime)
+        if not result.passed:
+            return result
+
         return runtime_test(runtime)
 
     return test

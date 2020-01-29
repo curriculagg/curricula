@@ -2,7 +2,7 @@ import sys
 from pathlib import Path
 
 root = Path(__file__).absolute().parent
-sys.path.append(str(root.parent))
+sys.path.insert(0, str(root.parent))
 
 from curricula.build import build
 from curricula.grade.manager import Manager

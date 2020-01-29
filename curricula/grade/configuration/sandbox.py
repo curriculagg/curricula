@@ -31,7 +31,13 @@ class SandboxConfiguration(GraderConfiguration):
 
         if self.user_demotion_enabled:
             log.debug("enabling user demotion")
-            record = pwd.getpwnam(self.user_demotion_username)
+
+            try:
+                record = pwd.getpwnam(self.user_demotion_username)
+            except KeyError:
+                log.error("grader system account not available")
+                return
+
             process.config.enable_demote_user(record.pw_uid, record.pw_gid)
 
     def revert(self):
