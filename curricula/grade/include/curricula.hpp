@@ -1,6 +1,4 @@
-#include <vector>
-#include <string>
-#include <functional>
+#include <cstring>
 
 #define EXPECT_TRUE(condition) if (!condition) { return 1; }
 #define EXPECT_FALSE(condition) if (condition) { return 1; }
@@ -20,9 +18,9 @@ int main(int argc, char** argv)\
 {\
     if (argc < 2)\
     {\
-        return 1;\
+        return 3;\
     }\
 
 #define HARNESS_END \
-    return 1;\
+    return 2;\
 }

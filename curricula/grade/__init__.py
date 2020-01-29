@@ -8,4 +8,5 @@ performance and memory usage, and running style checks.
 
 from pathlib import Path
 
-root = Path(__file__).absolute().parent
+ROOT = Path(__file__).absolute().parent
+INCLUDE_PATH = ROOT.joinpath("include")

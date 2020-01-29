@@ -7,9 +7,10 @@ from ....library.process import Runtime
 __all__ = (
     "as_lines",
     "lines_match",
-    "compare_stdout",
+    "make_stdout_test",
     "make_make_test_in_out",
-    "make_exit_test")
+    "make_exit_test",
+    "wrap_runtime_test")
 
 
 def as_lines(string: AnyStr) -> List[AnyStr]:
@@ -39,81 +40,114 @@ def lines_match(a: AnyStrSequence, b: AnyStrSequence) -> bool:
     return True
 
 
-def compare_stdout(runtime: Runtime, test_out_line_lists: List[List[bytes]]) -> CorrectnessResult:
-    """Check stdout for matching output.
+BytesTransform = Callable[[bytes], bytes]
+RuntimeTest = Callable[[Runtime], CorrectnessResult]
+
+
+def identity(x):
+    return x
+
+
+def make_stdout_test(
+        *,
+        out_transform: BytesTransform = identity,
+        out_line_transform: BytesTransform = identity,
+        test_out: bytes = None,
+        test_out_lines: List[bytes] = None,
+        test_out_lines_lists: List[List[bytes]] = None) -> RuntimeTest:
+    """Build a test for matching stdout output.
 
     The list of lines from the stdout of the runtime is compared
     against each list of lines in test_out_line_lists. Note that this
     method first checks whether any error was raised during runtime.
     """
 
-    if runtime.raised_exception:
-        return CorrectnessResult(complete=True, passed=False, runtime=runtime.dump())
+    if len(tuple(filter(None, (test_out, test_out_lines, test_out_lines_lists)))) != 1:
+        raise ValueError("Exactly one of test_out, test_out_lines, or test_out_lines_lists is required")
 
-    out_lines = runtime.stdout.strip().split(b"\n")
-    passed = any(lines_match(out_lines, test_out_lines) for test_out_lines in test_out_line_lists)
+    if test_out is not None:
+        def compare_stdout(runtime: Runtime):
+            """Direct comparision of output."""
 
-    expected_out_lines = []
-    for out_lines in test_out_line_lists:
-        expected_out_lines.append(b"\n".join(out_lines).decode(errors="replace"))
-    details = dict() if passed else dict(expected=expected_out_lines)
+            out = out_transform(runtime.stdout)
+            passed = out == test_out
+            details = {} if passed else {"expected": [test_out.decode(errors="replace")]}
+            return CorrectnessResult(passed=passed, runtime=runtime.dump(), **details)
+        return compare_stdout
 
-    return CorrectnessResult(passed=passed, runtime=runtime.dump(), **details)
+    else:
+        if test_out_lines is not None:
+            test_out_lines_lists = [test_out_lines]
+        expected_out = []
+        for expected_lines in test_out_lines_lists:
+            expected_out.append(b"\n".join(expected_lines).decode(errors="replace"))
+
+        def compare_stdout(runtime: Runtime):
+            """Compare by line."""
+
+            out_lines = tuple(map(out_line_transform, out_transform(runtime.stdout).split(b"\n")))
+            passed = any(lines_match(out_lines, lines) for lines in test_out_lines_lists)
+            details = dict() if passed else dict(expected=expected_out)
+            return CorrectnessResult(passed=passed, runtime=runtime.dump(), **details)
+        return compare_stdout
 
 
-def make_make_test_in_out(
+def make_test_in_out(
         executable_name: str,
-        ) -> Callable[..., Callable[[dict], CorrectnessResult]]:
-    """Procedurally generate a test case generator (lol).
+        test_in_path: Path,
+        test_out_path: Path,
+        *test_out_paths: Path,
+        timeout: float = 1) -> Callable[[dict], CorrectnessResult]:
+    """Create an input-output test case.
 
-    The innermost function is the actual test case. The intermediate
-    level provides configuration for which input and output paths we
-    feed into the executable and compare output to. Lastly, this level
-    sets the name of the executable to get from the dependency
-    injection system.
+    Returns a test case that feeds the executable the in path on
+    the command line and compares its output to the provided
+    options.
+
+    Note that by doing it this way, we read the files on grader
+    instantiation instead of every time we want to run the test.
     """
 
-    def make_test_in_out(
-            test_in_path: Path,
-            test_out_path: Path,
-            *test_out_paths: Path,
-            timeout: float = 1) -> Callable[[dict], CorrectnessResult]:
-        """Create an input-output test case.
+    test_out_lines_lists = []
+    for out_path in (test_out_path,) + test_out_paths:
+        test_out_lines_lists.append(out_path.read_bytes().strip().split(b"\n"))
+    compare_stdout = make_stdout_test(test_out_lines_lists=test_out_lines_lists)
 
-        Returns a test case that feeds the executable the in path on
-        the command line and compares its output to the provided
-        options.
+    def test_in_out(resources: dict) -> CorrectnessResult:
+        """Actually test the executable."""
 
-        Note that by doing it this way, we read the files on grader
-        instantiation instead of every time we want to run the test.
-        """
+        executable = resources[executable_name]
+        runtime = executable.execute(str(test_in_path), timeout=timeout)
+        return compare_stdout(runtime)
 
-        test_out_line_lists = []
-        for out_path in (test_out_path,) + test_out_paths:
-            test_out_line_lists.append(out_path.read_bytes().strip().split(b"\n"))
-
-        def test_in_out(resources: dict) -> CorrectnessResult:
-            """Actually test the executable."""
-
-            executable = resources[executable_name]
-            runtime = executable.execute(str(test_in_path), timeout=timeout)
-            return compare_stdout(runtime, test_out_line_lists)
-
-        return test_in_out
-
-    return make_test_in_out
+    return test_in_out
 
 
-# TODO: make_make can be made into a functools.partial wrapper
-
-def make_exit_test(executable_name: str, *args: str, timeout: float):
+def make_exit_test(executable_name: str, *args: str, timeout: float = None):
     """Make a generic exit code test."""
 
     def test(resources: dict) -> CorrectnessResult:
         executable = resources[executable_name]
+        runtime: Runtime = executable.execute(*args, timeout=timeout)
+        if runtime.raised_exception or runtime.code != 0:
+            return CorrectnessResult(passed=False, runtime=runtime.dump())
+        return CorrectnessResult(passed=True, runtime=runtime.dump())
+
+    return test
+
+
+def wrap_runtime_test(executable_name: str, *args: str, runtime_test: RuntimeTest, timeout: float = None):
+    """Make a simple stdout test."""
+
+    def test(resources: dict) -> CorrectnessResult:
+        executable = resources[executable_name]
         runtime = executable.execute(*args, timeout=timeout)
-        if runtime.error or runtime.code != 0:
-            return CorrectnessResult(passed=False, runtime=runtime)
-        return CorrectnessResult(passed=True, runtime=runtime)
+        if runtime.raised_exception:
+            return CorrectnessResult(passed=False, runtime=runtime.dump(), error=runtime.exception.description)
+        elif runtime.timed_out:
+            return CorrectnessResult(passed=False, runtime=runtime.dump(), error="timed out")
+        elif runtime.code != 0:
+            return CorrectnessResult(passed=False, runtime=runtime.dump(), error="expected status code of zero")
+        return runtime_test(runtime)
 
     return test
