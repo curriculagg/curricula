@@ -8,7 +8,7 @@ __all__ = (
     "as_lines",
     "lines_match",
     "make_stdout_test",
-    "make_make_test_in_out",
+    "make_in_out_test",
     "make_exit_test",
     "wrap_runtime_test")
 
@@ -92,7 +92,19 @@ def make_stdout_test(
         return compare_stdout
 
 
-def make_test_in_out(
+def test_runtime_succeeded(runtime: Runtime) -> CorrectnessResult:
+    """See if the runtime raised exceptions or returned status code."""
+
+    if runtime.raised_exception:
+        return CorrectnessResult(passed=False, runtime=runtime.dump(), error=runtime.exception.description)
+    elif runtime.timed_out:
+        return CorrectnessResult(passed=False, runtime=runtime.dump(), error="timed out")
+    elif runtime.code != 0:
+        return CorrectnessResult(passed=False, runtime=runtime.dump(), error="expected status code of zero")
+    return CorrectnessResult(passed=True)
+
+
+def make_in_out_test(
         executable_name: str,
         test_in_path: Path,
         test_out_path: Path,
@@ -118,6 +130,12 @@ def make_test_in_out(
 
         executable = resources[executable_name]
         runtime = executable.execute(str(test_in_path), timeout=timeout)
+
+        # Test failed
+        runtime_succeeded = test_runtime_succeeded(runtime)
+        if not runtime_succeeded.passed:
+            return runtime_succeeded
+
         return compare_stdout(runtime)
 
     return test_in_out
@@ -128,24 +146,16 @@ def make_exit_test(executable_name: str, *args: str, timeout: float = None):
 
     def test(resources: dict) -> CorrectnessResult:
         executable = resources[executable_name]
-        runtime: Runtime = executable.execute(*args, timeout=timeout)
-        if runtime.raised_exception or runtime.code != 0:
-            return CorrectnessResult(passed=False, runtime=runtime.dump())
+        runtime = executable.execute(*args, timeout=timeout)
+
+        # Test failed
+        runtime_succeeded = test_runtime_succeeded(runtime)
+        if not runtime_succeeded.passed:
+            return runtime_succeeded
+
         return CorrectnessResult(passed=True, runtime=runtime.dump())
 
     return test
-
-
-def test_runtime_failed(runtime):
-    """See if the runtime raised exceptions or returned status code."""
-
-    if runtime.raised_exception:
-        return CorrectnessResult(passed=False, runtime=runtime.dump(), error=runtime.exception.description)
-    elif runtime.timed_out:
-        return CorrectnessResult(passed=False, runtime=runtime.dump(), error="timed out")
-    elif runtime.code != 0:
-        return CorrectnessResult(passed=False, runtime=runtime.dump(), error="expected status code of zero")
-    return CorrectnessResult(passed=True)
 
 
 def wrap_runtime_test(executable_name: str, *args: str, runtime_test: RuntimeTest, timeout: float = None):
@@ -156,9 +166,9 @@ def wrap_runtime_test(executable_name: str, *args: str, runtime_test: RuntimeTes
         runtime = executable.execute(*args, timeout=timeout)
 
         # Check fail
-        result = test_runtime_failed(runtime)
-        if not result.passed:
-            return result
+        runtime_succeeded = test_runtime_succeeded(runtime)
+        if not runtime_succeeded.passed:
+            return runtime_succeeded
 
         return runtime_test(runtime)
 
