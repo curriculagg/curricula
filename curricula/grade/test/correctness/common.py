@@ -1,4 +1,6 @@
-from typing import List, Iterable, AnyStr, Union, Sized, Callable
+import functools
+
+from typing import List, Iterable, AnyStr, Union, Sized, Callable, Container, TypeVar
 from pathlib import Path
 
 from . import CorrectnessResult
@@ -7,10 +9,11 @@ from ....library.process import Runtime
 __all__ = (
     "as_lines",
     "lines_match",
-    "make_stdout_test",
+    "make_stdout_runtime_test",
     "make_in_out_test",
-    "make_exit_test",
-    "wrap_runtime_test")
+    "make_exit_runtime_test",
+    "wrap_runtime_test",
+    "make_exit_zero")
 
 
 def as_lines(string: AnyStr) -> List[AnyStr]:
@@ -42,54 +45,11 @@ def lines_match(a: AnyStrSequence, b: AnyStrSequence) -> bool:
 
 BytesTransform = Callable[[bytes], bytes]
 RuntimeTest = Callable[[Runtime], CorrectnessResult]
+T = TypeVar("T")
 
 
-def identity(x):
+def identity(x: T) -> T:
     return x
-
-
-def make_stdout_test(
-        *,
-        out_transform: BytesTransform = identity,
-        out_line_transform: BytesTransform = identity,
-        test_out: bytes = None,
-        test_out_lines: List[bytes] = None,
-        test_out_lines_lists: List[List[bytes]] = None) -> RuntimeTest:
-    """Build a test for matching stdout output.
-
-    The list of lines from the stdout of the runtime is compared
-    against each list of lines in test_out_line_lists. Note that this
-    method first checks whether any error was raised during runtime.
-    """
-
-    if len(tuple(filter(None, (test_out, test_out_lines, test_out_lines_lists)))) != 1:
-        raise ValueError("Exactly one of test_out, test_out_lines, or test_out_lines_lists is required")
-
-    if test_out is not None:
-        def compare_stdout(runtime: Runtime):
-            """Direct comparision of output."""
-
-            out = out_transform(runtime.stdout)
-            passed = out == test_out
-            details = {} if passed else {"expected": [test_out.decode(errors="replace")]}
-            return CorrectnessResult(passed=passed, runtime=runtime.dump(), **details)
-        return compare_stdout
-
-    else:
-        if test_out_lines is not None:
-            test_out_lines_lists = [test_out_lines]
-        expected_out = []
-        for expected_lines in test_out_lines_lists:
-            expected_out.append(b"\n".join(expected_lines).decode(errors="replace"))
-
-        def compare_stdout(runtime: Runtime):
-            """Compare by line."""
-
-            out_lines = tuple(map(out_line_transform, out_transform(runtime.stdout).split(b"\n")))
-            passed = any(lines_match(out_lines, lines) for lines in test_out_lines_lists)
-            details = dict() if passed else dict(expected=expected_out)
-            return CorrectnessResult(passed=passed, runtime=runtime.dump(), **details)
-        return compare_stdout
 
 
 def test_runtime_succeeded(runtime: Runtime) -> CorrectnessResult:
@@ -123,7 +83,7 @@ def make_in_out_test(
     test_out_lines_lists = []
     for out_path in (test_out_path,) + test_out_paths:
         test_out_lines_lists.append(out_path.read_bytes().strip().split(b"\n"))
-    compare_stdout = make_stdout_test(test_out_lines_lists=test_out_lines_lists)
+    compare_stdout = make_stdout_runtime_test(test_out_lines_lists=test_out_lines_lists)
 
     def test_in_out(resources: dict) -> CorrectnessResult:
         """Actually test the executable."""
@@ -141,29 +101,79 @@ def make_in_out_test(
     return test_in_out
 
 
-def make_exit_test(executable_name: str, *args: str, timeout: float = None):
+def make_stdout_runtime_test(
+        *,
+        out_transform: BytesTransform = identity,
+        out_line_transform: BytesTransform = identity,
+        test_out: bytes = None,
+        test_out_lines: List[bytes] = None,
+        test_out_lines_lists: List[List[bytes]] = None) -> RuntimeTest:
+    """Build a test for matching stdout output.
+
+    The list of lines from the stdout of the runtime is compared
+    against each list of lines in test_out_line_lists. Note that this
+    method first checks whether any error was raised during runtime.
+    """
+
+    if len(tuple(filter(lambda x: x is not None, (test_out, test_out_lines, test_out_lines_lists)))) != 1:
+        raise ValueError("Exactly one of test_out, test_out_lines, or test_out_lines_lists is required")
+
+    if test_out is not None:
+        def compare_stdout(runtime: Runtime):
+            """Direct comparision of output."""
+
+            out = out_transform(runtime.stdout)
+            passed = out == test_out
+            details = {} if passed else {"expected": [test_out.decode(errors="replace")]}
+            return CorrectnessResult(passed=passed, runtime=runtime.dump(), **details)
+        return compare_stdout
+
+    else:
+        if test_out_lines is not None:
+            test_out_lines_lists = [test_out_lines]
+        expected_out = []
+        for expected_lines in test_out_lines_lists:
+            expected_out.append(b"\n".join(expected_lines).decode(errors="replace"))
+
+        def compare_stdout(runtime: Runtime):
+            """Compare by line."""
+
+            out_lines = tuple(map(out_line_transform, out_transform(runtime.stdout).split(b"\n")))
+            passed = any(lines_match(out_lines, lines) for lines in test_out_lines_lists)
+            details = dict() if passed else dict(expected=expected_out)
+            return CorrectnessResult(passed=passed, runtime=runtime.dump(), **details)
+        return compare_stdout
+
+
+def make_exit_runtime_test(
+        *,
+        expected_code: int = None,
+        expected_codes: Container[int] = None) -> RuntimeTest:
     """Make a generic exit code test."""
 
-    def test(resources: dict) -> CorrectnessResult:
-        executable = resources[executable_name]
-        runtime = executable.execute(*args, timeout=timeout)
+    if expected_code is None and expected_codes is None:
+        raise ValueError("Runtime exit test requires either expected status or statuses!")
+    if expected_code is not None:
+        expected_codes = (expected_code,)
 
-        # Test failed
-        runtime_succeeded = test_runtime_succeeded(runtime)
-        if not runtime_succeeded.passed:
-            return runtime_succeeded
-
-        return CorrectnessResult(passed=True, runtime=runtime.dump())
+    def test(runtime: Runtime) -> CorrectnessResult:
+        return CorrectnessResult(passed=runtime.code in expected_codes, runtime=runtime.dump())
 
     return test
 
 
-def wrap_runtime_test(executable_name: str, *args: str, runtime_test: RuntimeTest, timeout: float = None):
+def wrap_runtime_test(
+        *,
+        executable_name: str,
+        args: Iterable[str] = (),
+        runtime_test: RuntimeTest,
+        stdin: bytes = None,
+        timeout: float = None):
     """Make a simple stdout test."""
 
     def test(resources: dict) -> CorrectnessResult:
         executable = resources[executable_name]
-        runtime = executable.execute(*args, timeout=timeout)
+        runtime = executable.execute(*args, stdin=stdin, timeout=timeout)
 
         # Check fail
         runtime_succeeded = test_runtime_succeeded(runtime)
@@ -173,3 +183,12 @@ def wrap_runtime_test(executable_name: str, *args: str, runtime_test: RuntimeTes
         return runtime_test(runtime)
 
     return test
+
+
+exit_zero = functools.partial(wrap_runtime_test, runtime_test=make_exit_runtime_test(expected_code=0))
+
+
+def make_exit_zero(executable_name: str, args: Iterable[str] = ()):
+    """Make a test that checks if the program returns zero."""
+
+    return exit_zero(executable_name=executable_name, args=args)

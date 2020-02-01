@@ -1,9 +1,9 @@
 #include <cstring>
 
-#define EXPECT_TRUE(condition) if (!condition) { return 1; }
+#define EXPECT_TRUE(condition) if (!(condition)) { return 1; }
 #define EXPECT_FALSE(condition) if (condition) { return 1; }
-#define EXPECT_EQUAL(left, right) if (left != right) { return 1; }
-#define EXPECT_UNEQUAL(left, right) if (left == right) { return 1; }
+#define EXPECT_EQUAL(left, right) if ((left) != (right)) { return 1; }
+#define EXPECT_UNEQUAL(left, right) if ((left) == (right)) { return 1; }
 #define EXPECT_THROW(statement)\
 {\
     bool caught = false;\
