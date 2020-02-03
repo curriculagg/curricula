@@ -188,7 +188,7 @@ def wrap_runtime_test(
 exit_zero = functools.partial(wrap_runtime_test, runtime_test=make_exit_runtime_test(expected_code=0))
 
 
-def make_exit_zero(executable_name: str, args: Iterable[str] = ()):
+def make_exit_zero(executable_name: str, args: Iterable[str] = (), stdin: bytes = None, timeout: float = None):
     """Make a test that checks if the program returns zero."""
 
-    return exit_zero(executable_name=executable_name, args=args)
+    return exit_zero(executable_name=executable_name, args=args, stdin=stdin, timeout=timeout)
