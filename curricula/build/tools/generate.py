@@ -65,90 +65,100 @@ def validated_input(prompt: str = "", *validators: Validator) -> str:
             return response
 
 
-def generate_assignment_interactive(assignment_path: Path):
-    """Generate a new assignment."""
+def input_assignment_json() -> dict:
+    """Encapsulate input logic."""
 
     while True:
-        try:
-            assignment_json = {
-                "title": validated_input("Assignment title: ", validate_not_empty),
-                "authors": [
-                    {
-                        "name": validated_input("Author name: ", validate_not_empty),
-                        "email": validated_input("Author email (address@domain.com): ", validate_email)
-                    }
-                ],
-                "dates": {
-                    "assigned": validated_input("Date assigned (YYYY-MM-DD HH:MM:SS): ", validate_datetime),
-                    "due": validated_input("Date due (YYYY-MM-DD HH:MM:SS): ", validate_datetime)
-                },
-                "problems": []
-            }
-        except KeyboardInterrupt:
-            print("Cancelling...")
-            return
+        assignment_json = {
+            "title": validated_input("Assignment title: ", validate_not_empty),
+            "authors": [
+                {
+                    "name": validated_input("Author name: ", validate_not_empty),
+                    "email": validated_input("Author email (address@domain.com): ", validate_email)
+                }
+            ],
+            "dates": {
+                "assigned": validated_input("Date assigned (YYYY-MM-DD HH:MM:SS): ", validate_datetime),
+                "due": validated_input("Date due (YYYY-MM-DD HH:MM:SS): ", validate_datetime)
+            },
+            "problems": []
+        }
 
         try:
             jsonschema.validate(assignment_json, validate.ASSIGNMENT_SCHEMA)
         except jsonschema.ValidationError as exception:
             print(exception)
         else:
-            break
+            return assignment_json
+
+
+def generate_assignment_interactive(assignment_path: Path):
+    """Generate a new assignment."""
+
+    try:
+        assignment_json = input_assignment_json()
+    except KeyboardInterrupt:
+        print("Cancelling...")
+        return
 
     assignment_path.mkdir(parents=True, exist_ok=True)
     with assignment_path.joinpath(Files.ASSIGNMENT).open("w") as file:
         json.dump(assignment_json, file, indent=2)
 
-    print(f"Created assignment {assignment_path.parts[-1]}")
+    print(f"Created assignment {assignment_path.parts[-1]}!")
 
 
-def generate_problem_interactive(assignment_path: Path, problem_relative_path: Path):
-    """Generate an assignment within the assignment."""
-
+def input_problem_json() -> dict:
     while True:
-        try:
-            problem_json = {
-                "title": validated_input("Problem title: ", validate_not_empty),
-                "authors": [
-                    {
-                        "name": validated_input("Author name: ", validate_not_empty),
-                        "email": validated_input("Author email (address@domain.com): ", validate_email)
-                    }
-                ],
-                "topics": [
-                    *map(str.strip, input("Optional topics (separated by comma): ").split(","))
-                ],
-                "grading": {
-                    "minutes": int(validated_input("Minutes to grade (integral): ", validate_numeric)),
-                    "automated": validated_input("Automated grading (y/n): ", validate_boolean).lower().startswith("y"),
-                    "review": validated_input("Code review (y/n): ", validate_boolean).lower().startswith("y"),
-                    "manual": validated_input("Manual grading (y/n): ", validate_boolean).lower().startswith("y"),
+        problem_json = {
+            "title": validated_input("Problem title: ", validate_not_empty),
+            "authors": [
+                {
+                    "name": validated_input("Author name: ", validate_not_empty),
+                    "email": validated_input("Author email (address@domain.com): ", validate_email)
                 }
+            ],
+            "topics": [
+                *map(str.strip, input("Optional topics (separated by comma): ").split(","))
+            ],
+            "grading": {
+                "minutes": int(validated_input("Minutes to grade (integral): ", validate_numeric)),
+                "automated": validated_input("Automated grading (y/n): ", validate_boolean).lower().startswith("y"),
+                "review": validated_input("Code review (y/n): ", validate_boolean).lower().startswith("y"),
+                "manual": validated_input("Manual grading (y/n): ", validate_boolean).lower().startswith("y"),
             }
-        except KeyboardInterrupt:
-            print("Cancelling...")
-            return
+        }
 
         try:
             jsonschema.validate(problem_json, validate.PROBLEM_SCHEMA)
         except jsonschema.ValidationError as exception:
             print(exception)
         else:
-            break
+            return problem_json
+
+
+def generate_problem_interactive(assignment_path: Path, problem_relative_path: Path):
+    """Generate an assignment within the assignment."""
 
     with assignment_path.joinpath(Files.ASSIGNMENT).open("r") as file:
         assignment_json = json.load(file)
 
-    while True:
-        try:
-            weight = validated_input("Problem weight (0.0-1.0): ", validate_weight)
-        except KeyboardInterrupt:
-            print("Cancelling...")
+    for existing_problem_json in assignment_json["problems"]:
+        if Path(existing_problem_json["path"]).parts[-1] == problem_relative_path.parts[-1]:
+            print("A problem with the same short is already in the assignment!")
             return
 
+    try:
+        problem_json = input_problem_json()
+    except KeyboardInterrupt:
+        print("Cancelling...")
+        return
+
+    while True:
+        weight = validated_input("Problem weight (0.0-1.0): ", validate_weight)
         assignment_json["problems"].append({
             "path": str(problem_relative_path),
-            "percentage": float(weight),
+            "percentage": float(weight)
         })
 
         try:
@@ -166,4 +176,4 @@ def generate_problem_interactive(assignment_path: Path, problem_relative_path: P
     with problem_path.joinpath(Files.PROBLEM).open("w") as file:
         json.dump(problem_json, file, indent=2)
 
-    print(f"Created problem {problem_relative_path}")
+    print(f"Created problem {problem_relative_path}!")
