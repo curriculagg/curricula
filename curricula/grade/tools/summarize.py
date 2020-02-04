@@ -94,7 +94,7 @@ def build_student_summary(summary: Summary, report_path: Path):
             if result["passed"]:
                 task_summary.students_passed.append(student_summary.student)
                 student_summary.problems[problem_short].tasks_passed.append(task)
-            if "runtime" in result and result["runtime"]["timeout"] is not None:
+            if "runtime" in result and result["runtime"] is not None and result["runtime"]["timeout"] is not None:
                 task_summary.students_timeout.append(student_summary.student)
 
     return student_summary

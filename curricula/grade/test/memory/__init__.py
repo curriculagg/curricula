@@ -10,20 +10,20 @@ class MemoryResult(Result):
 
     kind = "memory"
 
-    runtime: Runtime
+    runtime: Optional[Runtime]
     error_count: Optional[int]
     leaked_blocks: Optional[int]
     leaked_bytes: Optional[int]
 
     def __init__(
             self,
-             passed: bool,
-             runtime: Runtime,
-             complete: bool = True,
-             error_count: int = None,
-             leaked_blocks: int = None,
-             leaked_bytes: int = None,
-             **details):
+            passed: bool,
+            runtime: Runtime = None,
+            complete: bool = True,
+            error_count: int = None,
+            leaked_blocks: int = None,
+            leaked_bytes: int = None,
+            **details):
         super().__init__(complete=complete, passed=passed, details=details)
         self.runtime = runtime
         self.error_count = error_count
@@ -57,7 +57,7 @@ class MemoryResult(Result):
     def dump(self) -> dict:
         dump = super().dump()
         dump.update(
-            runtime=self.runtime.dump(),
+            runtime=self.runtime.dump() if self.runtime else None,
             error_count=self.error_count,
             leaked_blocks=self.leaked_blocks,
             leaked_bytes=self.leaked_bytes,

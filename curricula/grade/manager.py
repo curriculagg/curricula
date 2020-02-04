@@ -30,14 +30,15 @@ def import_grader(tests_path: Path, grader_name: str = "grader") -> Grader:
     return grader
 
 
-def print_reports(target_path: Path, reports: Dict[str, ProblemReport]):
+def print_reports(target_path: Path, reports: Dict[str, ProblemReport], options: dict):
     """Print reports to terminal."""
 
     print(f"{target_path}")
     for problem_short, report in reports.items():
         print(f"  {problem_short}: {report.statistics()}")
-        for result in report.results:
-            print(f"    {PASSED if result.complete and result.passed else FAILED} {result.task.name}")
+        if not options.get("concise"):
+            for result in report.results:
+                print(f"    {PASSED if result.complete and result.passed else FAILED} {result.task.name}")
 
 
 @dataclass(eq=False)
@@ -95,7 +96,7 @@ class Manager:
                 return reports
 
         if options.get("report"):
-            print_reports(target_path, reports)
+            print_reports(target_path, reports, options)
 
         return reports
 
