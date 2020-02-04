@@ -100,10 +100,9 @@ def build_student_summary(summary: Summary, report_path: Path):
     return student_summary
 
 
-def build_summary(grading_schema: dict, reports_directory: Path) -> Summary:
+def build_summary(grading_schema: dict, report_paths: Iterable[Path]) -> Summary:
     """Compile problem summaries."""
 
-    report_paths = tuple(reports_directory.glob("*.json"))
     students = {}
     for report_path in report_paths:
         student_username = report_path.parts[-1].rsplit(".")[0]
@@ -122,13 +121,13 @@ def filter_tests(tasks: List[dict]) -> List[dict]:
     return list(task for task in tasks if task["stage"] == "test")
 
 
-def summarize(grading_path: Path, reports_path: Path):
+def summarize(grading_path: Path, report_paths: Iterable[Path]):
     """Do summaries of the reports in a directory."""
 
     with grading_path.joinpath(Files.GRADING).open() as file:
         grading_schema = json.load(file)
 
-    summary = build_summary(grading_schema, reports_path)
+    summary = build_summary(grading_schema, report_paths)
 
     for problem_short, problem_summary in summary.problems.items():
         print(f"Problem: {problem_short}")

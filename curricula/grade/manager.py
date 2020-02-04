@@ -1,6 +1,7 @@
 import importlib.util
 import json
 import sys
+import timeit
 from typing import Dict, Optional, Iterable, Iterator, Tuple
 from pathlib import Path
 from dataclasses import dataclass
@@ -100,11 +101,14 @@ class Manager:
 
         return reports
 
-    @timed(name="batch", printer=log.info)
     def run_batch(self, target_paths: Iterable[Path], **options) -> Iterator[Tuple[Path, AssignmentReport]]:
         """Run multiple reports, map directory to report."""
 
-        report_tree = {}
+        # Start timer
+        start = timeit.default_timer()
+
         for target_path in target_paths:
             yield target_path, self.run_single(target_path, **options)
-        return report_tree
+
+        elapsed = timeit.default_timer() - start
+        log.info(f"finished batch in {round(elapsed, 5)} seconds")
