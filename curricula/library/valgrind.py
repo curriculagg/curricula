@@ -75,10 +75,10 @@ class ValgrindReport:
         return leaked_blocks, leaked_bytes
 
 
-def run(*args: str, timeout: float) -> Optional[ValgrindReport]:
+def run(*args: str, stdin: bytes = None, timeout: float = None) -> Optional[ValgrindReport]:
     """Run valgrind on the program and return IR count."""
 
-    runtime = process.run(*VALGRIND_ARGS, f"--xml-file={VALGRIND_XML_FILE}", *args, timeout=timeout)
+    runtime = process.run(*VALGRIND_ARGS, f"--xml-file={VALGRIND_XML_FILE}", *args, stdin=stdin, timeout=timeout)
     if os.path.exists(VALGRIND_XML_FILE):
         errors = []
         with open(VALGRIND_XML_FILE) as file:

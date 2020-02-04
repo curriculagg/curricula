@@ -9,6 +9,7 @@ from ....library.process import Runtime
 __all__ = (
     "as_lines",
     "lines_match",
+    "test_runtime_succeeded",
     "make_stdout_runtime_test",
     "make_in_out_test",
     "make_exit_runtime_test",

@@ -85,7 +85,7 @@ def build_student_summary(summary: Summary, report_path: Path):
         for task_name, result in problem_report.items():
             task_summary = problem_summary.tasks[task_name]
             task = task_summary.task
-            if task["kind"] == "setup" and not result["passed"]:
+            if task["stage"] == "setup" and not result["passed"]:
                 summary.failed_setup.add(report_name)
 
             if result["complete"]:
@@ -119,7 +119,7 @@ def percent(x: Union[int, float], n: int = 1) -> str:
 
 
 def filter_tests(tasks: List[dict]) -> List[dict]:
-    return list(task for task in tasks if task["kind"] == "test")
+    return list(task for task in tasks if task["stage"] == "test")
 
 
 def summarize(grading_path: Path, reports_path: Path):
@@ -130,13 +130,10 @@ def summarize(grading_path: Path, reports_path: Path):
 
     summary = build_summary(grading_schema, reports_path)
 
-    print(f"Failed setup: {len(summary.failed_setup)}")
-
-    print("Problem reports:")
     for problem_short, problem_summary in summary.problems.items():
         print(f"Problem: {problem_short}")
 
-        print("  Problems")
+        print("  Tests")
         for task_name, task_summary in problem_summary.tasks.items():
             print(f"    {task_name}: {percent(len(task_summary.students_passed), len(task_summary.students_complete))} ({len(task_summary.students_timeout)} timeout)")
 
@@ -155,6 +152,6 @@ def summarize(grading_path: Path, reports_path: Path):
         print(f"    Perfect: {percent(len(list(filter(lambda x: x == 1, scores))), len(scores))}")
         # print(f"    Scores: {list(scores)}")
 
+    print(f"Submissions that failed setup: {len(summary.failed_setup)}")
     for report_name in summary.failed_setup:
-        print(report_name)
-
+        print(f"  {report_name}")
