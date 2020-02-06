@@ -23,6 +23,7 @@ class ProblemSummary:
 
     # Setup problems
     setup_failed: bool = False
+    setup_failed_task: Optional[str] = None
     setup_error: Optional[str] = None
 
     @property
@@ -64,7 +65,11 @@ def summarize(grading_schema: dict, report: dict) -> ReportSummary:
             if task["stage"] == "setup":
                 if not result["complete"] or not result["passed"]:
                     problem_summary.setup_failed = True
-                    problem_summary.setup_error = result["details"]["error"]
+                    problem_summary.setup_failed_task = task_name
+                    if "error" in result["details"]:
+                        problem_summary.setup_error = result["details"]["error"]
+                    elif "runtime" in result["details"]:
+                        problem_summary.setup_error = result["details"]["runtime"]["stderr"]
 
             # Problem summary
             elif task["stage"] == "test":
