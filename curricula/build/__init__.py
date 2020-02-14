@@ -33,7 +33,7 @@ file via relative path, so the problem directory could be anywhere.
 
 import jinja2
 import json
-from pathlib import Path
+from pathlib import Path, PurePath
 from typing import Dict, Union, List, Callable
 from dataclasses import dataclass
 
@@ -261,7 +261,7 @@ def build_index(context: Context, assignment: Assignment):
 def get_readme(environment: jinja2.Environment, item: Union[Problem, Assignment], *component: str) -> str:
     """Render a README with options for nested path."""
 
-    readme_path = Path(*component, Files.README)
+    readme_path = "/".join(component + (Files.README,))
 
     try:
         if isinstance(item, Assignment):
