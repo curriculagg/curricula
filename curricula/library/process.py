@@ -1,6 +1,13 @@
 import subprocess
 import timeit
 import os
+import time
+
+try:
+    import fcntl
+except ImportError:
+    fcntl = None
+
 from typing import Optional, Tuple, Callable
 from dataclasses import dataclass, asdict, field
 
@@ -17,8 +24,8 @@ class RuntimeException:
 class Runtime:
     """Runtime data extracted from running an external process."""
 
-    args: Tuple[str]
-    timeout: float  # Populated if timed out
+    args: Tuple[str, ...]
+    timeout: Optional[float] = None
 
     code: Optional[int] = None
     elapsed: Optional[float] = None
@@ -38,6 +45,79 @@ class Runtime:
             if dump[field_name] is not None:
                 dump[field_name] = dump[field_name].decode(errors="replace")
         return dump
+
+
+class Interactive:
+    """An interactive runtime session."""
+
+    _args: Tuple[str, ...]
+    _process: subprocess.Popen
+    _start_time: float
+    _stdin: bytes = b""
+    _stdout: bytes = b""
+    _stderr: bytes = b""
+
+    def __init__(self, args: Tuple[str, ...]):
+        """Start up the new process."""
+
+        self._args = args
+        self._process = subprocess.Popen(
+            args=args,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            stdin=subprocess.PIPE,
+            preexec_fn=config.process_setup)
+        flags = fcntl.fcntl(self._process.stdout, fcntl.F_GETFL)
+        fcntl.fcntl(self._process.stdout, fcntl.F_SETFL, flags | os.O_NONBLOCK)
+        self._start_time = timeit.default_timer()
+
+    def stdin(self, data: bytes, end: bytes = b"\n"):
+        """Write bytes to the process stdin."""
+
+        data += end
+        self._process.stdin.write(data)
+        self._process.stdin.flush()
+        self._stdin += data
+
+    def stdout(self) -> bytes:
+        """Read and consume from stdout and stderr."""
+
+        while True:
+            stdout = self._process.stdout.read()
+            if stdout is not None:
+                break
+            time.sleep(0.01)
+
+        self._stdout += stdout
+        return stdout
+
+    def stderr(self) -> bytes:
+        """Read and consume from stdout and stderr."""
+
+        while True:
+            stderr = self._process.stderr.read()
+            if stderr is not None:
+                break
+            time.sleep(0.01)
+
+        self._stderr += stderr
+        return stderr
+
+    def close(self, timeout: float = None) -> Runtime:
+        """Block until exit."""
+
+        stdout, stderr = self._process.communicate(timeout=timeout)
+        stop_time = timeit.default_timer()
+        self._stdout += stdout
+        self._stderr += stderr
+        return Runtime(
+            args=self._args,
+            timeout=timeout,
+            code=self._process.returncode,
+            elapsed=stop_time - self._start_time,
+            stdin=self._stdin,
+            stdout=self._stdout,
+            stderr=self._stderr)
 
 
 def demote_user(user_uid: int, user_gid: int):
@@ -150,3 +230,7 @@ def run(*args: str, stdin: bytes = None, timeout: float = None) -> Runtime:
         stdin=stdin,
         stdout=stdout,
         stderr=stderr)
+
+
+def interactive(*args: str) -> Interactive:
+    return Interactive(args=args)

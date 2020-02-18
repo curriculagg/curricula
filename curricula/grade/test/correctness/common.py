@@ -9,6 +9,7 @@ from ....library.process import Runtime
 __all__ = (
     "as_lines",
     "lines_match",
+    "lines_match_test",
     "test_runtime_succeeded",
     "make_stdout_runtime_test",
     "make_in_out_test",
@@ -42,6 +43,14 @@ def lines_match(a: AnyStrSequence, b: AnyStrSequence) -> bool:
             return False
 
     return True
+
+
+def lines_match_test(a: Iterable[bytes], b: Iterable[bytes]) -> CorrectnessResult:
+    """Wrap lines match with correctness result."""
+
+    if lines_match(a, b):
+        return CorrectnessResult(passed=True)
+    return CorrectnessResult(passed=False, expected="\n".join(map(bytes.decode, a)))
 
 
 BytesTransform = Callable[[bytes], bytes]

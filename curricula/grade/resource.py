@@ -1,3 +1,6 @@
+import subprocess
+import os
+
 from typing import Dict, Tuple
 from pathlib import Path
 from dataclasses import dataclass, field
@@ -38,6 +41,11 @@ class Executable(Resource):
     def __init__(self, *args: str):
         self.args = args
 
+    def interactive(self, *args: str) -> process.Interactive:
+        """Return a subprocess."""
+
+        return process.Interactive(self.args + args)
+
     def execute(self, *args: str, stdin: bytes = None, timeout: float = None) -> process.Runtime:
         """Run the target with command line arguments."""
 
@@ -57,13 +65,3 @@ class ExecutableFile(Executable, File):
         super().__init__()
         self.path = path
         self.args = (str(path),) + args
-
-    def execute(self, *args: str, stdin: bytes = None, timeout: float = None) -> process.Runtime:
-        """Run the target with command line arguments."""
-
-        return process.run(*self.args, *args, stdin=stdin, timeout=timeout)
-
-    def count(self, *args: str, timeout: float = None) -> int:
-        """Count the instructions executed during runtime."""
-
-        return callgrind.count(*self.args, *args, timeout=timeout)

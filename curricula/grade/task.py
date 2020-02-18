@@ -32,6 +32,15 @@ class Result(abc.ABC):
         return cls(complete=False, passed=False)
 
 
+class GenericResult(Result):
+    """Can be used for generic tests."""
+
+    kind = "generic"
+
+    def __init__(self, passed: bool = True, complete: bool = True, **details):
+        super().__init__(complete=complete, passed=passed, details=details)
+
+
 TResult = TypeVar("TResult", bound=Result)
 
 
