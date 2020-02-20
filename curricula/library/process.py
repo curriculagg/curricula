@@ -1,7 +1,6 @@
 import subprocess
 import timeit
 import os
-import io
 import time
 
 try:
@@ -11,6 +10,7 @@ except ImportError:
 
 from typing import Optional, Tuple, Callable, IO
 from dataclasses import dataclass, asdict, field
+from contextlib import contextmanager
 
 
 @dataclass(eq=False)
@@ -22,21 +22,15 @@ class RuntimeException:
 
 
 @dataclass(eq=False)
-class Runtime:
-    """Runtime data extracted from running an external process."""
+class Interaction:
+    """Container for single interaction with a process."""
 
     args: Tuple[str, ...]
-    timeout: Optional[float] = None
 
-    code: Optional[int] = None
     elapsed: Optional[float] = None
     stdin: Optional[bytes] = None
     stdout: Optional[bytes] = None
     stderr: Optional[bytes] = None
-
-    timed_out: bool = False
-    raised_exception: bool = False
-    exception: Optional[RuntimeException] = None
 
     def dump(self) -> dict:
         """Make the runtime JSON serializable."""
@@ -48,11 +42,26 @@ class Runtime:
         return dump
 
 
+@dataclass(eq=False)
+class Runtime(Interaction):
+    """Runtime data extracted from running an external process."""
+
+    code: Optional[int] = None
+
+    timeout: Optional[float] = None
+    timed_out: bool = False
+
+    raised_exception: bool = False
+    exception: Optional[RuntimeException] = None
+
+
 class InteractiveStream:
     """Custom IO stream for Interactive."""
 
     file: IO[bytes]
     history: bytes
+
+    POLL: float = 0.001
 
     def __init__(self, file: IO[bytes], read: bool, write: bool):
         """Create the stream."""
@@ -75,24 +84,21 @@ class InteractiveStream:
         flags = fcntl.fcntl(self.file, fcntl.F_GETFL)
         fcntl.fcntl(self.file, fcntl.F_SETFL, flags | os.O_NONBLOCK)
 
-    def read(
-            self,
-            blocking: bool = True,
-            condition: Callable[[bytes], bool] = None,
-            timeout: float = None) -> Optional[bytes]:
-        """Read from a stream.
+    def _read_nonblock(self) -> Optional[bytes]:
+        """Read or return None if no data."""
 
-        If blocking is disabled, may return None. If condition is not
-        None, block until condition is satisfied. If timeout is not
-        None, break after timeout and return buffer or None.
-        """
+        data = self.file.read()
+        if data is not None:
+            self.history += data
+        return data
+
+    def _read_block(self, condition: Callable[[bytes], bool] = None, timeout: float = None) -> Optional[bytes]:
+        """Block until something besides None is returned."""
 
         buffer = b""
         success = False
 
-        if not blocking:
-            return self.file.read()
-
+        timeout_time = None
         if timeout is not None:
             timeout_time = timeit.timeit() + timeout
 
@@ -105,10 +111,26 @@ class InteractiveStream:
                     break
             if timeout is not None and timeit.default_timer() >= timeout_time:
                 break
-            time.sleep(0.001)
+            time.sleep(self.POLL)
 
         self.history += buffer
         return buffer if success else None
+
+    def read(
+            self,
+            block: bool = True,
+            condition: Callable[[bytes], bool] = None,
+            timeout: float = None) -> Optional[bytes]:
+        """Read from a stream.
+
+        If blocking is disabled, may return None. If condition is not
+        None, block until condition is satisfied. If timeout is not
+        None, break after timeout and return buffer or None.
+        """
+
+        if block:
+            return self._read_block(condition=condition, timeout=timeout)
+        return self._read_nonblock()
 
     def write(
             self,
@@ -125,7 +147,7 @@ class InteractiveStream:
         self.history += data
 
 
-@dataclass
+@dataclass(eq=False)
 class Interactive:
     """An interactive runtime session."""
 
@@ -135,6 +157,8 @@ class Interactive:
     stdin: InteractiveStream
     stdout: InteractiveStream
     stderr: InteractiveStream
+
+    _recording: Optional[Interaction] = None
 
     def __init__(self, args: Tuple[str, ...]):
         """Start up the new process."""
@@ -150,6 +174,32 @@ class Interactive:
         self.stdout = InteractiveStream(self._process.stdout, read=True, write=False)
         self.stderr = InteractiveStream(self._process.stdout, read=True, write=False)
         self._start_time = timeit.default_timer()
+
+    def poll(self) -> bool:
+        """Check whether the interactive has terminated."""
+
+        return self._process.poll() is not None
+
+    @contextmanager
+    def recording(self) -> Interaction:
+        """Record a frame of all process streams."""
+
+        if self._recording is not None:
+            raise RuntimeError("Cannot make multiple runtime recordings at once!")
+
+        partial = Interaction(args=self._args)
+        stdin_index = len(self.stdin.history)
+        stdout_index = len(self.stdout.history)
+        stderr_index = len(self.stderr.history)
+        start_time = timeit.default_timer()
+
+        yield partial
+
+        # Collect everything that changed
+        partial.elapsed = timeit.default_timer() - start_time
+        partial.stdin = self.stdin.history[stdin_index:]
+        partial.stdout = self.stdout.history[stdout_index:]
+        partial.stderr = self.stderr.history[stderr_index:]
 
     def close(self, timeout: float = None) -> Runtime:
         """Block until exit."""

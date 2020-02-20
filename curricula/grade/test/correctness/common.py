@@ -51,13 +51,17 @@ def lines_match_unordered(a: AnyStrSequence, b: AnyStrSequence) -> bool:
     return lines_match(sorted(a), sorted(b))
 
 
-def lines_match_test(a: Iterable[bytes], b: Iterable[bytes], ordered: bool = True) -> CorrectnessResult:
+def lines_match_test(
+        a: Iterable[bytes],
+        b: Iterable[bytes],
+        ordered: bool = True,
+        **details: dict) -> CorrectnessResult:
     """Wrap lines match with correctness result."""
 
     match = lines_match if ordered else lines_match_unordered
     if match(a, b):
-        return CorrectnessResult(passed=True)
-    return CorrectnessResult(passed=False, expected=b"\n".join(a).decode() + "\n")
+        return CorrectnessResult(passed=True, **details)
+    return CorrectnessResult(passed=False, expected=b"\n".join(a).decode() + "\n", **details)
 
 
 BytesTransform = Callable[[bytes], bytes]
