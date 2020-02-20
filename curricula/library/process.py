@@ -1,6 +1,7 @@
 import subprocess
 import timeit
 import os
+import io
 import time
 
 try:
@@ -8,7 +9,7 @@ try:
 except ImportError:
     fcntl = None
 
-from typing import Optional, Tuple, Callable
+from typing import Optional, Tuple, Callable, IO
 from dataclasses import dataclass, asdict, field
 
 
@@ -47,15 +48,93 @@ class Runtime:
         return dump
 
 
+class InteractiveStream:
+    """Custom IO stream for Interactive."""
+
+    file: IO[bytes]
+    history: bytes
+
+    def __init__(self, file: IO[bytes], read: bool, write: bool):
+        """Create the stream."""
+
+        self.file = file
+        self.history = b""
+
+        if read:
+            self._set_nonblock()
+
+        # Disable methods
+        if not read:
+            self.read = None
+        if not write:
+            self.write = None
+
+    def _set_nonblock(self):
+        """Disable blocking for read."""
+
+        flags = fcntl.fcntl(self.file, fcntl.F_GETFL)
+        fcntl.fcntl(self.file, fcntl.F_SETFL, flags | os.O_NONBLOCK)
+
+    def read(
+            self,
+            blocking: bool = True,
+            condition: Callable[[bytes], bool] = None,
+            timeout: float = None) -> Optional[bytes]:
+        """Read from a stream.
+
+        If blocking is disabled, may return None. If condition is not
+        None, block until condition is satisfied. If timeout is not
+        None, break after timeout and return buffer or None.
+        """
+
+        buffer = b""
+        success = False
+
+        if not blocking:
+            return self.file.read()
+
+        if timeout is not None:
+            timeout_time = timeit.timeit() + timeout
+
+        while True:
+            data = self.file.read()
+            if data is not None:
+                buffer += data
+                success = True
+                if condition is None or condition(buffer):
+                    break
+            if timeout is not None and timeit.default_timer() >= timeout_time:
+                break
+            time.sleep(0.001)
+
+        self.history += buffer
+        return buffer if success else None
+
+    def write(
+            self,
+            *values: bytes,
+            sep: bytes = b" ",
+            end: bytes = b"\n",
+            flush: bool = True):
+        """Write to the stream like traditional print."""
+
+        data = sep.join(values) + end
+        self.file.write(data)
+        if flush:
+            self.file.flush()
+        self.history += data
+
+
+@dataclass
 class Interactive:
     """An interactive runtime session."""
 
     _args: Tuple[str, ...]
     _process: subprocess.Popen
     _start_time: float
-    _stdin: bytes = b""
-    _stdout: bytes = b""
-    _stderr: bytes = b""
+    stdin: InteractiveStream
+    stdout: InteractiveStream
+    stderr: InteractiveStream
 
     def __init__(self, args: Tuple[str, ...]):
         """Start up the new process."""
@@ -67,57 +146,24 @@ class Interactive:
             stderr=subprocess.PIPE,
             stdin=subprocess.PIPE,
             preexec_fn=config.process_setup)
-        flags = fcntl.fcntl(self._process.stdout, fcntl.F_GETFL)
-        fcntl.fcntl(self._process.stdout, fcntl.F_SETFL, flags | os.O_NONBLOCK)
+        self.stdin = InteractiveStream(self._process.stdin, read=False, write=True)
+        self.stdout = InteractiveStream(self._process.stdout, read=True, write=False)
+        self.stderr = InteractiveStream(self._process.stdout, read=True, write=False)
         self._start_time = timeit.default_timer()
-
-    def stdin(self, data: bytes, end: bytes = b"\n"):
-        """Write bytes to the process stdin."""
-
-        data += end
-        self._process.stdin.write(data)
-        self._process.stdin.flush()
-        self._stdin += data
-
-    def stdout(self) -> bytes:
-        """Read and consume from stdout and stderr."""
-
-        while True:
-            stdout = self._process.stdout.read()
-            if stdout is not None:
-                break
-            time.sleep(0.01)
-
-        self._stdout += stdout
-        return stdout
-
-    def stderr(self) -> bytes:
-        """Read and consume from stdout and stderr."""
-
-        while True:
-            stderr = self._process.stderr.read()
-            if stderr is not None:
-                break
-            time.sleep(0.01)
-
-        self._stderr += stderr
-        return stderr
 
     def close(self, timeout: float = None) -> Runtime:
         """Block until exit."""
 
         stdout, stderr = self._process.communicate(timeout=timeout)
         stop_time = timeit.default_timer()
-        self._stdout += stdout
-        self._stderr += stderr
         return Runtime(
             args=self._args,
             timeout=timeout,
             code=self._process.returncode,
             elapsed=stop_time - self._start_time,
-            stdin=self._stdin,
-            stdout=self._stdout,
-            stderr=self._stderr)
+            stdin=self.stdin.history,
+            stdout=self.stdout.history + stdout,
+            stderr=self.stderr.history + stderr)
 
 
 def demote_user(user_uid: int, user_gid: int):

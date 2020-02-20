@@ -9,7 +9,7 @@ Registrar = Callable[[Runnable], Runnable]
 RegistrarFactory = Callable[[dict, Type[Result]], Registrar]
 
 
-def create_registrar_factory(stage: str, task_list: List) -> RegistrarFactory:
+def create_registrar_factory(stage: str, task_list: List[Task]) -> RegistrarFactory:
     """A third-level decorator to reuse code."""
 
     def create_registrar(details: dict, result_type: Type[Result]) -> Registrar:
@@ -31,6 +31,10 @@ def create_registrar_factory(stage: str, task_list: List) -> RegistrarFactory:
                 dependencies = (details.pop("dependency"),)
             else:
                 dependencies = ()
+
+            for existing_task in task_list:
+                if existing_task.name == name:
+                    raise ValueError(f"Duplicate task name \"{name}\"")
 
             # Create task, append
             task_list.append(Task(

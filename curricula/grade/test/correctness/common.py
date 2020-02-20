@@ -45,12 +45,19 @@ def lines_match(a: AnyStrSequence, b: AnyStrSequence) -> bool:
     return True
 
 
-def lines_match_test(a: Iterable[bytes], b: Iterable[bytes]) -> CorrectnessResult:
+def lines_match_unordered(a: AnyStrSequence, b: AnyStrSequence) -> bool:
+    """Check unordered equality."""
+
+    return lines_match(sorted(a), sorted(b))
+
+
+def lines_match_test(a: Iterable[bytes], b: Iterable[bytes], ordered: bool = True) -> CorrectnessResult:
     """Wrap lines match with correctness result."""
 
-    if lines_match(a, b):
+    match = lines_match if ordered else lines_match_unordered
+    if match(a, b):
         return CorrectnessResult(passed=True)
-    return CorrectnessResult(passed=False, expected="\n".join(map(bytes.decode, a)))
+    return CorrectnessResult(passed=False, expected=b"\n".join(a).decode() + "\n")
 
 
 BytesTransform = Callable[[bytes], bytes]
