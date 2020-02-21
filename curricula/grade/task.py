@@ -55,7 +55,8 @@ def inject(resources: dict, runnable: Runnable[TResult]) -> TResult:
     dependencies = {}
     for name, parameter in inspect.signature(runnable).parameters.items():
         dependency = resources.get(name, parameter.default)
-        assert dependency != parameter.empty, "could not satisfy dependency {}".format(name)
+        if dependency == parameter.empty:
+            raise ValueError(f"could not satisfy dependency {name}")
         dependencies[name] = dependency
     return runnable(**dependencies)
 
@@ -82,7 +83,11 @@ class Task(Generic[TResult]):
     def run(self, resources: Dict[str, Any]) -> TResult:
         """Do the dependency injection for the runnable."""
 
-        result = inject(resources, self.runnable)
+        try:
+            result = inject(resources, self.runnable)
+        except ValueError as error:
+            raise ValueError(f"caught in {self.name}: {error}")
+
         if result is None:
             log.debug(f"task {self.name} did not return a result")
             result = self.result_type()

@@ -20,6 +20,19 @@ class RuntimeException:
     description: str
     error_number: Optional[int] = None
 
+    @classmethod
+    def from_os_error(cls, error: OSError) -> "RuntimeException":
+        """Create from OS error."""
+
+        return RuntimeException(
+            description="executable format error" if error.errno == 8 else "failed to run executable",
+            error_number=error.errno)
+
+    def dump(self) -> dict:
+        """Serialize."""
+
+        return asdict(self)
+
 
 @dataclass(eq=False)
 class Interaction:
@@ -53,6 +66,14 @@ class Runtime(Interaction):
 
     raised_exception: bool = False
     exception: Optional[RuntimeException] = None
+
+    def dump(self) -> dict:
+        """Make the runtime JSON serializable."""
+
+        dump = super().dump()
+        if dump["exception"] is not None:
+            dump["exception"] = dump["exception"].dump()
+        return dump
 
 
 class InteractiveStream:
@@ -143,7 +164,10 @@ class InteractiveStream:
         data = sep.join(values) + end
         self.file.write(data)
         if flush:
-            self.file.flush()
+            try:
+                self.file.flush()
+            except BrokenPipeError:
+                pass
         self.history += data
 
 
@@ -178,7 +202,7 @@ class Interactive:
     def poll(self) -> bool:
         """Check whether the interactive has terminated."""
 
-        return self._process.poll() is not None
+        return self._process.poll() is None
 
     @contextmanager
     def recording(self) -> Interaction:
@@ -204,7 +228,20 @@ class Interactive:
     def close(self, timeout: float = None) -> Runtime:
         """Block until exit."""
 
-        stdout, stderr = self._process.communicate(timeout=timeout)
+        raised_exception = False
+        exception = None
+        timed_out = False
+        stdout = b""
+        stderr = b""
+
+        try:
+            stdout, stderr = self._process.communicate(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            timed_out = True
+        except OSError as error:
+            raised_exception = True
+            exception = RuntimeException.from_os_error(error)
+
         stop_time = timeit.default_timer()
         return Runtime(
             args=self._args,
@@ -213,7 +250,10 @@ class Interactive:
             elapsed=stop_time - self._start_time,
             stdin=self.stdin.history,
             stdout=self.stdout.history + stdout,
-            stderr=self.stderr.history + stderr)
+            stderr=self.stderr.history + stderr,
+            raised_exception=raised_exception,
+            exception=exception,
+            timed_out=timed_out)
 
 
 def demote_user(user_uid: int, user_gid: int):
@@ -296,9 +336,7 @@ def run(*args: str, stdin: bytes = None, timeout: float = None) -> Runtime:
 
     # Catch common errors
     except OSError as error:
-        exception = RuntimeException(
-            description="executable format error" if error.errno == 8 else "failed to run executable",
-            error_number=error.errno)
+        exception = RuntimeException.from_os_error(error)
         return Runtime(args=args, timeout=timeout, stdin=stdin, raised_exception=True, exception=exception)
     except ValueError:
         exception = RuntimeException(description="failed to open process")

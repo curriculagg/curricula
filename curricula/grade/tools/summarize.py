@@ -114,7 +114,7 @@ def build_summary(grading_schema: dict, report_paths: Iterable[Path]) -> Summary
 
 
 def percent(x: Union[int, float], n: int = 1) -> str:
-    return f"{round(x / n * 1000) / 10}%"
+    return f"{round(x / n * 1000) / 10 if n != 0 else 0}%"
 
 
 def filter_tests(tasks: List[dict]) -> List[dict]:
@@ -134,7 +134,9 @@ def summarize(grading_path: Path, report_paths: Iterable[Path]):
 
         print("  Tests")
         for task_name, task_summary in problem_summary.tasks.items():
-            print(f"    {task_name}: {percent(len(task_summary.students_passed), len(task_summary.students_complete))} ({len(task_summary.students_timeout)} timeout)")
+            print(f"    {task_name}:",
+                  percent(len(task_summary.students_passed), len(task_summary.students_complete)),
+                  f"({len(task_summary.students_timeout)} timeout)")
 
         scores = []
         for student_username, student_summary in summary.students.items():
