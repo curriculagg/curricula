@@ -61,7 +61,11 @@ def lines_match_test(
     match = lines_match if ordered else lines_match_unordered
     if match(a, b):
         return CorrectnessResult(passed=True, **details)
-    return CorrectnessResult(passed=False, expected=b"\n".join(a).decode() + "\n", **details)
+    return CorrectnessResult(
+        passed=False,
+        received=b"\n".join(a).decode() + "\n",
+        expected=b"\n".join(b).decode() + "\n",
+        **details)
 
 
 BytesTransform = Callable[[bytes], bytes]

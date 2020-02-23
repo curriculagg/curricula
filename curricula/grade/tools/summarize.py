@@ -134,8 +134,7 @@ def summarize(grading_path: Path, report_paths: Iterable[Path]):
 
         print("  Tests")
         for task_name, task_summary in problem_summary.tasks.items():
-            print(f"    {task_name}:",
-                  percent(len(task_summary.students_passed), len(task_summary.students_complete)),
+            print(f"    {task_name}: {len(task_summary.students_passed)}/{len(task_summary.students_complete)}",
                   f"({len(task_summary.students_timeout)} timeout)")
 
         scores = []

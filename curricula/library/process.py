@@ -76,6 +76,13 @@ class Runtime(Interaction):
         return dump
 
 
+class InteractiveStreamTimeoutExpired(RuntimeError):
+    buffer: bytes
+
+    def __init__(self, buffer: bytes):
+        self.buffer = buffer
+
+
 class InteractiveStream:
     """Custom IO stream for Interactive."""
 
@@ -117,25 +124,24 @@ class InteractiveStream:
         """Block until something besides None is returned."""
 
         buffer = b""
-        success = False
 
         timeout_time = None
         if timeout is not None:
-            timeout_time = timeit.timeit() + timeout
+            timeout_time = timeit.default_timer() + timeout
 
         while True:
             data = self.file.read()
             if data is not None:
                 buffer += data
-                success = True
                 if condition is None or condition(buffer):
                     break
             if timeout is not None and timeit.default_timer() >= timeout_time:
-                break
+                self.history += buffer
+                raise InteractiveStreamTimeoutExpired(buffer=buffer)
             time.sleep(self.POLL)
 
         self.history += buffer
-        return buffer if success else None
+        return buffer
 
     def read(
             self,
@@ -163,12 +169,12 @@ class InteractiveStream:
 
         data = sep.join(values) + end
         self.file.write(data)
+        self.history += data
         if flush:
             try:
                 self.file.flush()
             except BrokenPipeError:
                 pass
-        self.history += data
 
 
 @dataclass(eq=False)
