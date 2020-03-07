@@ -20,7 +20,7 @@ def read_last_line(path: Path) -> str:
         return file.readlines()[-1].decode()
 
 
-def count(*args: str, stdin: bytes = None, timeout: float = None) -> Optional[int]:
+def count(*args: str, stdin: bytes = None, timeout: float = None, cwd: Path = None) -> Optional[int]:
     """Run callgrind on the program and return IR count."""
 
     _, out_path = tempfile.mkstemp(dir=Path().absolute())
@@ -31,7 +31,8 @@ def count(*args: str, stdin: bytes = None, timeout: float = None) -> Optional[in
         f"--callgrind-out-file={out_path.parts[-1]}",
         *args,
         stdin=stdin,
-        timeout=timeout)
+        timeout=timeout,
+        cwd=cwd)
     if out_path.exists():
         result = int(read_last_line(out_path).rsplit(maxsplit=1)[1])
         delete_file(out_path)

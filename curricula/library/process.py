@@ -11,6 +11,7 @@ except ImportError:
 from typing import Optional, Tuple, Callable, IO
 from dataclasses import dataclass, asdict, field
 from contextlib import contextmanager
+from pathlib import Path
 
 
 @dataclass(eq=False)
@@ -39,6 +40,7 @@ class Interaction:
     """Container for single interaction with a process."""
 
     args: Tuple[str, ...]
+    cwd: Optional[Path]
 
     elapsed: Optional[float] = None
     stdin: Optional[bytes] = None
@@ -52,6 +54,8 @@ class Interaction:
         for field_name in "stdout", "stdin", "stderr":
             if dump[field_name] is not None:
                 dump[field_name] = dump[field_name].decode(errors="replace")
+        if dump["cwd"]:
+            dump["cwd"] = str(dump["cwd"])
         return dump
 
 
@@ -66,14 +70,6 @@ class Runtime(Interaction):
 
     raised_exception: bool = False
     exception: Optional[RuntimeException] = None
-
-    def dump(self) -> dict:
-        """Make the runtime JSON serializable."""
-
-        dump = super().dump()
-        if dump["exception"] is not None:
-            dump["exception"] = dump["exception"].dump()
-        return dump
 
 
 class InteractiveStreamTimeoutExpired(RuntimeError):
@@ -184,13 +180,14 @@ class Interactive:
     _args: Tuple[str, ...]
     _process: subprocess.Popen
     _start_time: float
+    cwd: Optional[Path]
     stdin: InteractiveStream
     stdout: InteractiveStream
     stderr: InteractiveStream
 
     _recording: Optional[Interaction] = None
 
-    def __init__(self, args: Tuple[str, ...]):
+    def __init__(self, args: Tuple[str, ...], cwd: Path = None):
         """Start up the new process."""
 
         self._args = args
@@ -199,7 +196,9 @@ class Interactive:
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             stdin=subprocess.PIPE,
-            preexec_fn=config.process_setup)
+            preexec_fn=config.process_setup,
+            cwd=str(cwd) if cwd is not None else None)
+        self.cwd = cwd
         self.stdin = InteractiveStream(self._process.stdin, read=False, write=True)
         self.stdout = InteractiveStream(self._process.stdout, read=True, write=False)
         self.stderr = InteractiveStream(self._process.stdout, read=True, write=False)
@@ -251,6 +250,7 @@ class Interactive:
         stop_time = timeit.default_timer()
         return Runtime(
             args=self._args,
+            cwd=self.cwd,
             timeout=timeout,
             code=self._process.returncode,
             elapsed=stop_time - self._start_time,
@@ -313,7 +313,7 @@ class SubprocessConfiguration:
 config = SubprocessConfiguration()
 
 
-def run(*args: str, stdin: bytes = None, timeout: float = None) -> Runtime:
+def run(*args: str, stdin: bytes = None, timeout: float = None, cwd: Path = None) -> Runtime:
     """Run an executable with a list of command line arguments.
 
     The provided path must be absolute in order to properly execute
@@ -332,24 +332,26 @@ def run(*args: str, stdin: bytes = None, timeout: float = None) -> Runtime:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 stdin=subprocess.PIPE,
-                preexec_fn=config.process_setup)
+                preexec_fn=config.process_setup,
+                cwd=str(cwd) if cwd is not None else None)
         else:
             process = subprocess.Popen(
                 args,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                preexec_fn=config.process_setup)
+                preexec_fn=config.process_setup,
+                cwd=str(cwd) if cwd is not None else None)
 
     # Catch common errors
     except OSError as error:
         exception = RuntimeException.from_os_error(error)
-        return Runtime(args=args, timeout=timeout, stdin=stdin, raised_exception=True, exception=exception)
+        return Runtime(args=args, cwd=cwd, timeout=timeout, stdin=stdin, raised_exception=True, exception=exception)
     except ValueError:
         exception = RuntimeException(description="failed to open process")
-        return Runtime(args=args, timeout=timeout, stdin=stdin, raised_exception=True, exception=exception)
+        return Runtime(args=args, cwd=cwd, timeout=timeout, stdin=stdin, raised_exception=True, exception=exception)
     except subprocess.SubprocessError as exception:
         exception = RuntimeException(description=str(exception))
-        return Runtime(args=args, timeout=timeout, stdin=stdin, raised_exception=True, exception=exception)
+        return Runtime(args=args, cwd=cwd, timeout=timeout, stdin=stdin, raised_exception=True, exception=exception)
 
     # Wait for the process to finish with timeout
     start = timeit.default_timer()
@@ -358,12 +360,13 @@ def run(*args: str, stdin: bytes = None, timeout: float = None) -> Runtime:
     except subprocess.TimeoutExpired:
         process.kill()
         stdout, stderr = process.communicate()
-        return Runtime(args=args, timeout=timeout, stdin=stdin, stdout=stdout, stderr=stderr, timed_out=True)
+        return Runtime(args=args, cwd=cwd, timeout=timeout, stdin=stdin, stdout=stdout, stderr=stderr, timed_out=True)
 
     # Check elapsed
     elapsed = timeit.default_timer() - start
     return Runtime(
         args=args,
+        cwd=cwd,
         timeout=timeout,
         code=process.returncode,
         elapsed=elapsed,

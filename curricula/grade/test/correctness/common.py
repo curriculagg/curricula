@@ -193,12 +193,13 @@ def wrap_runtime_test(
         args: Iterable[str] = (),
         runtime_test: RuntimeTest,
         stdin: bytes = None,
-        timeout: float = None):
+        timeout: float = None,
+        cwd: Path = None):
     """Make a simple stdout test."""
 
     def test(resources: dict) -> CorrectnessResult:
         executable = resources[executable_name]
-        runtime = executable.execute(*args, stdin=stdin, timeout=timeout)
+        runtime = executable.execute(*args, stdin=stdin, timeout=timeout, cwd=cwd)
 
         # Check fail
         runtime_succeeded = test_runtime_succeeded(runtime)
