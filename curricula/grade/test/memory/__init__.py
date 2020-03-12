@@ -60,6 +60,5 @@ class MemoryResult(Result):
             runtime=self.runtime.dump() if self.runtime else None,
             error_count=self.error_count,
             leaked_blocks=self.leaked_blocks,
-            leaked_bytes=self.leaked_bytes,
-            details=self.details)
+            leaked_bytes=self.leaked_bytes)
         return dump

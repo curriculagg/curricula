@@ -90,5 +90,5 @@ def run(*args: str, stdin: bytes = None, timeout: float = None) -> Optional[Valg
                 if child.tag == "error":
                     errors.append(ValgrindError.load(child))
         os.remove(VALGRIND_XML_FILE)
-        return ValgrindReport(runtime, errors)
-    return ValgrindReport(runtime, None)
+        return ValgrindReport(runtime=runtime, errors=errors)
+    return ValgrindReport(runtime=runtime, errors=None)

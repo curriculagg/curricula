@@ -67,14 +67,6 @@ class Runtime(Interaction):
     raised_exception: bool = False
     exception: Optional[RuntimeException] = None
 
-    def dump(self) -> dict:
-        """Make the runtime JSON serializable."""
-
-        dump = super().dump()
-        if dump["exception"] is not None:
-            dump["exception"] = dump["exception"].dump()
-        return dump
-
 
 class InteractiveStream:
     """Custom IO stream for Interactive."""
