@@ -61,7 +61,11 @@ def lines_match_test(
     match = lines_match if ordered else lines_match_unordered
     if match(a, b):
         return CorrectnessResult(passed=True, **details)
-    return CorrectnessResult(passed=False, expected=b"\n".join(a).decode() + "\n", **details)
+    return CorrectnessResult(
+        passed=False,
+        received=b"\n".join(a).decode() + "\n",
+        expected=b"\n".join(b).decode() + "\n",
+        **details)
 
 
 BytesTransform = Callable[[bytes], bytes]
@@ -189,12 +193,13 @@ def wrap_runtime_test(
         args: Iterable[str] = (),
         runtime_test: RuntimeTest,
         stdin: bytes = None,
-        timeout: float = None):
+        timeout: float = None,
+        cwd: Path = None):
     """Make a simple stdout test."""
 
     def test(resources: dict) -> CorrectnessResult:
         executable = resources[executable_name]
-        runtime = executable.execute(*args, stdin=stdin, timeout=timeout)
+        runtime = executable.execute(*args, stdin=stdin, timeout=timeout, cwd=cwd)
 
         # Check fail
         runtime_succeeded = test_runtime_succeeded(runtime)

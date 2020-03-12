@@ -46,15 +46,15 @@ class Executable(Resource):
 
         return process.Interactive(self.args + args)
 
-    def execute(self, *args: str, stdin: bytes = None, timeout: float = None) -> process.Runtime:
+    def execute(self, *args: str, stdin: bytes = None, timeout: float = None, cwd: Path = None) -> process.Runtime:
         """Run the target with command line arguments."""
 
-        return process.run(*self.args, *args, stdin=stdin, timeout=timeout)
+        return process.run(*self.args, *args, stdin=stdin, timeout=timeout, cwd=cwd)
 
-    def count(self, *args: str, stdin: bytes = None, timeout: float) -> int:
+    def count(self, *args: str, stdin: bytes = None, timeout: float = None, cwd: Path = None) -> int:
         """Count the instructions executed during runtime."""
 
-        return callgrind.count(*self.args, *args, stdin=stdin, timeout=timeout)
+        return callgrind.count(*self.args, *args, stdin=stdin, timeout=timeout, cwd=cwd)
 
 
 @dataclass(eq=False)

@@ -57,7 +57,7 @@ def build_makefile_executable(
     """Run make on the target directory."""
 
     runtime = process.run("make", "-B", "-C", str(target_path), *make_options, timeout=timeout)
-    if runtime.code != 0 or runtime.timeout is not None:
+    if runtime.code != 0 or runtime.timed_out:
         error = f"failed to make {target_path.parts[-1]}"
         return BuildResult(passed=False, runtime=runtime.dump(), error=error)
     return BuildResult(passed=True, runtime=runtime.dump())
