@@ -147,8 +147,8 @@ def summarize(grading_path: Path, report_paths: Iterable[Path]):
 
         print("  Statistics")
         print(f"    Total scores: {len(scores)}")
-        print(f"    Mean: {percent(statistics.mean(scores))}")
-        print(f"    Median: {percent(statistics.median(scores))}")
+        print(f"    Mean: {percent(statistics.mean(scores)) if len(scores) > 0 else '-'}")
+        print(f"    Median: {percent(statistics.median(scores)) if len(scores) > 0 else '-'}")
         print(f"    Perfect: {percent(len(list(filter(lambda x: x == 1, scores))), len(scores))}")
         # print(f"    Scores: {list(scores)}")
 

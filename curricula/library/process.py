@@ -2,6 +2,7 @@ import subprocess
 import timeit
 import os
 import time
+import signal
 
 try:
     import fcntl
@@ -359,7 +360,13 @@ def run(*args: str, stdin: bytes = None, timeout: float = None, cwd: Path = None
         stdout, stderr = process.communicate(input=stdin, timeout=timeout)
     except subprocess.TimeoutExpired:
         process.kill()
-        stdout, stderr = process.communicate()
+
+        # Recover data
+        try:
+            stdout, stderr = process.communicate(timeout=1)
+        except subprocess.TimeoutExpired:
+            stdout, stderr = None, None
+
         return Runtime(args=args, cwd=cwd, timeout=timeout, stdin=stdin, stdout=stdout, stderr=stderr, timed_out=True)
 
     # Check elapsed
