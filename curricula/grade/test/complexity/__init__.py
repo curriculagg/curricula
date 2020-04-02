@@ -4,11 +4,7 @@ from ...task import Result
 class ComplexityResult(Result):
     """The result of a correctness case."""
 
-    constrained: bool
+    kind = "correctness"
 
-    def __init__(self, constrained: bool):
-        super().__init__()
-        self.constrained = constrained
-
-    def __str__(self):
-        return "meets complexity constraint" if self.constrained else "failed to meet complexity constraint"
+    def __init__(self, passed: bool, complete: bool = True, **details):
+        super().__init__(complete=complete, passed=passed, details=details)

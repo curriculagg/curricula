@@ -1,3 +1,6 @@
+#ifndef CURRICULA_HPP
+#define CURRICULA_HPP
+
 #include <cstring>
 
 #define EXPECT_TRUE(condition) if (!(condition)) { return 1; }
@@ -24,3 +27,5 @@ int main(int argc, char** argv)\
 #define HARNESS_END \
     return 2;\
 }
+
+#endif
