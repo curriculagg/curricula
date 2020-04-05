@@ -3,7 +3,7 @@ from typing import List, Dict, Iterable
 from dataclasses import dataclass, field
 
 from .report import ProblemReport
-from .task import Task
+from .task import Task, Result
 from .stage import GraderStage
 from ..log import log
 
@@ -108,8 +108,16 @@ class Grader:
             hidden = sanity_enabled_and_not_sanity(task, resources)
 
             # Run task if not hidden and dependencies are met
-            run_task = not hidden and fulfills_dependencies(task, report)
-            result = task.run(resources) if run_task else task.result_type.incomplete()
+            if not hidden and fulfills_dependencies(task, report):
+                try:
+                    result = task.run(resources)
+                except Result as result:
+                    pass
+
+            # Otherwise take an incomplete result
+            else:
+                result = task.result_type.incomplete()
+
             result.task = task
 
             # Check result

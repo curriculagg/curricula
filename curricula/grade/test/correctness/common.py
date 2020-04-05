@@ -1,10 +1,10 @@
 import functools
 
-from typing import List, Iterable, AnyStr, Union, Sized, Callable, Container, TypeVar
+from typing import List, Iterable, AnyStr, Union, Sized, Callable, Container, TypeVar, Sequence
 from pathlib import Path
 
 from . import CorrectnessResult
-from ....library.process import Runtime
+from ....library.process import Runtime, Interactive, InteractiveStreamTimeoutExpired, Interaction
 
 __all__ = (
     "as_lines",
@@ -15,7 +15,8 @@ __all__ = (
     "make_in_out_test",
     "make_exit_runtime_test",
     "wrap_runtime_test",
-    "make_exit_zero")
+    "make_exit_zero",
+    "write_then_read")
 
 
 def as_lines(string: AnyStr) -> List[AnyStr]:
@@ -149,23 +150,27 @@ def make_stdout_runtime_test(
 
             out = out_transform(runtime.stdout)
             passed = out == test_out
-            details = {} if passed else {"expected": [test_out.decode(errors="replace")]}
+            details = {} if passed else dict(
+                expected=[test_out.decode(errors="replace")],
+                received=out.decode(errors="replace"))
             return CorrectnessResult(passed=passed, runtime=runtime.dump(), **details)
         return compare_stdout
 
     else:
         if test_out_lines is not None:
             test_out_lines_lists = [test_out_lines]
-        expected_out = []
-        for expected_lines in test_out_lines_lists:
-            expected_out.append(b"\n".join(expected_lines).decode(errors="replace"))
+        expected_out_lines = []
+        for expected_out_lines_list in test_out_lines_lists:
+            expected_out_lines.append(b"\n".join(expected_out_lines_list).decode(errors="replace"))
 
         def compare_stdout(runtime: Runtime):
             """Compare by line."""
 
             out_lines = tuple(map(out_line_transform, out_transform(runtime.stdout).split(b"\n")))
             passed = any(lines_match(out_lines, lines) for lines in test_out_lines_lists)
-            details = dict() if passed else dict(expected=expected_out)
+            details = {} if passed else dict(
+                expected=expected_out_lines,
+                received=b"\n".join(out_lines))
             return CorrectnessResult(passed=passed, runtime=runtime.dump(), **details)
         return compare_stdout
 
@@ -218,3 +223,30 @@ def make_exit_zero(executable_name: str, args: Iterable[str] = (), stdin: bytes 
     """Make a test that checks if the program returns zero."""
 
     return exit_zero(executable_name=executable_name, args=args, stdin=stdin, timeout=timeout)
+
+
+def write_then_read(
+        interactive: Interactive,
+        stdin: Sequence[bytes],
+        read_condition: Callable[[bytes], bool] = None,
+        read_condition_timeout: float = None) -> Interaction:
+    """Pass in a bunch of lines, get the last output, compare."""
+
+    if not interactive.poll():
+        raise CorrectnessResult(passed=False, error="program crashed")
+
+    with interactive.recording() as interaction:
+        for command in stdin:
+            interactive.stdin.write(command)
+            try:
+                interactive.stdout.read(
+                    block=True,
+                    condition=read_condition,
+                    timeout=read_condition_timeout)
+            except InteractiveStreamTimeoutExpired:
+                raise CorrectnessResult(passed=False, error="timed out", runtime=interaction.dump())
+
+    if interaction.stdout is None:
+        raise CorrectnessResult(passed=False, error="did not receive output", runtime=interaction.dump())
+
+    return interaction

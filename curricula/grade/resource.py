@@ -41,10 +41,10 @@ class Executable(Resource):
     def __init__(self, *args: str):
         self.args = args
 
-    def interactive(self, *args: str) -> process.Interactive:
+    def interactive(self, *args: str, cwd: Path = None) -> process.Interactive:
         """Return a subprocess."""
 
-        return process.Interactive(self.args + args)
+        return process.Interactive(args=self.args + args, cwd=cwd)
 
     def execute(self, *args: str, stdin: bytes = None, timeout: float = None, cwd: Path = None) -> process.Runtime:
         """Run the target with command line arguments."""

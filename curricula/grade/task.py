@@ -6,8 +6,8 @@ from dataclasses import dataclass, field
 from ..log import log
 
 
-@dataclass
-class Result(abc.ABC):
+@dataclass(init=False)
+class Result(Exception, abc.ABC):
     """The result of a test."""
 
     complete: bool
@@ -16,6 +16,11 @@ class Result(abc.ABC):
 
     kind: str = field(init=False)
     task: "Task" = field(init=False)
+
+    def __init__(self, complete: bool, passed: bool, **details):
+        self.complete = complete
+        self.passed = passed
+        self.details = details
 
     def __str__(self):
         return "passed" if self.complete and self.passed else "failed"
@@ -30,15 +35,6 @@ class Result(abc.ABC):
     @classmethod
     def incomplete(cls):
         return cls(complete=False, passed=False)
-
-
-class GenericResult(Result):
-    """Can be used for generic tests."""
-
-    kind = "generic"
-
-    def __init__(self, passed: bool = True, complete: bool = True, **details):
-        super().__init__(complete=complete, passed=passed, details=details)
 
 
 TResult = TypeVar("TResult", bound=Result)

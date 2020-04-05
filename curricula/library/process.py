@@ -217,7 +217,7 @@ class Interactive:
         if self._recording is not None:
             raise RuntimeError("Cannot make multiple runtime recordings at once!")
 
-        partial = Interaction(args=self._args)
+        partial = Interaction(args=self._args, cwd=self.cwd)
         stdin_index = len(self.stdin.history)
         stdout_index = len(self.stdout.history)
         stderr_index = len(self.stderr.history)
