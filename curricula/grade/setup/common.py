@@ -16,7 +16,7 @@ def make_open_interactive(
 
     def test(resources: dict):
         try:
-            for i in range(1, count + 1):
+            for i in range(count):
                 name = f"{executable_name}_i{i}"
                 resources[name] = interactive = resources[executable_name].interactive(*args, cwd=cwd)
                 if read_condition is not None:

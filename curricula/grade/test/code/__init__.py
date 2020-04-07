@@ -29,6 +29,6 @@ class CodeResult(Result):
     location: CodeLocation = field(init=False)
 
     def __init__(self, complete: bool, passed: bool, description: str, location: CodeLocation, **details):
-        super().__init__(complete=complete, passed=passed, details=details)
+        super().__init__(complete=complete, passed=passed, **details)
         self.description = description
         self.location = location

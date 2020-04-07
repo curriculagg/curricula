@@ -12,12 +12,12 @@ class Result(Exception, abc.ABC):
 
     complete: bool
     passed: bool
-    details: dict = field(default_factory=dict)
+    details: dict
 
     kind: str = field(init=False)
     task: "Task" = field(init=False)
 
-    def __init__(self, complete: bool, passed: bool, **details):
+    def __init__(self, complete: bool, passed: bool, details: dict):
         self.complete = complete
         self.passed = passed
         self.details = details

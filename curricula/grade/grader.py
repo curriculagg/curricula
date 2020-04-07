@@ -111,8 +111,8 @@ class Grader:
             if not hidden and fulfills_dependencies(task, report):
                 try:
                     result = task.run(resources)
-                except Result as result:
-                    pass
+                except Result as r:
+                    result = r
 
             # Otherwise take an incomplete result
             else:
