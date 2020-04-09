@@ -10,4 +10,4 @@ class CheckResult(Result):
     kind = "check"
 
     def __init__(self, passed: bool, complete=True, **details):
-        super().__init__(complete=complete, passed=passed, **details)
+        super().__init__(complete=complete, passed=passed, details=details)
