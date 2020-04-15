@@ -4,6 +4,7 @@ from typing import List, Iterable, AnyStr, Union, Sized, Callable, Container, Ty
 from pathlib import Path
 
 from . import CorrectnessResult
+from ...task import Error
 from ....library.process import Runtime, Interactive, InteractiveStreamTimeoutExpired, Interaction
 
 __all__ = (
@@ -61,12 +62,13 @@ def lines_match_test(
 
     match = lines_match if ordered else lines_match_unordered
     if match(a, b):
-        return CorrectnessResult(passed=True, **details)
+        return CorrectnessResult(passing=True, **details)
     return CorrectnessResult(
-        passed=False,
+        passing=False,
+        error=Error(description="did not match the expected output"),
+        **details,
         received=b"\n".join(a).decode() + "\n",
-        expected=b"\n".join(b).decode() + "\n",
-        **details)
+        expected=b"\n".join(b).decode() + "\n")
 
 
 BytesTransform = Callable[[bytes], bytes]
@@ -82,12 +84,23 @@ def test_runtime_succeeded(runtime: Runtime) -> CorrectnessResult:
     """See if the runtime raised exceptions or returned status code."""
 
     if runtime.raised_exception:
-        return CorrectnessResult(passed=False, runtime=runtime.dump(), error=runtime.exception.description)
+        return CorrectnessResult(
+            passing=False,
+            runtime=runtime.dump(),
+            error=Error(description=runtime.exception.description))
     elif runtime.timed_out:
-        return CorrectnessResult(passed=False, runtime=runtime.dump(), error="timed out")
+        return CorrectnessResult(
+            passing=False,
+            runtime=runtime.dump(),
+            error=Error(description="timed out",
+                        suggestion=f"expected maximum elapsed time of {runtime.timeout} seconds"))
     elif runtime.code != 0:
-        return CorrectnessResult(passed=False, runtime=runtime.dump(), error="expected status code of zero")
-    return CorrectnessResult(passed=True)
+        return CorrectnessResult(
+            passing=False,
+            runtime=runtime.dump(),
+            error=Error(description=f"received status code {runtime.code}",
+                        suggestion="expected status code of zero"))
+    return CorrectnessResult(passing=True)
 
 
 def make_in_out_test(
@@ -119,7 +132,7 @@ def make_in_out_test(
 
         # Test failed
         runtime_succeeded = test_runtime_succeeded(runtime)
-        if not runtime_succeeded.passed:
+        if not runtime_succeeded.passing:
             return runtime_succeeded
 
         return compare_stdout(runtime)
@@ -153,7 +166,7 @@ def make_stdout_runtime_test(
             details = {} if passed else dict(
                 expected=[test_out.decode(errors="replace")],
                 received=out.decode(errors="replace"))
-            return CorrectnessResult(passed=passed, runtime=runtime.dump(), **details)
+            return CorrectnessResult(passing=passed, runtime=runtime.dump(), **details)
         return compare_stdout
 
     else:
@@ -171,7 +184,7 @@ def make_stdout_runtime_test(
             details = {} if passed else dict(
                 expected=expected_out_lines,
                 received=b"\n".join(out_lines))
-            return CorrectnessResult(passed=passed, runtime=runtime.dump(), **details)
+            return CorrectnessResult(passing=passed, runtime=runtime.dump(), **details)
         return compare_stdout
 
 
@@ -187,7 +200,7 @@ def make_exit_runtime_test(
         expected_codes = (expected_code,)
 
     def test(runtime: Runtime) -> CorrectnessResult:
-        return CorrectnessResult(passed=runtime.code in expected_codes, runtime=runtime.dump())
+        return CorrectnessResult(passing=runtime.code in expected_codes, runtime=runtime.dump())
 
     return test
 
@@ -208,7 +221,7 @@ def wrap_runtime_test(
 
         # Check fail
         runtime_succeeded = test_runtime_succeeded(runtime)
-        if not runtime_succeeded.passed:
+        if not runtime_succeeded.passing:
             return runtime_succeeded
 
         return runtime_test(runtime)
@@ -233,7 +246,7 @@ def write_then_read(
     """Pass in a bunch of lines, get the last output, compare."""
 
     if not interactive.poll():
-        raise CorrectnessResult(passed=False, error="program crashed")
+        raise CorrectnessResult(passing=False, error=Error(description="program crashed"))
 
     with interactive.recording() as interaction:
         for command in stdin:
@@ -244,9 +257,15 @@ def write_then_read(
                     condition=read_condition,
                     timeout=read_condition_timeout)
             except InteractiveStreamTimeoutExpired:
-                raise CorrectnessResult(passed=False, error="timed out", runtime=interaction.dump())
+                raise CorrectnessResult(
+                    passing=False,
+                    error=Error(description="timed out"),
+                    runtime=interaction.dump())
 
     if interaction.stdout is None:
-        raise CorrectnessResult(passed=False, error="did not receive output", runtime=interaction.dump())
+        raise CorrectnessResult(
+            passing=False,
+            error=Error(description="did not receive output"),
+            runtime=interaction.dump())
 
     return interaction

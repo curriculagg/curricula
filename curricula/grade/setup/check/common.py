@@ -10,8 +10,8 @@ def check_file_exists(*paths: Path) -> CheckResult:
     """Check if a file is present in the directory."""
 
     if not any(path.exists() for path in paths):
-        return CheckResult(passed=False, error=f"can't find {paths[0].parts[-1]}")
-    return CheckResult(passed=True)
+        return CheckResult(passing=False, error=f"can't find {paths[0].parts[-1]}")
+    return CheckResult(passing=True)
 
 
 def check_makefile_exists(path: Path) -> CheckResult:
@@ -21,8 +21,8 @@ def check_makefile_exists(path: Path) -> CheckResult:
     upper_path = path.joinpath("Makefile")
 
     if not lower_path.exists() and not upper_path.exists():
-        return CheckResult(passed=False, error=f"can't find {upper_path.parts[-1]}")
-    return CheckResult(passed=True)
+        return CheckResult(passing=False, error=f"can't find {upper_path.parts[-1]}")
+    return CheckResult(passing=True)
 
 
 def search_file_by_name(name: str, path: Path) -> Optional[Path]:

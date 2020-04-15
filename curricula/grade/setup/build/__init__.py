@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from ...task import Result
+from ...task import Error, Result
 
 
 @dataclass(init=False, eq=False)
@@ -9,5 +9,5 @@ class BuildResult(Result):
 
     kind = "build"
 
-    def __init__(self, passed: bool, complete: bool = True, **details):
-        super().__init__(complete=complete, passed=passed, details=details)
+    def __init__(self, passing: bool, complete: bool = True, error: Error = None, **details):
+        super().__init__(complete=complete, passing=passing, error=error, details=details)

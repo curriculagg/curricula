@@ -2,7 +2,7 @@ from typing import Optional
 
 from ....library.process import Runtime
 from ....library.valgrind import ValgrindReport
-from ...task import Result
+from ...task import Result, Error
 
 
 class MemoryResult(Result):
@@ -17,18 +17,24 @@ class MemoryResult(Result):
 
     def __init__(
             self,
-            passed: bool,
+            passing: bool,
             runtime: Runtime = None,
             complete: bool = True,
             error_count: int = None,
             leaked_blocks: int = None,
             leaked_bytes: int = None,
             **details):
-        super().__init__(complete=complete, passed=passed, details=details)
+        """Initialize a memory result."""
+
+        super().__init__(complete=complete, passing=passing, details=details)
         self.runtime = runtime
         self.error_count = error_count
         self.leaked_blocks = leaked_blocks
         self.leaked_bytes = leaked_bytes
+
+        # Create the error with additional data
+        if error_count > 0 or leaked_bytes > 0:
+            self.error = Error(description=f"leaked {leaked_bytes} bytes with {error_count} errors")
 
     @classmethod
     def from_valgrind_report(cls, report: ValgrindReport, **details) -> "MemoryResult":
@@ -44,15 +50,6 @@ class MemoryResult(Result):
             leaked_blocks=leaked_blocks,
             leaked_bytes=leaked_bytes,
             **details)
-
-    def __str__(self):
-        if self.leaked_bytes is None:
-            return "failed to run"
-        if self.leaked_bytes > 0:
-            return f"leaked {self.leaked_bytes} bytes"
-        if self.error_count > 0:
-            return f"encountered {self.error_count} errors"
-        return "found no leaked memory"
 
     def dump(self) -> dict:
         dump = super().dump()

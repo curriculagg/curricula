@@ -1,5 +1,5 @@
 import itertools
-from typing import List, Dict, Iterable
+from typing import List, Iterable
 from dataclasses import dataclass, field
 
 from .report import ProblemReport
@@ -7,45 +7,12 @@ from .task import Task, Result
 from .stage import GraderStage
 from ..log import log
 
+from .dependency import topological_sort
 from .setup import SetupStage
 from .test import TestStage
 from .teardown import TeardownStage
 from .configuration.sandbox import SandboxConfiguration
 from .configuration.output import OutputConfiguration
-
-
-def topological_sort_visit(task: Task, lookup: Dict[str, Task], marks: Dict[Task, int], result: List[Task]):
-    """Visit a node."""
-
-    if marks[task] == 2:
-        return
-
-    if marks[task] == 1:
-        log.error("found cycle in task dependencies")
-        raise ValueError()
-
-    marks[task] = 1
-    for dependency in task.dependencies:
-        topological_sort_visit(lookup[dependency], lookup, marks, result)
-    marks[task] = 2
-    result.append(task)
-
-
-def topological_sort(stage_tasks: Iterable[List[Task]]):
-    """Order tasks by dependency."""
-
-    lookup = {}
-    marks = {}
-    for tasks in stage_tasks:
-        result = []
-        for task in tasks:
-            marks[task] = 0
-            lookup[task.name] = task
-        for task in tasks:
-            if marks[task] != 2:
-                topological_sort_visit(task, lookup, marks, result)
-        tasks.clear()
-        tasks.extend(result)
 
 
 def collapse_tasks(stages: Iterable[GraderStage]) -> Iterable[Task]:
@@ -57,7 +24,9 @@ def collapse_tasks(stages: Iterable[GraderStage]) -> Iterable[Task]:
 def fulfills_dependencies(task: Task, report: ProblemReport):
     """Convenience."""
 
-    return all(report.check(dependency) for dependency in task.dependencies)
+    return all((
+        all(report.lookup[dependency].passing for dependency in task.dependencies.passing),
+        all(report.lookup[dependency].complete for dependency in task.dependencies.complete)))
 
 
 def sanity_enabled_and_not_sanity(task: Task, resources: dict):
@@ -116,7 +85,7 @@ class Grader:
 
             # Otherwise take an incomplete result
             else:
-                result = task.result_type.incomplete()
+                result = task.Result.incomplete()
 
             result.task = task
 

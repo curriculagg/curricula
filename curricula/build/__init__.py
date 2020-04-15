@@ -33,7 +33,7 @@ file via relative path, so the problem directory could be anywhere.
 
 import jinja2
 import json
-from pathlib import Path, PurePath
+from pathlib import Path
 from typing import Dict, Union, List, Callable
 from dataclasses import dataclass
 

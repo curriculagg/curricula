@@ -7,4 +7,4 @@ grader = Grader()
 def check_pass():
     """Check if the program exists."""
 
-    return CorrectnessResult(passed=True)
+    return CorrectnessResult(passing=True)

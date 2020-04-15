@@ -1,5 +1,5 @@
 from ..stage import GraderStage
-# from .code import CodeResult
+from .code import CodeResult
 from .complexity import ComplexityResult
 from .correctness import CorrectnessResult
 from .memory import MemoryResult
@@ -10,22 +10,22 @@ class TestStage(GraderStage):
 
     name = "test"
 
-    # def code(self, **details):
-    #     """Code quality."""
-    #
-    #     return self.create_registrar(details, CodeResult)
+    def code(self, **details):
+        """Code quality."""
+
+        return self.registrar(details, CodeResult)
 
     def complexity(self, **details):
         """Runtime complexity."""
 
-        return self.create_registrar(details, ComplexityResult)
+        return self.registrar(details, ComplexityResult)
 
     def correctness(self, **details):
         """Program correctness."""
 
-        return self.create_registrar(details, CorrectnessResult)
+        return self.registrar(details, CorrectnessResult)
 
     def memory(self, **details):
         """Resource allocation."""
 
-        return self.create_registrar(details, MemoryResult)
+        return self.registrar(details, MemoryResult)

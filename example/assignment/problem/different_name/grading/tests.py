@@ -35,7 +35,7 @@ def test_output(name_different: Executable) -> CorrectnessResult:
     """Check if the program outputs as expected."""
 
     runtime = name_different.execute(timeout=1)
-    return CorrectnessResult(passed=runtime.stdout.strip() == b"Hello, world!", runtime=runtime.dump())
+    return CorrectnessResult(passing=runtime.stdout.strip() == b"Hello, world!", runtime=runtime.dump())
 
 
 @grader.teardown.cleanup(dependency="build_name_different")

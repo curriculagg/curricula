@@ -1,3 +1,4 @@
+import time
 import datetime
 import json
 from pathlib import Path
@@ -5,6 +6,8 @@ from dataclasses import dataclass, asdict
 from typing import Optional, List
 
 from ..shared import *
+
+TZ = datetime.timezone(offset=datetime.timedelta(seconds=time.timezone))
 
 
 @dataclass
@@ -28,8 +31,8 @@ class Dates:
     def __init__(self, assigned: str, due: str):
         """Convert to datetime."""
 
-        self.assigned = datetime.datetime.strptime(assigned, "%Y-%m-%d %H:%M:%S")
-        self.due = datetime.datetime.strptime(due, "%Y-%m-%d %H:%M:%S")
+        self.assigned = datetime.datetime.strptime(assigned, "%Y-%m-%d %H:%M:%S").replace(tzinfo=TZ)
+        self.due = datetime.datetime.strptime(due, "%Y-%m-%d %H:%M:%S").replace(tzinfo=TZ)
 
     def dump(self) -> dict:
         return dict(

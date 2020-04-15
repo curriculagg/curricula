@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from ...task import Result
+from ...task import Result, Error
 
 
 @dataclass
@@ -9,5 +9,5 @@ class CleanupResult(Result):
 
     kind = "cleanup"
 
-    def __init__(self, passed: bool = True, complete: bool = True, **details):
-        super().__init__(complete=complete, passed=passed, details=details)
+    def __init__(self, passing: bool = True, complete: bool = True, error: Error = None, **details):
+        super().__init__(complete=complete, passing=passing, error=error, details=details)

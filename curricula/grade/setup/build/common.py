@@ -41,13 +41,13 @@ def build_gpp_executable(
 
     # If the build failed
     if error is not None:
-        return BuildResult(passed=False, runtime=runtime.dump(), error=error), None
+        return BuildResult(passing=False, runtime=runtime.dump(), error=error), None
 
     # Chmod
     add_mode(destination_path, stat.S_IXOTH)
 
     # Otherwise
-    return BuildResult(passed=True, runtime=runtime.dump()), ExecutableFile(destination_path)
+    return BuildResult(passing=True, runtime=runtime.dump()), ExecutableFile(destination_path)
 
 
 def build_makefile_executable(
@@ -59,8 +59,8 @@ def build_makefile_executable(
     runtime = process.run("make", "-B", "-C", str(target_path), *make_options, timeout=timeout)
     if runtime.code != 0 or runtime.timed_out:
         error = f"failed to make {target_path.parts[-1]}"
-        return BuildResult(passed=False, runtime=runtime.dump(), error=error)
-    return BuildResult(passed=True, runtime=runtime.dump())
+        return BuildResult(passing=False, runtime=runtime.dump(), error=error)
+    return BuildResult(passing=True, runtime=runtime.dump())
 
 
 def build_harness_library(
@@ -69,7 +69,7 @@ def build_harness_library(
         object_paths: Iterable[Path] = (),
         gpp_options: Iterable[str] = (),
         build_path: Path = Path(),
-        timeout: int = 30) -> (BuildResult, Optional[File]):
+        timeout: int = 30) -> Tuple[BuildResult, Optional[File]]:
     """Build a shared object file.
 
     The target path will be listed after an include flag so that
@@ -85,12 +85,12 @@ def build_harness_library(
         "-o", str(object_path),
         timeout=timeout)
     if runtime.code != 0 or runtime.raised_exception is not None:
-        return BuildResult(passed=False, runtime=runtime.dump(), error="compilation failed"), None
+        return BuildResult(passing=False, runtime=runtime.dump(), error="compilation failed"), None
 
     shared_object_path = build_path.joinpath("harness.so")
     runtime = process.run("g++", "-shared", str(object_path), "-o", str(shared_object_path), timeout=timeout)
     delete_file(object_path)
     if runtime.code != 0 or runtime.raised_exception is not None:
-        return BuildResult(passed=False, runtime=runtime.dump(), error="shared library build failed"), None
+        return BuildResult(passing=False, runtime=runtime.dump(), error="shared library build failed"), None
 
-    return BuildResult(passed=True), File(shared_object_path)
+    return BuildResult(passing=True), File(shared_object_path)

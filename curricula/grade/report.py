@@ -32,12 +32,6 @@ class ProblemReport(Resource):
     lookup: Dict[str, Result] = field(default_factory=dict)
     results: List[Result] = field(default_factory=list)
 
-    def check(self, task_name: str) -> bool:
-        """Check the result of a task."""
-
-        result = self.lookup[task_name]
-        return result.complete and result.passed
-
     def add(self, result: Result, hidden: bool = False):
         """Add a result to the report."""
 
@@ -58,13 +52,13 @@ class ProblemReport(Resource):
             statistics.tasks_total += 1
             if result.complete:
                 statistics.tasks_complete += 1
-            if result.passed:
+            if result.passing:
                 statistics.tasks_passed += 1
             if result.task.stage == "test":
                 statistics.tests_total += 1
                 if result.complete:
                     statistics.tests_complete += 1
-                if result.passed:
+                if result.passing:
                     statistics.tests_passed += 1
         return statistics
 

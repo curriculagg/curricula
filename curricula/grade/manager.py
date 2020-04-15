@@ -39,7 +39,7 @@ def print_reports(target_path: Path, reports: Dict[str, ProblemReport], options:
         print(f"  {problem_short}: {report.statistics()}")
         if not options.get("concise"):
             for result in report.results:
-                print(f"    {PASSED if result.complete and result.passed else FAILED} {result.task.name}")
+                print(f"    {PASSED if result.complete and result.passing else FAILED} {result.task.name}")
 
 
 @dataclass(eq=False)

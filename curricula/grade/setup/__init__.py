@@ -9,8 +9,8 @@ class SetupResult(Result):
 
     kind = "generic"
 
-    def __init__(self, passed: bool = True, complete: bool = True, **details):
-        super().__init__(complete=complete, passed=passed, details=details)
+    def __init__(self, passing: bool = True, complete: bool = True, **details):
+        super().__init__(complete=complete, passing=passing, details=details)
 
 
 class SetupStage(GraderStage):

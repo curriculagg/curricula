@@ -52,6 +52,9 @@
           },
           "percentage": {
             "type": "number"
+          },
+          "directory": {
+            "type": "string"
           }
         },
         "required": [
