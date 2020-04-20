@@ -206,16 +206,16 @@ def generate_grading_schema(grading_path: Path, assignment: Assignment) -> dict:
     dump their task summaries.
     """
 
-    schema = dict(title=assignment.title, short=assignment.short, problems=dict())
+    assignment_schema = dict(title=assignment.title, short=assignment.short, problems=dict())
     for problem in assignment.problems:
         if problem.grading.automated:
             grader = import_grader(grading_path.joinpath(problem.short, Files.TESTS))
-            schema["problems"][problem.short] = dict(
+            assignment_schema["problems"][problem.short] = dict(
                 title=problem.title,
                 directory=problem.directory,
                 percentage=problem.percentage,
                 tasks=grader.dump())
-    return schema
+    return assignment_schema
 
 
 def build_grading_schema(assignment: Assignment, path: Path):

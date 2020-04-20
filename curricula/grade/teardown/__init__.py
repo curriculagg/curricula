@@ -20,9 +20,9 @@ class TeardownStage(GraderStage):
     def generic(self, **details) -> Registrar:
         """Generic tasks."""
 
-        return self.create_registrar(details, TeardownResult)
+        return self.registrar(details, TeardownResult)
 
     def cleanup(self, **details) -> Registrar:
         """Deleting files."""
 
-        return self.create_registrar(details, CleanupResult)
+        return self.registrar(details, CleanupResult)

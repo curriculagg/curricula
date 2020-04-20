@@ -1,4 +1,5 @@
 from .grader import Grader
+from .task import Error
 from .setup.build import BuildResult
 from .setup.check import CheckResult
 from .test.correctness import CorrectnessResult

@@ -1,5 +1,5 @@
 from ..stage import GraderStage, Registrar
-from ..task import Result
+from ..task import Result, Error
 from .check import CheckResult
 from .build import BuildResult
 
@@ -9,8 +9,8 @@ class SetupResult(Result):
 
     kind = "generic"
 
-    def __init__(self, passing: bool = True, complete: bool = True, **details):
-        super().__init__(complete=complete, passing=passing, details=details)
+    def __init__(self, passing: bool = True, complete: bool = True, error: Error = None, **details):
+        super().__init__(complete=complete, passing=passing, error=error, details=details)
 
 
 class SetupStage(GraderStage):
@@ -21,14 +21,14 @@ class SetupStage(GraderStage):
     def generic(self, **details) -> Registrar:
         """Generic tasks."""
 
-        return self.create_registrar(details, SetupResult)
+        return self.registrar(details, SetupResult)
 
     def build(self, **details) -> Registrar:
         """Compilation."""
 
-        return self.create_registrar(details, BuildResult)
+        return self.registrar(details, BuildResult)
 
     def check(self, **details) -> Registrar:
         """Passive checks."""
 
-        return self.create_registrar(details, CheckResult)
+        return self.registrar(details, CheckResult)

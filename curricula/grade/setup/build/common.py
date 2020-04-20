@@ -4,6 +4,7 @@ from pathlib import Path
 
 from . import BuildResult
 from ...resource import ExecutableFile, File
+from ...task import Error
 from ....library import process
 from ....library.files import delete_file, add_mode
 
@@ -41,7 +42,7 @@ def build_gpp_executable(
 
     # If the build failed
     if error is not None:
-        return BuildResult(passing=False, runtime=runtime.dump(), error=error), None
+        return BuildResult(passing=False, runtime=runtime.dump(), error=Error(description=error)), None
 
     # Chmod
     add_mode(destination_path, stat.S_IXOTH)
@@ -59,7 +60,7 @@ def build_makefile_executable(
     runtime = process.run("make", "-B", "-C", str(target_path), *make_options, timeout=timeout)
     if runtime.code != 0 or runtime.timed_out:
         error = f"failed to make {target_path.parts[-1]}"
-        return BuildResult(passing=False, runtime=runtime.dump(), error=error)
+        return BuildResult(passing=False, runtime=runtime.dump(), error=Error(description=error))
     return BuildResult(passing=True, runtime=runtime.dump())
 
 
@@ -85,12 +86,17 @@ def build_harness_library(
         "-o", str(object_path),
         timeout=timeout)
     if runtime.code != 0 or runtime.raised_exception is not None:
-        return BuildResult(passing=False, runtime=runtime.dump(), error="compilation failed"), None
+        return BuildResult(passing=False, runtime=runtime.dump(), error=Error(description="compilation failed")), None
 
     shared_object_path = build_path.joinpath("harness.so")
     runtime = process.run("g++", "-shared", str(object_path), "-o", str(shared_object_path), timeout=timeout)
     delete_file(object_path)
     if runtime.code != 0 or runtime.raised_exception is not None:
-        return BuildResult(passing=False, runtime=runtime.dump(), error="shared library build failed"), None
+        return (
+            BuildResult(
+                passing=False,
+                runtime=runtime.dump(),
+                error=Error(description="shared library build failed")),
+            None)
 
     return BuildResult(passing=True), File(shared_object_path)

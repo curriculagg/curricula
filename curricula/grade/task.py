@@ -15,12 +15,16 @@ class Error:
     description: str
     location: str = None
     suggestion: str = None
+    expected: Any = None
+    received: Any = None
 
     def dump(self) -> dict:
         return dict(
             description=self.description,
             location=self.location,
-            suggestion=self.suggestion)
+            suggestion=self.suggestion,
+            expected=self.expected,
+            received=self.received)
 
 
 @dataclass(init=False, eq=False)
@@ -85,7 +89,7 @@ class Dependencies:
     def normalize_from_details(cls, name: str, details: dict) -> Set[str]:
         """Normalize a set of strings."""
 
-        value = details.get(name)
+        value = details.pop(name, None)
         if value is None:
             return set()
         if isinstance(value, str):
@@ -101,6 +105,11 @@ class Dependencies:
         return cls(
             passing=cls.normalize_from_details("passing", details),
             complete=cls.normalize_from_details("complete", details))
+
+    def dump(self):
+        return dict(
+            passing=list(self.passing),
+            complete=list(self.complete))
 
 
 @dataclass(eq=False)
@@ -156,5 +165,5 @@ class Task(Generic[TResult]):
             description=self.description,
             stage=self.stage,
             kind=self.kind,
-            dependencies=self.dependencies,
+            dependencies=self.dependencies.dump(),
             details=self.details)

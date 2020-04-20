@@ -65,10 +65,11 @@ def lines_match_test(
         return CorrectnessResult(passing=True, **details)
     return CorrectnessResult(
         passing=False,
-        error=Error(description="did not match the expected output"),
-        **details,
-        received=b"\n".join(a).decode() + "\n",
-        expected=b"\n".join(b).decode() + "\n")
+        error=Error(
+            description="did not match the expected output",
+            received=b"\n".join(a).decode() + "\n",
+            expected=b"\n".join(b).decode() + "\n"),
+        **details)
 
 
 BytesTransform = Callable[[bytes], bytes]

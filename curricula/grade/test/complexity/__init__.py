@@ -1,4 +1,4 @@
-from ...task import Result
+from ...task import Result, Error
 
 
 class ComplexityResult(Result):
@@ -6,5 +6,5 @@ class ComplexityResult(Result):
 
     kind = "correctness"
 
-    def __init__(self, passing: bool, complete: bool = True, **details):
-        super().__init__(complete=complete, passing=passing, details=details)
+    def __init__(self, passing: bool, complete: bool = True, error: Error = None, **details):
+        super().__init__(complete=complete, passing=passing, error=error, details=details)

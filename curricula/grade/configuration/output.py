@@ -4,7 +4,6 @@ from typing import Dict, Any
 from . import GraderConfiguration
 from ..exception import GraderException
 from ..task import Task, Result
-from ...log import log
 
 Nothing = object()
 
@@ -32,8 +31,7 @@ class OutputConfiguration(GraderConfiguration):
         for detail_name, detail_default in self.task_details.items():
             if detail_name not in task.details:
                 if detail_default is Nothing:
-                    log.error(f"missing required detail {detail_name} in task {task.name}")
-                    raise GraderException()
+                    raise GraderException(f"missing required detail {detail_name} in task {task.name}")
                 task.details[detail_name] = detail_default
 
     def check_result(self, result: Result):
@@ -42,6 +40,5 @@ class OutputConfiguration(GraderConfiguration):
         for detail_name, detail_default in self.task_details.items():
             if detail_name not in result.details:
                 if detail_default is Nothing:
-                    log.error(f"missing required detail {detail_name} from result of task {result.task.name}")
-                    raise GraderException()
+                    raise GraderException(f"missing required detail {detail_name} from result of task {result.task.name}")
                 result.details[detail_name] = detail_default

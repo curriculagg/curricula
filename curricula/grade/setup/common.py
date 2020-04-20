@@ -1,6 +1,7 @@
 from typing import Callable, Iterable
 from pathlib import Path
 
+from ..task import Error
 from . import SetupResult
 from ...library.process import InteractiveStreamTimeoutExpired
 
@@ -22,8 +23,8 @@ def make_open_interactive(
                 if read_condition is not None:
                     interactive.stdout.read(condition=read_condition, timeout=read_condition_timeout)
         except OSError:
-            return SetupResult(passing=False, error="failed to open process")
+            return SetupResult(passing=False, error=Error(description="failed to open process"))
         except InteractiveStreamTimeoutExpired:
-            return SetupResult(passing=False, error=f"{executable_name} timed out")
+            return SetupResult(passing=False, error=Error(description=f"{executable_name} timed out"))
 
     return test
