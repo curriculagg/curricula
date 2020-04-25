@@ -1,6 +1,6 @@
 import functools
 
-from typing import List, Iterable, AnyStr, Union, Sized, Callable, Container, TypeVar, Sequence
+from typing import List, Iterable, AnyStr, Union, Sized, Callable, Container, TypeVar, Sequence, Tuple, Optional
 from pathlib import Path
 
 from . import CorrectnessResult
@@ -12,6 +12,7 @@ __all__ = (
     "lines_match",
     "lines_match_test",
     "test_runtime_succeeded",
+    "make_compare_test",
     "make_stdout_runtime_test",
     "make_in_out_test",
     "make_exit_runtime_test",
@@ -104,6 +105,59 @@ def test_runtime_succeeded(runtime: Runtime) -> CorrectnessResult:
     return CorrectnessResult(passing=True)
 
 
+CompareTest = Callable[[bytes], CorrectnessResult]
+
+
+def make_compare_test(
+        *,
+        out_transform: BytesTransform = identity,
+        out_line_transform: BytesTransform = identity,
+        test_out: bytes = None,
+        test_out_lines: Iterable[bytes] = None,
+        test_out_lines_lists: Iterable[Iterable[bytes]] = None) -> CompareTest:
+    """Build a test for matching stdout output.
+
+    The list of lines from the stdout of the runtime is compared
+    against each list of lines in test_out_line_lists. Note that this
+    method first checks whether any error was raised during runtime.
+    """
+
+    if len(tuple(filter(lambda x: x is not None, (test_out, test_out_lines, test_out_lines_lists)))) != 1:
+        raise ValueError("Exactly one of test_out, test_out_lines, or test_out_lines_lists is required")
+
+    if test_out is not None:
+        def compare_out(out: bytes):
+            """Direct comparision of output."""
+
+            out = out_transform(out)
+            passing = out == test_out
+            error = None if passing else Error(
+                description="unexpected output",
+                expected=[test_out.decode(errors="replace")],
+                received=out.decode(errors="replace"))
+            return CorrectnessResult(passing=passing, error=error)
+        return compare_out
+
+    else:
+        if test_out_lines is not None:
+            test_out_lines_lists = [test_out_lines]
+        test_out_lines = []
+        for test_out_lines_list in test_out_lines_lists:
+            test_out_lines.append(b"\n".join(test_out_lines_list).decode(errors="replace"))
+
+        def compare_out(out: bytes):
+            """Compare by line."""
+
+            out_lines = tuple(map(out_line_transform, out_transform(out).split(b"\n")))
+            passing = any(lines_match(out_lines, lines) for lines in test_out_lines_lists)
+            error = None if passing else Error(
+                description="unexpected output",
+                expected=test_out_lines,
+                received=b"\n".join(out_lines).decode(errors="replace"))
+            return CorrectnessResult(passing=passing, error=error)
+        return compare_out
+
+
 def make_in_out_test(
         executable_name: str,
         test_in_path: Path,
@@ -123,7 +177,7 @@ def make_in_out_test(
     test_out_lines_lists = []
     for out_path in (test_out_path,) + test_out_paths:
         test_out_lines_lists.append(out_path.read_bytes().strip().split(b"\n"))
-    compare_stdout = make_stdout_runtime_test(test_out_lines_lists=test_out_lines_lists)
+    compare_stdout = make_stdout_runtime_test(make_compare_test(test_out_lines_lists=test_out_lines_lists))
 
     def test_in_out(resources: dict) -> CorrectnessResult:
         """Actually test the executable."""
@@ -141,52 +195,14 @@ def make_in_out_test(
     return test_in_out
 
 
-def make_stdout_runtime_test(
-        *,
-        out_transform: BytesTransform = identity,
-        out_line_transform: BytesTransform = identity,
-        test_out: bytes = None,
-        test_out_lines: List[bytes] = None,
-        test_out_lines_lists: List[List[bytes]] = None) -> RuntimeTest:
-    """Build a test for matching stdout output.
+def make_stdout_runtime_test(compare_test: CompareTest):
+    """Compare test with lens for runtime stdout."""
 
-    The list of lines from the stdout of the runtime is compared
-    against each list of lines in test_out_line_lists. Note that this
-    method first checks whether any error was raised during runtime.
-    """
-
-    if len(tuple(filter(lambda x: x is not None, (test_out, test_out_lines, test_out_lines_lists)))) != 1:
-        raise ValueError("Exactly one of test_out, test_out_lines, or test_out_lines_lists is required")
-
-    if test_out is not None:
-        def compare_stdout(runtime: Runtime):
-            """Direct comparision of output."""
-
-            out = out_transform(runtime.stdout)
-            passed = out == test_out
-            details = {} if passed else dict(
-                expected=[test_out.decode(errors="replace")],
-                received=out.decode(errors="replace"))
-            return CorrectnessResult(passing=passed, runtime=runtime.dump(), **details)
-        return compare_stdout
-
-    else:
-        if test_out_lines is not None:
-            test_out_lines_lists = [test_out_lines]
-        expected_out_lines = []
-        for expected_out_lines_list in test_out_lines_lists:
-            expected_out_lines.append(b"\n".join(expected_out_lines_list).decode(errors="replace"))
-
-        def compare_stdout(runtime: Runtime):
-            """Compare by line."""
-
-            out_lines = tuple(map(out_line_transform, out_transform(runtime.stdout).split(b"\n")))
-            passed = any(lines_match(out_lines, lines) for lines in test_out_lines_lists)
-            details = {} if passed else dict(
-                expected=expected_out_lines,
-                received=b"\n".join(out_lines))
-            return CorrectnessResult(passing=passed, runtime=runtime.dump(), **details)
-        return compare_stdout
+    def compare_stdout(runtime: Runtime):
+        result = compare_test(runtime.stdout)
+        result.details["runtime"] = runtime.dump()
+        return result
+    return compare_stdout
 
 
 def make_exit_runtime_test(

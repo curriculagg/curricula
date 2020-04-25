@@ -32,9 +32,16 @@ def compare_output(template_path: Path, report_path: Path) -> str:
     for problem_short, report in reports.items():
         content += f"<h2><code>{problem_short}</code></h2>"
         for task_name, result in report.items():
-            if result["complete"] and not result["passed"]:
-                expected = map(show_whitespace, result["details"]["expected"])
-                received = show_whitespace(result["details"]["received"])
+            if result["complete"] and not result["passed"] and "error" in result:
+                expected = result["error"]["expected"]
+                if isinstance(expected, str):
+                    expected = [expected]
+                if expected is None:
+                    expected = []
+                received = result["error"]["received"]
+
+                expected = list(map(show_whitespace, expected))
+                received = show_whitespace(received) if received is not None else ""
                 content += difference_template.render(task_name=task_name, expected=expected, received=received)
 
     return compare_template.render(content=content)
