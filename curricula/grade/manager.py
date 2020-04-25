@@ -91,10 +91,7 @@ class Manager:
                 problem_directory=target_path.joinpath(problem_schema["directory"]),
                 options=options)
 
-            try:
-                reports[problem_short] = grader.run(context=context)
-            except GraderException:
-                return reports
+            reports[problem_short] = grader.run(context=context)
 
         if options.get("report"):
             print_reports(target_path, reports, options)

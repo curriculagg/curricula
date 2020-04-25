@@ -30,8 +30,8 @@ class GraderStage:
         def decorator(runnable: Runnable) -> Runnable:
             """Put the function in a correctness object."""
 
-            name = details.pop("name", runnable.__qualname__)
-            description = details.pop("description", runnable.__doc__)
+            name = details.pop("name", None) or runnable.__qualname__
+            description = details.pop("description", None) or runnable.__doc__
             dependencies = Dependencies.from_details(details)
 
             for existing_task in self.tasks:

@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from .report import ProblemReport
 from .task import Task, Result
 from .stage import GraderStage
+from .exception import GraderException
 from ..log import log
 
 from .dependency import topological_sort
@@ -80,8 +81,14 @@ class Grader:
             if not hidden and fulfills_dependencies(task, report):
                 try:
                     result = task.run(resources)
+
+                # Results may be raised
                 except Result as r:
                     result = r
+
+                # Check if the result is the right type
+                if not isinstance(result, task.Result):
+                    raise GraderException(f"expected result type {task.Result.kind}")
 
             # Otherwise take an incomplete result
             else:

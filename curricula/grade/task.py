@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 
 from ..log import log
 
-__all__ = ("Error", "Result", "Dependencies", "Task")
+__all__ = ("Error", "Result", "Dependencies", "Task", "Runnable")
 
 
 @dataclass(eq=False)
