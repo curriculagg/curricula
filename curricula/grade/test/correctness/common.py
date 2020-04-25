@@ -7,7 +7,7 @@ from . import CorrectnessResult
 from .. import Test
 from ...task import Error
 from ....library.process import Runtime, Interactive, InteractiveStreamTimeoutExpired, Interaction
-from ....library.introspection import none, resolve, not_none
+from ....library.introspection import none, not_none
 
 __all__ = (
     "as_lines",
