@@ -56,7 +56,7 @@ class Result(Exception, abc.ABC):
 
         return dict(
             complete=self.complete,
-            passed=self.passing,
+            passing=self.passing,
             details=self.details,
             error=self.error.dump() if self.error is not None else self.error,
             task=self.task.name)

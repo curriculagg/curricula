@@ -13,7 +13,7 @@ class TaskSummary:
 
     task: dict
     students_complete: List[dict] = field(default_factory=list)
-    students_passed: List[dict] = field(default_factory=list)
+    students_passing: List[dict] = field(default_factory=list)
     students_timeout: List[dict] = field(default_factory=list)
 
 
@@ -22,7 +22,7 @@ class StudentProblemSummary:
     """Problem results for a single student."""
 
     tasks_complete: List[dict] = field(default_factory=list)
-    tasks_passed: List[dict] = field(default_factory=list)
+    tasks_passing: List[dict] = field(default_factory=list)
 
 
 @dataclass
@@ -85,15 +85,15 @@ def build_student_summary(summary: Summary, report_path: Path):
         for task_name, result in problem_report.items():
             task_summary = problem_summary.tasks[task_name]
             task = task_summary.task
-            if task["stage"] == "setup" and not result["passed"]:
+            if task["stage"] == "setup" and not result["passing"]:
                 summary.failed_setup.add(report_name)
 
             if result["complete"]:
                 task_summary.students_complete.append(student_summary.student)
                 student_summary.problems[problem_short].tasks_complete.append(task)
-            if result["passed"]:
-                task_summary.students_passed.append(student_summary.student)
-                student_summary.problems[problem_short].tasks_passed.append(task)
+            if result["passing"]:
+                task_summary.students_passing.append(student_summary.student)
+                student_summary.problems[problem_short].tasks_passing.append(task)
             if "runtime" in result and result["runtime"] is not None and result["runtime"]["timeout"] is not None:
                 task_summary.students_timeout.append(student_summary.student)
 
@@ -134,16 +134,16 @@ def summarize(grading_path: Path, report_paths: Iterable[Path]):
 
         print("  Tests")
         for task_name, task_summary in problem_summary.tasks.items():
-            print(f"    {task_name}: {len(task_summary.students_passed)}/{len(task_summary.students_complete)}",
+            print(f"    {task_name}: {len(task_summary.students_passing)}/{len(task_summary.students_complete)}",
                   f"({len(task_summary.students_timeout)} timeout)")
 
         scores = []
         for student_username, student_summary in summary.students.items():
             count_tests_complete = len(filter_tests(student_summary.problems[problem_short].tasks_complete))
             if count_tests_complete:
-                count_tests_passed = len(filter_tests(student_summary.problems[problem_short].tasks_passed))
-                scores.append(count_tests_passed / count_tests_complete)
-                # print(student_username, 100 * count_tests_passed / count_tests_complete)
+                count_tests_passing = len(filter_tests(student_summary.problems[problem_short].tasks_passing))
+                scores.append(count_tests_passing / count_tests_complete)
+                # print(student_username, 100 * count_tests_passing / count_tests_complete)
 
         print("  Statistics")
         print(f"    Total scores: {len(scores)}")

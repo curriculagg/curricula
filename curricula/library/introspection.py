@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Optional
 
 
 none = object()
@@ -14,19 +14,30 @@ def not_none(name: str, value: Any, none_value: Any = none, default_value: Any =
     return value
 
 
-def resolve(self: Any, name: str, none_value: Any = none, default_value: Any = none) -> Any:
+def resolve(
+        self: Any,
+        field_name: str = None,
+        field_getter_name: Optional[str] = none,
+        local_value: Any = none,
+        none_value: Any = none,
+        default_value: Any = none) -> Any:
     """Check value, self.name, then self.get_name()."""
 
+    if local_value is not none_value:
+        return local_value
+
     # Check self
-    if hasattr(self, name):
-        value = getattr(self, name)
+    if field_name is not None and hasattr(self, field_name):
+        value = getattr(self, field_name)
         if value is not none_value:
             return value
 
     # Try getter
-    getter_name = f"get_{name}"
-    if hasattr(self, getter_name):
-        getter = getattr(self, getter_name)
+    if field_getter_name is none and field_name is not None:
+        field_getter_name = f"get_{field_name}"
+
+    if field_getter_name is not None and hasattr(self, field_getter_name):
+        getter = getattr(self, field_getter_name)
         if callable(getter):
             value = getter()
             if value is not none_value:
@@ -36,4 +47,4 @@ def resolve(self: Any, name: str, none_value: Any = none, default_value: Any = n
     if default_value is not none:
         return default_value
 
-    raise RuntimeError(f"can't find a valid source for {name}")
+    raise RuntimeError(f"can't find a valid source for {field_name or 'value'}")

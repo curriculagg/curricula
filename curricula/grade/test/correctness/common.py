@@ -7,7 +7,7 @@ from . import CorrectnessResult
 from .. import Test
 from ...task import Error
 from ....library.process import Runtime, Interactive, InteractiveStreamTimeoutExpired, Interaction
-from ....library.introspection import none, not_none
+from ....library.introspection import none, not_none, resolve
 
 __all__ = (
     "as_lines",
@@ -18,9 +18,10 @@ __all__ = (
     "CompareTest",
     "CompareBytesOutputTest",
     "ExecutableMixin",
+    "ExecutableCodeMixin",
     "ExecutableInputFileMixin",
     "ExecutableOutputFileMixin",
-    "ExecutableExitCodeTest",
+    "CompareExitCodeOutputTest",
     "write_then_read")
 
 
@@ -101,14 +102,20 @@ def identity(x: T) -> T:
 class CompareBytesOutputTest(OutputTest):
     """Compares output to expected values."""
 
+    out_transform: BytesTransform
+    out_line_transform: BytesTransform
+    test_out: bytes
+    test_out_lines: Iterable[bytes]
+    test_out_lines_lists: Iterable[Iterable[bytes]]
+
     def __init__(
             self,
             *,
-            out_transform: BytesTransform = identity,
-            out_line_transform: BytesTransform = identity,
-            test_out: bytes = None,
-            test_out_lines: Iterable[bytes] = None,
-            test_out_lines_lists: Iterable[Iterable[bytes]] = None,
+            out_transform: BytesTransform = none,
+            out_line_transform: BytesTransform = none,
+            test_out: bytes = none,
+            test_out_lines: Iterable[bytes] = none,
+            test_out_lines_lists: Iterable[Iterable[bytes]] = none,
             **kwargs):
         """Build a test for matching stdout output.
 
@@ -119,56 +126,71 @@ class CompareBytesOutputTest(OutputTest):
 
         super().__init__(**kwargs)
 
-        if len(tuple(filter(lambda x: x is not None, (test_out, test_out_lines, test_out_lines_lists)))) != 1:
+        self.test_out = resolve(
+            self,
+            field_name="test_out",
+            field_getter_name=None,
+            local_value=test_out,
+            default_value=None)
+        self.test_out_lines = resolve(
+            self,
+            field_name="test_out_lines",
+            field_getter_name=None,
+            local_value=test_out_lines,
+            default_value=None)
+        self.test_out_lines_lists = resolve(
+            self,
+            field_name="test_out_lines_lists",
+            field_getter_name=None,
+            local_value=test_out_lines_lists,
+            default_value=None)
+
+        if len(tuple(filter(None, (self.test_out, self.test_out_lines, self.test_out_lines_lists)))) != 1:
             raise ValueError("Exactly one of test_out, test_out_lines, or test_out_lines_lists is required")
 
-        if test_out is not None:
-            self.test = CompareBytesOutputTest.create_out_test(
-                out_transform=out_transform,
-                test_out=test_out)
+        self.out_transform = resolve(
+            self,
+            field_name="out_transform",
+            field_getter_name=None,
+            local_value=out_transform,
+            default_value=identity)
+        self.out_line_transform = resolve(
+            self,
+            field_name="out_line_transform",
+            field_getter_name=None,
+            local_value=out_line_transform,
+            default_value=identity)
+
+        if self.test_out is not None:
+            self.test = self._test_out
         else:
-            if test_out_lines is not None:
-                test_out_lines_lists = [test_out_lines]
-            self.test = CompareBytesOutputTest.create_out_lines_lists_test(
-                out_transform=out_transform,
-                out_line_transform=out_line_transform,
-                test_out_lines_lists=test_out_lines_lists)
+            if self.test_out_lines is not None:
+                self.test_out_lines_lists = [test_out_lines]
+            self.test = self._test_out_lines_lists
 
-    @classmethod
-    def create_out_test(cls, out_transform: BytesTransform, test_out: bytes) -> CompareTest:
-        """Shortcut for comparing a single block of text."""
+    def _test_out(self, out: bytes) -> CorrectnessResult:
+        """Shortcut compare for one option block text."""
 
-        def test(out: bytes):
-            out = out_transform(out)
-            passing = out == test_out
-            error = None if passing else Error(
-                description="unexpected output",
-                expected=[test_out.decode(errors="replace")],
-                received=out.decode(errors="replace"))
-            return CorrectnessResult(passing=passing, error=error)
+        out = self.out_transform(out)
+        passing = out == self.test_out
+        error = None if passing else Error(
+            description="unexpected output",
+            expected=[self.test_out.decode(errors="replace")],
+            received=out.decode(errors="replace"))
+        return CorrectnessResult(passing=passing, error=error)
 
-        return test
-
-    @classmethod
-    def create_out_lines_lists_test(
-            cls,
-            out_transform: BytesTransform,
-            out_line_transform: BytesTransform,
-            test_out_lines_lists: Iterable[Iterable[bytes]]) -> CompareTest:
+    def _test_out_lines_lists(self, out: bytes) -> CorrectnessResult:
         """Used to compare multiple options of lists of lines."""
 
-        expected = [b"\n".join(test_out_lines).decode(errors="replace") for test_out_lines in test_out_lines_lists]
-
-        def test(out: bytes):
-            out_lines = tuple(map(out_line_transform, out_transform(out).split(b"\n")))
-            passing = any(lines_match(out_lines, lines) for lines in test_out_lines_lists)
-            error = None if passing else Error(
-                description="unexpected output",
-                expected=expected,
-                received=b"\n".join(out_lines).decode(errors="replace"))
-            return CorrectnessResult(passing=passing, error=error)
-
-        return test
+        out_lines = tuple(map(self.out_line_transform, self.out_transform(out).split(b"\n")))
+        passing = any(lines_match(out_lines, lines) for lines in self.test_out_lines_lists)
+        error = None if passing else Error(
+            description="unexpected output",
+            expected=tuple(
+                b"\n".join(test_out_lines).decode(errors="replace")
+                for test_out_lines in self.test_out_lines_lists),
+            received=b"\n".join(out_lines).decode(errors="replace"))
+        return CorrectnessResult(passing=passing, error=error)
 
 
 def test_runtime_succeeded(runtime: Runtime) -> CorrectnessResult:
@@ -257,7 +279,11 @@ class ExecutableMixin(OutputTest):
 
         return runtime.stdout
 
-    def get_exit_code(self) -> Any:
+
+class ExecutableCodeMixin(ExecutableMixin):
+    """Output is exit code instead of stdout."""
+
+    def get_output(self) -> Any:
         """Return exit code."""
 
         return self.execute().code
@@ -310,18 +336,20 @@ class ExecutableOutputFileMixin(OutputTest):
         return output_file_path.read_bytes()
 
 
-ExitCodeTest = Callable[[int], CorrectnessResult]
+CompareNativeTest = Callable[[Any], CorrectnessResult]
 
 
-class ExecutableExitCodeTest(Test, abc.ABC):
+class CompareExitCodeOutputTest(OutputTest):
     """Checks program exit code."""
 
-    test: ExitCodeTest
+    test: CompareNativeTest
     resources: Optional[dict]
     details: Optional[dict]
 
-    def __init__(self, *, expected_code: int = None, expected_codes: Container[int] = None):
+    def __init__(self, *, expected_code: int = None, expected_codes: Container[int] = None, **kwargs):
         """Set expected codes."""
+
+        super().__init__(**kwargs)
 
         if expected_code is None and expected_codes is None:
             raise ValueError("Runtime exit test requires either expected status or statuses!")
@@ -334,26 +362,10 @@ class ExecutableExitCodeTest(Test, abc.ABC):
             return CorrectnessResult(
                 passing=False,
                 error=Error(
-                    description=f"received incorrect exit code",
+                    description=f"received incorrect exit code f{code}",
                     suggestion=f"expected {expected_codes}"))
 
         self.test = test
-
-    def get_exit_code(self) -> int:
-        """Override this."""
-
-        pass
-
-    def __call__(self, resources: dict) -> CorrectnessResult:
-        """Check if the output matches."""
-
-        self.resources = resources
-        self.details = {}
-        result = self.test(self.get_exit_code())
-        result.details.update(self.details)
-        self.resources = None
-        self.details = None
-        return result
 
 
 def write_then_read(
