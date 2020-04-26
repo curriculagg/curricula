@@ -7,7 +7,7 @@ from . import CorrectnessResult
 from .. import Test
 from ...task import Error
 from ....library.process import Runtime, Interactive, InteractiveStreamTimeoutExpired, Interaction
-from ....library.introspection import none, not_none, resolve
+from ....library.configurable import none, not_none, Configurable
 
 __all__ = (
     "as_lines",
@@ -99,7 +99,7 @@ def identity(x: T) -> T:
     return x
 
 
-class CompareBytesOutputTest(OutputTest):
+class CompareBytesOutputTest(OutputTest, Configurable):
     """Compares output to expected values."""
 
     out_transform: BytesTransform
@@ -125,70 +125,60 @@ class CompareBytesOutputTest(OutputTest):
         """
 
         super().__init__(**kwargs)
+        self.test_out = test_out
+        self.test_out_lines = test_out_lines
+        self.test_out_lines_lists = test_out_lines_lists
 
-        self.test_out = resolve(
-            self,
-            field_name="test_out",
-            field_getter_name=None,
-            local_value=test_out,
-            default_value=None)
-        self.test_out_lines = resolve(
-            self,
-            field_name="test_out_lines",
-            field_getter_name=None,
-            local_value=test_out_lines,
-            default_value=None)
-        self.test_out_lines_lists = resolve(
-            self,
-            field_name="test_out_lines_lists",
-            field_getter_name=None,
-            local_value=test_out_lines_lists,
-            default_value=None)
-
-        if len(tuple(filter(None, (self.test_out, self.test_out_lines, self.test_out_lines_lists)))) != 1:
+        # Check resolvable
+        resolvable = tuple(filter(None, map(self.is_resolvable, (
+            "test_out",
+            "test_out_lines",
+            "test_out_lines_lists"))))
+        if len(resolvable) != 1:
             raise ValueError("Exactly one of test_out, test_out_lines, or test_out_lines_lists is required")
 
-        self.out_transform = resolve(
-            self,
-            field_name="out_transform",
-            field_getter_name=None,
-            local_value=out_transform,
-            default_value=identity)
-        self.out_line_transform = resolve(
-            self,
-            field_name="out_line_transform",
-            field_getter_name=None,
-            local_value=out_line_transform,
-            default_value=identity)
+        self.out_transform = out_transform
+        self.out_line_transform = out_line_transform
 
-        if self.test_out is not None:
-            self.test = self._test_out
-        else:
-            if self.test_out_lines is not None:
-                self.test_out_lines_lists = [test_out_lines]
-            self.test = self._test_out_lines_lists
+    def test(self, out: bytes):
+        """Call the corresponding test."""
+
+        if self.is_resolvable("test_out"):
+            return self._test_out(out)
+        return self._test_out_lines_lists(out)
 
     def _test_out(self, out: bytes) -> CorrectnessResult:
         """Shortcut compare for one option block text."""
 
-        out = self.out_transform(out)
-        passing = out == self.test_out
+        out_transform = self.resolve("out_transform", default=identity)
+        test_out = self.resolve("test_out")
+
+        out = out_transform(out)
+        passing = out == test_out
         error = None if passing else Error(
             description="unexpected output",
-            expected=[self.test_out.decode(errors="replace")],
+            expected=[test_out.decode(errors="replace")],
             received=out.decode(errors="replace"))
         return CorrectnessResult(passing=passing, error=error)
 
     def _test_out_lines_lists(self, out: bytes) -> CorrectnessResult:
         """Used to compare multiple options of lists of lines."""
 
-        out_lines = tuple(map(self.out_line_transform, self.out_transform(out).split(b"\n")))
-        passing = any(lines_match(out_lines, lines) for lines in self.test_out_lines_lists)
+        out_transform = self.resolve("out_transform", default=identity)
+        out_line_transform = self.resolve("out_line_transform", default=identity)
+        test_out_lines = self.resolve("test_out_lines", default=None)
+        if test_out_lines is not None:
+            test_out_lines_lists = [test_out_lines]
+        else:
+            test_out_lines_lists = self.resolve("test_out_lines_lists")
+
+        out_lines = tuple(map(out_line_transform, out_transform(out).split(b"\n")))
+        passing = any(lines_match(out_lines, lines) for lines in test_out_lines_lists)
         error = None if passing else Error(
             description="unexpected output",
             expected=tuple(
                 b"\n".join(test_out_lines).decode(errors="replace")
-                for test_out_lines in self.test_out_lines_lists),
+                for test_out_lines in test_out_lines_lists),
             received=b"\n".join(out_lines).decode(errors="replace"))
         return CorrectnessResult(passing=passing, error=error)
 
@@ -197,26 +187,21 @@ def test_runtime_succeeded(runtime: Runtime) -> CorrectnessResult:
     """See if the runtime raised exceptions or returned status code."""
 
     if runtime.raised_exception:
-        return CorrectnessResult(
-            passing=False,
-            runtime=runtime.dump(),
-            error=Error(description=runtime.exception.description))
-    elif runtime.timed_out:
-        return CorrectnessResult(
-            passing=False,
-            runtime=runtime.dump(),
-            error=Error(description="timed out",
-                        suggestion=f"expected maximum elapsed time of {runtime.timeout} seconds"))
-    elif runtime.code != 0:
-        return CorrectnessResult(
-            passing=False,
-            runtime=runtime.dump(),
-            error=Error(description=f"received status code {runtime.code}",
-                        suggestion="expected status code of zero"))
-    return CorrectnessResult(passing=True)
+        error = Error(description=runtime.exception.description)
+        raise CorrectnessResult(passing=False, runtime=runtime.dump(), error=error)
+    if runtime.timed_out:
+        error = Error(
+            description="timed out",
+            suggestion=f"expected maximum elapsed time of {runtime.timeout} seconds")
+        raise CorrectnessResult(passing=False, runtime=runtime.dump(), error=error)
+    if runtime.code != 0:
+        error = Error(
+            description=f"received status code {runtime.code}",
+            suggestion="expected status code of zero")
+        return CorrectnessResult(passing=False, runtime=runtime.dump(), error=error)
 
 
-class ExecutableMixin(OutputTest):
+class ExecutableMixin(OutputTest, Configurable):
     """Meant for reading and comparing stdout."""
 
     executable_name: str
@@ -243,27 +228,15 @@ class ExecutableMixin(OutputTest):
         self.timeout = timeout
         self.cwd = cwd
 
-    def get_args(self) -> Iterable[str]:
-        return not_none("args", self.args, default_value=())
-
-    def get_stdin(self) -> Optional[bytes]:
-        return not_none("stdin", self.stdin, default_value=None)
-
-    def get_timeout(self) -> Optional[float]:
-        return not_none("timeout", self.timeout, default_value=None)
-
-    def get_cwd(self) -> Optional[Path]:
-        return not_none("cwd", self.cwd, default_value=None)
-
     def execute(self) -> Runtime:
         """Check that it ran correctly, then run the test."""
 
         executable = self.resources[self.executable_name]
         runtime = executable.execute(
-            *self.get_args(),
-            stdin=self.get_stdin(),
-            timeout=self.get_timeout(),
-            cwd=self.get_cwd())
+            *self.resolve("args", default=()),
+            stdin=self.resolve("stdin", default=None),
+            timeout=self.resolve("timeout", default=None),
+            cwd=self.resolve("cwd", default=None))
         self.details["runtime"] = runtime.dump()
         return runtime
 
@@ -271,12 +244,7 @@ class ExecutableMixin(OutputTest):
         """Return stdout by default."""
 
         runtime = self.execute()
-
-        # Check standard stuff
-        result = test_runtime_succeeded(runtime)
-        if not result.passing:
-            raise result
-
+        test_runtime_succeeded(runtime)
         return runtime.stdout
 
 
@@ -289,7 +257,7 @@ class ExecutableCodeMixin(ExecutableMixin):
         return self.execute().code
 
 
-class ExecutableInputFileMixin(OutputTest):
+class ExecutableInputFileMixin(OutputTest, Configurable):
     """Enables the use of an input file rather than stdin string."""
 
     stdin: bytes
@@ -300,15 +268,10 @@ class ExecutableInputFileMixin(OutputTest):
 
         super().__init__(**kwargs)
         self.input_file_path = input_file_path
-        self.stdin = self.get_input_file_path().read_bytes()
-
-    def get_input_file_path(self) -> Path:
-        """Override or specify in constructor."""
-
-        return not_none("input_file_path", self.input_file_path)
+        self.stdin = self.resolve("input_file_path").read_bytes()
 
 
-class ExecutableOutputFileMixin(OutputTest):
+class ExecutableOutputFileMixin(OutputTest, Configurable):
     """Enables the use of an input file rather than stdin string."""
 
     output_file_path: Path
@@ -319,16 +282,11 @@ class ExecutableOutputFileMixin(OutputTest):
         super().__init__(**kwargs)
         self.output_file_path = output_file_path
 
-    def get_output_file_path(self) -> Path:
-        """Override or specify in constructor."""
-
-        return not_none("output_file_path", self.output_file_path)
-
     def get_output(self) -> Any:
         """Call super because it might do something."""
 
         super().get_output()
-        output_file_path = self.get_output_file_path()
+        output_file_path = self.resolve("output_file_path")
         if not output_file_path.is_file():
             raise CorrectnessResult(passing=False, error=Error(
                 description="no output file",

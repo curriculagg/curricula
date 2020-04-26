@@ -2,6 +2,7 @@ from typing import List, Type, Callable
 
 from .task import Task, Runnable, Dependencies, Result
 from .exception import GraderException
+from ..library.debug import get_source_location
 
 __all__ = ("GraderStage", "Registrar")
 
@@ -47,6 +48,7 @@ class GraderStage:
                 dependencies=dependencies,
                 runnable=runnable,
                 details=details,
+                source=get_source_location(2),
                 Result=result_type))
             return runnable
 

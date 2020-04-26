@@ -24,7 +24,8 @@ class ProblemSummary:
     # Setup problems
     setup_failed: bool = False
     setup_failed_task: Optional[str] = None
-    setup_error: Optional[str] = None
+    setup_error_description: Optional[str] = None
+    setup_error_traceback: Optional[str] = None
 
     @property
     def tests_fraction(self) -> str:
@@ -63,18 +64,18 @@ def summarize(grading_schema: dict, report: dict) -> ReportSummary:
 
             # Diagnose any issues in setup
             if task["stage"] == "setup":
-                if not result["complete"] or not result["passed"]:
+                if not result["complete"] or not result["passing"]:
                     problem_summary.setup_failed = True
                     problem_summary.setup_failed_task = task_name
                     if "error" in result["details"]:
-                        problem_summary.setup_error = result["details"]["error"]
+                        problem_summary.setup_error_description = result["details"]["error"]["description"]
                     elif "runtime" in result["details"]:
-                        problem_summary.setup_error = result["details"]["runtime"]["stderr"]
+                        problem_summary.setup_error_traceback = result["details"]["runtime"]["stderr"]
 
             # Problem summary
             elif task["stage"] == "test":
                 problem_summary.tests_total += 1
-                if result["complete"] and result["passed"]:
+                if result["complete"] and result["passing"]:
                     problem_summary.tests_correct.append(task)
                 else:
                     problem_summary.tests_incorrect.append(task)

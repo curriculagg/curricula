@@ -88,7 +88,7 @@ class Grader:
 
                 # Check if the result is the right type
                 if not isinstance(result, task.Result):
-                    raise GraderException(f"expected result type {task.Result.kind}")
+                    raise GraderException(f"expected result type {task.Result.kind} from {task.name} in {task.source}")
 
             # Otherwise take an incomplete result
             else:

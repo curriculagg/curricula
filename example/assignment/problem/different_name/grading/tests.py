@@ -18,11 +18,11 @@ def check_name_different(context: Context, resources: dict) -> CheckResult:
     return check_file_exists(resources["name_different_source_path"])
 
 
-@grader.setup.build(dependency="check_name_different", sanity=True)
-def build_name_different(name_different_source_path: Path, resources: dict) -> BuildResult:
+@grader.setup.build(passing={"check_name_different"}, sanity=True)
+def build_name_different(context: Context, name_different_source_path: Path, resources: dict) -> BuildResult:
     """Compile the program with gcc."""
 
-    resources["name_different_path"] = Path("/tmp", "name_different")
+    resources["name_different_path"] = context.problem_directory.joinpath("name_different")
     result, resources["name_different"] = build_gpp_executable(
         source_path=name_different_source_path,
         destination_path=resources["name_different_path"],
@@ -30,7 +30,7 @@ def build_name_different(name_different_source_path: Path, resources: dict) -> B
     return result
 
 
-@grader.test.correctness(dependency="build_name_different")
+@grader.test.correctness(passing={"build_name_different"})
 def test_output(name_different: Executable) -> CorrectnessResult:
     """Check if the program outputs as expected."""
 
@@ -38,7 +38,7 @@ def test_output(name_different: Executable) -> CorrectnessResult:
     return CorrectnessResult(passing=runtime.stdout.strip() == b"Hello, world!", runtime=runtime.dump())
 
 
-@grader.teardown.cleanup(dependency="build_name_different")
+@grader.teardown.cleanup(passing={"build_name_different"})
 def cleanup(name_different_path: Path):
     """Clean up executables."""
 

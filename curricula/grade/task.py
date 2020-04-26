@@ -37,7 +37,7 @@ class Result(Exception, abc.ABC):
     error: Error
 
     kind: str = field(init=False)
-    task: "Task" = field(init=False)
+    task: "Task" = field(init=False, repr=False)
 
     def __init__(self, complete: bool, passing: bool, error: Error = None, details: dict = None):
         """Initialize a new result.
@@ -124,6 +124,8 @@ class Task(Generic[TResult]):
     dependencies: Dependencies
     runnable: Runnable[Result]
     details: dict
+
+    source: str
 
     Result: Type[Result]
 
