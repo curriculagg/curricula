@@ -2,12 +2,20 @@ import time
 import datetime
 import json
 from pathlib import Path
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
 from typing import Optional, List
 
-from ..shared import *
+from .shared import *
 
 TZ = datetime.timezone(offset=datetime.timedelta(seconds=time.timezone))
+
+
+def parse_datetime(s: str) -> datetime.datetime:
+    return datetime.datetime.strptime(s, "%Y-%m-%d %H:%M:%S").replace(tzinfo=TZ)
+
+
+def dump_datetime(d: datetime) -> str:
+    return d.strftime("%Y-%m-%d %H:%M:%S")
 
 
 @dataclass
@@ -19,25 +27,6 @@ class Author:
 
     def dump(self) -> dict:
         return asdict(self)
-
-
-@dataclass
-class Dates:
-    """Assignment dates."""
-
-    assigned: datetime.datetime
-    due: datetime.datetime
-
-    def __init__(self, assigned: str, due: str):
-        """Convert to datetime."""
-
-        self.assigned = datetime.datetime.strptime(assigned, "%Y-%m-%d %H:%M:%S").replace(tzinfo=TZ)
-        self.due = datetime.datetime.strptime(due, "%Y-%m-%d %H:%M:%S").replace(tzinfo=TZ)
-
-    def dump(self) -> dict:
-        return dict(
-            assigned=self.assigned.strftime("%Y-%m-%d %H:%M:%S"),
-            due=self.due.strftime("%Y-%m-%d %H:%M:%S"))
 
 
 @dataclass
@@ -59,10 +48,8 @@ class Problem:
 
     assignment: "Assignment"
 
-    path: Path
     short: str
     number: int
-    percentage: float
     directory: str  # Most specific directory containing relevant files
 
     title: str
@@ -73,7 +60,7 @@ class Problem:
     difficulty: Optional[str] = None
 
     @classmethod
-    def load(cls, assignment: "Assignment", root: Path, reference: dict, number: int) -> "Problem":
+    def load_from_directory(cls, assignment: "Assignment", root: Path, reference: dict, number: int) -> "Problem":
         """Load a problem from the assignment path and reference."""
 
         path = root.joinpath(reference["path"])
@@ -88,7 +75,6 @@ class Problem:
 
         return cls(
             assignment=assignment,
-            path=path,
             short=short,
             number=number,
             percentage=percentage,
@@ -111,20 +97,51 @@ class Problem:
 
 
 @dataclass
+class Dates:
+    """Assignment dates."""
+
+    assigned: datetime.datetime
+    due: datetime.datetime
+
+    def __init__(self, assigned: str, due: str):
+        """Convert to datetime."""
+
+        self.assigned = parse_datetime(assigned)
+        self.due = parse_datetime(due)
+
+    def dump(self) -> dict:
+        """Specifically serialize the datetime."""
+
+        return dict(assigned=dump_datetime(self.assigned), due=dump_datetime(self.due))
+
+
+@dataclass
+class Meta:
+    """Metadata about an assignment."""
+
+    built: datetime.datetime = field(default_factory=datetime.datetime.now)
+    version: str = version
+
+    def dump(self) -> dict:
+        """Serialize the datetime here too."""
+
+        return dict(built=dump_datetime(self.built), version=version)
+
+
+@dataclass
 class Assignment:
     """Contains assignment metadata."""
 
-    path: Path
     short: str
-
     title: str
     authors: List[Author]
     dates: Dates
     problems: List[Problem]
     notes: Optional[str] = None
+    meta: Meta = Meta()
 
     @classmethod
-    def load(cls, path: Path) -> "Assignment":
+    def load_from_directory(cls, path: Path) -> "Assignment":
         """Load an assignment from a containing directory."""
 
         short = path.parts[-1]
@@ -135,7 +152,7 @@ class Assignment:
         dates = Dates(**data.pop("dates"))
         problem_references = data.pop("problems")
 
-        self = cls(path, short, authors=authors, dates=dates, problems=[], **data)
+        self = cls(short, authors=authors, dates=dates, problems=[], **data)
 
         counter = 1
         for reference in problem_references:
@@ -143,7 +160,7 @@ class Assignment:
             if reference["percentage"] > 0:
                 number = counter
                 counter += 1
-            self.problems.append(Problem.load(self, path, reference, number))
+            self.problems.append(Problem.load_from_directory(self, path, reference, number))
 
         return self
 
@@ -161,4 +178,5 @@ class Assignment:
             authors=[author.dump() for author in self.authors],
             dates=self.dates.dump(),
             problems=[problem.dump() for problem in self.problems],
-            notes=self.notes)
+            notes=self.notes,
+            meta=self.meta.dump())

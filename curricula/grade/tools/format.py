@@ -16,6 +16,9 @@ def sum_weights(tasks: Iterable[dict]) -> float:
 class ProblemSummary:
     """A summary of the results from a problem's cases."""
 
+    problem_short: str
+    problem: dict
+
     # Main tests
     tests_total: int = 0
     tests_correct: List[dict] = field(default_factory=list)
@@ -58,7 +61,7 @@ def summarize(grading_schema: dict, report: dict) -> ReportSummary:
 
     summary = ReportSummary()
     for problem_short, problem in grading_schema["problems"].items():
-        problem_summary = summary.problems[problem_short] = ProblemSummary()
+        problem_summary = summary.problems[problem_short] = ProblemSummary(problem_short, problem)
         for task_name, task in problem["tasks"].items():
             result = report[problem_short][task_name]
 

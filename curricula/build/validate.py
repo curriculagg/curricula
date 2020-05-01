@@ -2,7 +2,7 @@ import json
 import jsonschema
 from pathlib import Path
 
-from .models import Assignment
+from ..models import Assignment
 from ..shared import *
 from ..log import log
 
@@ -39,7 +39,7 @@ def validate_assignment(assignment_path: Path):
 
     validate_assignment_directory(assignment_path)
 
-    assignment = Assignment.load(assignment_path)
+    assignment = Assignment.load_from_directory(assignment_path)
     for problem in assignment.problems:
         validate_problem_directory(problem.path)
 

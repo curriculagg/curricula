@@ -37,7 +37,7 @@ from pathlib import Path
 from typing import Dict, Union, List, Callable
 from dataclasses import dataclass
 
-from .models import Assignment, Problem
+from ..models import Assignment, Problem
 from ..shared import Files, Paths
 from ..library.template import jinja2_create_environment
 from ..library import files
@@ -296,7 +296,7 @@ def build(template_path: Path, assignment_path: Path, artifacts_path: Path, **op
 
     # Load the assignment object
     log.debug("loading assignment")
-    assignment = Assignment.load(assignment_path)
+    assignment = Assignment.load_from_directory(assignment_path)
 
     # Set up templating
     problem_template_paths = {f"problem/{problem.short}": problem.path for problem in assignment.problems}

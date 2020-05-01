@@ -1,7 +1,10 @@
 from pathlib import Path
 from typing import Iterator
 
-__all__ = ("Paths", "Files")
+__all__ = ("version", "Paths", "Files")
+
+
+version = "0.1.0"
 
 
 class Paths:
