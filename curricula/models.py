@@ -1,6 +1,5 @@
 import time
 import datetime
-import json
 
 from decimal import Decimal
 from pathlib import Path
@@ -36,6 +35,15 @@ def some(value: Optional[T], method: Callable[[T], Any]) -> Optional[T]:
     return method(value)
 
 
+def overwrite(over: dict, under: dict):
+    """Overwrite a dictionary."""
+
+    for key in over:
+        if isinstance(over[key], dict) and key in under and isinstance(under[key], dict):
+            overwrite(over[key], under[key])
+        under[key] = over[key]
+
+
 @dataclass(eq=False)
 class Model(ABC):
     """Provide some default behaviors."""
@@ -64,29 +72,65 @@ class Author(Model):
 
 
 @dataclass(eq=False)
-class ProblemGradingConfiguration(Model):
-    """These are the only possible kinds of grading."""
+class ProblemGradingCategory(Model):
+    """Data about weight, points, etc."""
 
-    automated: bool
-    review: bool
-    manual: bool
+    enabled: bool
+
+    # Overwrite
+    name: Optional[str]
+    minutes: Optional[float]
+
+    # Reference
+    weight: Decimal
+    points: Decimal
 
     @classmethod
-    def load(cls, data: dict) -> "ProblemGradingConfiguration":
-        """Load methods from serialized."""
+    def load(cls, data: dict) -> "ProblemGradingCategory":
+        """Deserialize decimals."""
 
         return cls(
-            automated=data["automated"],
-            review=data["review"],
-            manual=data["manual"],)
+            enabled=data.get("enabled", True),
+            weight=Decimal(data["weight"]),
+            points=Decimal(data["points"]),
+            name=data["name"],
+            minutes=data["minutes"],)
 
     def dump(self) -> dict:
-        """Serialize methods."""
+        """Use string format."""
 
         return dict(
-            automated=self.automated,
-            review=self.review,
-            manual=self.manual,)
+            enabled=self.enabled,
+            weight=str(self.weight),
+            points=str(self.points),
+            name=self.name,
+            minutes=self.minutes,)
+
+
+@dataclass(eq=False)
+class ProblemGrading(Model):
+    """Data for each grading method."""
+
+    automated: ProblemGradingCategory
+    review: ProblemGradingCategory
+    manual: ProblemGradingCategory
+
+    @classmethod
+    def load(cls, data: dict) -> "ProblemGrading":
+        """Deserialize each method."""
+
+        return cls(
+            automated=ProblemGradingCategory.load(data["automated"]),
+            review=ProblemGradingCategory.load(data["review"]),
+            manual=ProblemGradingCategory.load(data["manual"]),)
+
+    def dump(self) -> dict:
+        """Serialize with monad."""
+
+        return dict(
+            automated=self.automated.dump(),
+            review=self.review.dump(),
+            manual=self.manual.dump(),)
 
 
 @dataclass(eq=False)
@@ -99,7 +143,7 @@ class Problem(Model):
     relative_path: Path  # Most specific directory containing relevant files relative to assignment root
 
     # Defined in assignment reference
-    grading: ProblemGradingConfiguration
+    grading: ProblemGrading
 
     # Intrinsic
     authors: List[Author]
@@ -108,18 +152,18 @@ class Problem(Model):
     difficulty: Optional[str] = None
 
     @classmethod
-    def load(cls, data: dict, **overwrite) -> "Problem":
+    def load(cls, data: dict) -> "Problem":
         """Load directly from a dictionary."""
 
         return cls(
-            short=overwrite.get("short", data["short"]),
-            title=overwrite.get("title", data["title"]),
-            relative_path=Path(overwrite.get("relative_path", data["relative_path"])),
-            grading=ProblemGradingConfiguration.load(data["grading"]),
+            short=data["short"],
+            title=data["title"],
+            relative_path=Path(data["relative_path"]),
+            grading=ProblemGrading.load(data["grading"]),
             authors=list(map(Author.load, data["authors"])),
             topics=data["topics"],
-            notes=data["notes"],
-            difficulty=data["difficulty"],)
+            notes=data.get("notes"),
+            difficulty=data.get("difficulty"),)
 
     def dump(self) -> dict:
         """Serialize 1:1."""
@@ -156,64 +200,6 @@ class Dates(Model):
         return dict(
             assigned=dump_datetime(self.assigned),
             due=dump_datetime(self.due),)
-
-
-@dataclass(eq=False)
-class ProblemGradingCategorySchema(Model):
-    """Data about weight, points, etc."""
-
-    # Overwrite
-    name: Optional[str]
-    minutes: Optional[float]
-
-    # Reference
-    weight: Decimal
-    points: Decimal
-
-    @classmethod
-    def load(cls, data: dict) -> "ProblemGradingCategorySchema":
-        """Deserialize decimals."""
-
-        return cls(
-            weight=Decimal(data["weight"]),
-            points=Decimal(data["points"]),
-            name=data["name"],
-            minutes=data["minutes"],)
-
-    def dump(self) -> dict:
-        """Use string format."""
-
-        return dict(
-            weight=str(self.weight),
-            points=str(self.points),
-            name=self.name,
-            minutes=self.minutes,)
-
-
-@dataclass(eq=False)
-class ProblemGradingSchema(Model):
-    """Data for each grading method."""
-
-    automated: ProblemGradingCategorySchema
-    review: ProblemGradingCategorySchema
-    manual: ProblemGradingCategorySchema
-
-    @classmethod
-    def load(cls, data: dict) -> "ProblemGradingSchema":
-        """Deserialize each method."""
-
-        return cls(
-            automated=some(data["automated"], ProblemGradingCategorySchema.load),
-            review=some(data["review"], ProblemGradingCategorySchema.load),
-            manual=some(data["manual"], ProblemGradingCategorySchema.load),)
-
-    def dump(self) -> dict:
-        """Serialize with monad."""
-
-        return dict(
-            automated=some(self.automated, ProblemGradingCategorySchema.dump),
-            review=some(self.review, ProblemGradingCategorySchema.dump),
-            manual=some(self.manual, ProblemGradingCategorySchema.dump),)
 
 
 @dataclass(eq=False)
@@ -265,34 +251,17 @@ class Assignment(Model):
     meta: Meta = Meta()
 
     @classmethod
-    def load(cls, data: dict) -> "Assignment":
+    def load(cls, data: dict, problems: List[Problem] = None) -> "Assignment":
         """Deserialize."""
 
-
-
-    @classmethod
-    def read(cls, path: Path) -> "Assignment":
-        """Load an assignment from a containing directory."""
-
-        short = path.parts[-1]
-        with path.joinpath(Files.ASSIGNMENT).open() as file:
-            data = json.load(file)
-
-        authors = list(Author(**author) for author in data.pop("authors"))
-        dates = Dates(**data.pop("dates"))
-        problem_references = data.pop("problems")
-
-        self = cls(short, authors=authors, dates=dates, problems=[], **data)
-
-        counter = 1
-        for reference in problem_references:
-            number = None
-            if reference["percentage"] > 0:
-                number = counter
-                counter += 1
-            self.problems.append(Problem.read(reference, path, number))
-
-        return self
+        return cls(
+            short=data["short"],
+            title=data["title"],
+            authors=list(map(Author.load, data["authors"])),
+            dates=Dates.load(data["dates"]),
+            problems=problems if problems is None else list(map(Problem.load, data["problems"])),
+            notes=data.get("notes"),
+            meta=Meta.load(data) if "meta" in data else Meta())
 
     def dump(self) -> dict:
         """Dump the assignment to JSON.

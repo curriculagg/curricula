@@ -14,6 +14,10 @@ with root.joinpath("schema", "problem.schema.json").open() as _file:
     PROBLEM_SCHEMA = json.load(_file)
 
 
+class ValidationException(Exception):
+    """Raised while building models."""
+
+
 def validate_problem_directory(problem_path: Path):
     """Validate with jsonschema."""
 

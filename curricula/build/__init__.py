@@ -35,7 +35,7 @@ import jinja2
 import json
 from pathlib import Path
 from typing import Dict, Union, List, Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from ..models import Assignment, Problem
 from ..shared import Files, Paths
@@ -47,27 +47,68 @@ from ..log import log
 from ..grade.manager import import_grader
 
 
-@dataclass(eq=False)
 class BuildProblem(Problem):
     """Add additional fields only used for build."""
 
-    short: str = None
-    number: int = None
+    number: int
+    path: Path
+    assignment: "BuildAssignment"
 
     @classmethod
-    def read(cls, reference: dict, root: Path, number: int) -> "Problem":
+    def read(cls, assignment: "BuildAssignment", reference: dict, root: Path, number: int) -> "BuildProblem":
         """Load a problem from the assignment path and reference."""
 
         path = root.joinpath(reference["path"])
         with path.joinpath(Files.PROBLEM).open() as file:
             data = json.load(file)
 
+        data["short"] = reference.get("short", path.parts[-1])
+        data["relative_path"] = reference.get("relative_path", path.parts[-1])
+
+        if "title" in reference:
+            data["title"] = reference["title"]
+        if "grading" in reference:
+            for category in "automated", "review", "manual":
+                for key in reference["grading"][category]:
+                    data["grading"][category][key] = reference["grading"][category][key]
+
         self = cls.load(data)
-        self.merge(reference)
 
         # Convenience details for rendering
-        self.short = path.parts[-1]
+        self.assignment = assignment
         self.number = number
+        self.path = path
+
+        return self
+
+
+class BuildAssignment(Assignment):
+    """Additional fields for build."""
+
+    problems: List[BuildProblem]
+    path: Path = field(init=False)
+
+    @classmethod
+    def read(cls, path: Path) -> "BuildAssignment":
+        """Load an assignment from a containing directory."""
+
+        with path.joinpath(Files.ASSIGNMENT).open() as file:
+            data = json.load(file)
+
+        self = cls.load(data, problems=[])
+
+        counter = 1
+        for reference in data.pop("problems"):
+            number = None
+            if reference["grading"] > 0:
+                number = counter
+                counter += 1
+
+            problem = BuildProblem.read(self, reference, path, number)
+            self.problems.append(problem)
+
+        data["short"] = data.get("short", path.parts[-1])
+        self.path = path
 
         return self
 
@@ -88,7 +129,7 @@ class Context:
 
 def compile_readme(
         context: Context,
-        assignment: Assignment,
+        assignment: BuildAssignment,
         template_relative_path: str,
         destination_path: Path) -> Path:
     """Compile a README from an assignment.
@@ -108,10 +149,10 @@ def compile_readme(
 
 def merge_contents(
         context: Context,
-        assignment: Assignment,
+        assignment: BuildAssignment,
         contents_relative_path: Path,
         destination_path: Path,
-        filter_problems: Callable[[Problem], bool] = None):
+        filter_problems: Callable[[BuildProblem], bool] = None):
     """Compile subdirectories from problems into a single directory."""
 
     log.debug(f"merging contents to {destination_path}")
@@ -131,11 +172,11 @@ def merge_contents(
 
 
 def aggregate_contents(
-        assignment: Assignment,
+        assignment: BuildAssignment,
         contents_relative_path: Path,
         destination_path: Path,
-        filter_problems: Callable[[Problem], bool] = None,
-        rename: Callable[[Problem], str] = None) -> List[Path]:
+        filter_problems: Callable[[BuildProblem], bool] = None,
+        rename: Callable[[BuildProblem], str] = None) -> List[Path]:
     """Compile subdirectories from problems to respective directories.
 
     Different from merge in that the result is a directory of
@@ -164,7 +205,7 @@ def aggregate_contents(
     return copied_paths
 
 
-def build_instructions(context: Context, assignment: Assignment):
+def build_instructions(context: Context, assignment: BuildAssignment):
     """Compile instruction readme and assets."""
 
     log.debug("compiling instructions")
@@ -174,7 +215,7 @@ def build_instructions(context: Context, assignment: Assignment):
     merge_contents(context, assignment, Paths.ASSETS, instructions_path.joinpath(Paths.ASSETS))
 
 
-def build_resources(context: Context, assignment: Assignment):
+def build_resources(context: Context, assignment: BuildAssignment):
     """Compile resources files."""
 
     log.debug("compiling resources")
@@ -192,7 +233,7 @@ def build_solution_readme(context: Context, assignment: Assignment, path: Path):
         file.write(assignment_template.render(assignment=assignment))
 
 
-def build_solution_code(assignment: Assignment, path: Path):
+def build_solution_code(assignment: BuildAssignment, path: Path):
     """Compile only submission files of the solution."""
 
     log.debug("assembling solution code")
@@ -205,7 +246,7 @@ def build_solution_code(assignment: Assignment, path: Path):
             files.delete(readme_path)
 
 
-def build_solution(context: Context, assignment: Assignment):
+def build_solution(context: Context, assignment: BuildAssignment):
     """Compile cheatsheets."""
 
     log.debug("compiling solution")
@@ -251,7 +292,7 @@ def build_grading_schema(assignment: Assignment, path: Path):
         json.dump(generate_grading_schema(path, assignment), file, indent=2)
 
 
-def build_grading(context: Context, assignment: Assignment):
+def build_grading(context: Context, assignment: BuildAssignment):
     """Compile rubrics."""
 
     log.debug("compiling grading")
@@ -283,17 +324,21 @@ def build_index(context: Context, assignment: Assignment):
 
 
 @jinja2.environmentfilter
-def get_readme(environment: jinja2.Environment, item: Union[Problem, Assignment], *component: str) -> str:
+def get_readme(environment: jinja2.Environment, item: Union[BuildProblem, BuildAssignment], *component: str) -> str:
     """Render a README with options for nested path."""
 
     readme_path = "/".join(component + (Files.README,))
 
     try:
-        if isinstance(item, Assignment):
-            return environment.get_template(f"assignment:{readme_path}").render(assignment=item)
-        elif isinstance(item, Problem):
-            return environment.get_template(f"problem/{item.short}:{readme_path}").render(
-                assignment=item.assignment, problem=item)
+        if isinstance(item, BuildAssignment):
+            return environment \
+                .get_template(f"assignment:{readme_path}") \
+                .render(assignment=item)
+        elif isinstance(item, BuildProblem):
+            return environment \
+                .get_template(f"problem/{item.short}:{readme_path}") \
+                .render(assignment=item.assignment, problem=item)
+
     except jinja2.exceptions.TemplateNotFound as exception:
         log.error(f"error finding {exception}")
         return ""
@@ -321,7 +366,7 @@ def build(template_path: Path, assignment_path: Path, artifacts_path: Path, **op
 
     # Load the assignment object
     log.debug("loading assignment")
-    assignment = Assignment.read(assignment_path)
+    assignment = BuildAssignment.read(assignment_path)
 
     # Set up templating
     problem_template_paths = {f"problem/{problem.short}": problem.path for problem in assignment.problems}
