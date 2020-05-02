@@ -5,7 +5,7 @@ import json
 from decimal import Decimal
 from pathlib import Path
 from dataclasses import dataclass, asdict, field
-from typing import Optional, List, Any, Callable, TypeVar
+from typing import Optional, List, Any, Callable, TypeVar, Dict
 from abc import ABC, abstractmethod
 
 from .shared import *
@@ -64,70 +64,46 @@ class Author(Model):
 
 
 @dataclass(eq=False)
-class ProblemGradingMethod(Model):
-    """Data about weight, points, etc."""
-
-    weight: Decimal
-    points: Decimal
-
-    @classmethod
-    def load(cls, grading: dict) -> "ProblemGradingMethod":
-        """Deserialize decimals."""
-
-        return cls(
-            weight=Decimal(grading["weight"]),
-            points=Decimal(grading["points"]),)
-
-    def dump(self) -> dict:
-        """Use string format."""
-
-        return dict(
-            weight=str(self.weight),
-            points=str(self.points),)
-
-
-@dataclass(eq=False)
-class ProblemGrading(Model):
+class ProblemGradingConfiguration(Model):
     """These are the only possible kinds of grading."""
 
-    minutes: int
-    automated: Optional[ProblemGradingMethod]
-    review: Optional[ProblemGradingMethod]
-    manual: Optional[ProblemGradingMethod]
+    automated: bool
+    review: bool
+    manual: bool
 
     @classmethod
-    def load(cls, grading: dict) -> "ProblemGrading":
+    def load(cls, data: dict) -> "ProblemGradingConfiguration":
         """Load methods from serialized."""
 
         return cls(
-            minutes=grading["minutes"],
-            automated=some(grading["automated"], ProblemGradingMethod.load),
-            review=some(grading["review"], ProblemGradingMethod.load),
-            manual=some(grading["manual"], ProblemGradingMethod.load),)
+            automated=data["automated"],
+            review=data["review"],
+            manual=data["manual"],)
 
     def dump(self) -> dict:
         """Serialize methods."""
 
         return dict(
-            minutes=self.minutes,
-            automated=some(self.automated, ProblemGradingMethod.dump),
-            review=some(self.review, ProblemGradingMethod.dump),
-            manual=some(self.manual, ProblemGradingMethod.dump),)
+            automated=self.automated,
+            review=self.review,
+            manual=self.manual,)
 
 
 @dataclass(eq=False)
 class Problem(Model):
     """All problem data."""
 
+    # Overwrite
     short: str
-    relative_path: Path  # Most specific directory containing relevant files
-
     title: str
+    relative_path: Path  # Most specific directory containing relevant files relative to assignment root
+
+    # Defined in assignment reference
+    grading: ProblemGradingConfiguration
+
+    # Intrinsic
     authors: List[Author]
     topics: List[str]
-
-    grading: ProblemGrading
-
     notes: Optional[str] = None
     difficulty: Optional[str] = None
 
@@ -136,12 +112,12 @@ class Problem(Model):
         """Load directly from a dictionary."""
 
         return cls(
-            short=overwrite.get("relative_path") or data["short"],
-            relative_path=overwrite.get("relative_path") or data["relative_path"],
-            title=overwrite.get("relative_path") or data["title"],
+            short=overwrite.get("short", data["short"]),
+            title=overwrite.get("title", data["title"]),
+            relative_path=Path(overwrite.get("relative_path", data["relative_path"])),
+            grading=ProblemGradingConfiguration.load(data["grading"]),
             authors=list(map(Author.load, data["authors"])),
             topics=data["topics"],
-            grading=ProblemGrading.load(data["grading"]),
             notes=data["notes"],
             difficulty=data["difficulty"],)
 
@@ -150,11 +126,11 @@ class Problem(Model):
 
         return dict(
             short=self.short,
-            relative_path=self.relative_path,
             title=self.title,
+            relative_path=str(self.relative_path),
+            grading=self.grading.dump(),
             authors=list(map(Author.dump, self.authors)),
             topics=self.topics,
-            grading=self.grading.dump(),
             notes=self.notes,
             difficulty=self.difficulty,)
 
@@ -183,13 +159,71 @@ class Dates(Model):
 
 
 @dataclass(eq=False)
-class AssignmentGrading(Model):
+class ProblemGradingCategorySchema(Model):
+    """Data about weight, points, etc."""
+
+    # Overwrite
+    name: Optional[str]
+    minutes: Optional[float]
+
+    # Reference
+    weight: Decimal
+    points: Decimal
+
+    @classmethod
+    def load(cls, data: dict) -> "ProblemGradingCategorySchema":
+        """Deserialize decimals."""
+
+        return cls(
+            weight=Decimal(data["weight"]),
+            points=Decimal(data["points"]),
+            name=data["name"],
+            minutes=data["minutes"],)
+
+    def dump(self) -> dict:
+        """Use string format."""
+
+        return dict(
+            weight=str(self.weight),
+            points=str(self.points),
+            name=self.name,
+            minutes=self.minutes,)
+
+
+@dataclass(eq=False)
+class ProblemGradingSchema(Model):
+    """Data for each grading method."""
+
+    automated: ProblemGradingCategorySchema
+    review: ProblemGradingCategorySchema
+    manual: ProblemGradingCategorySchema
+
+    @classmethod
+    def load(cls, data: dict) -> "ProblemGradingSchema":
+        """Deserialize each method."""
+
+        return cls(
+            automated=some(data["automated"], ProblemGradingCategorySchema.load),
+            review=some(data["review"], ProblemGradingCategorySchema.load),
+            manual=some(data["manual"], ProblemGradingCategorySchema.load),)
+
+    def dump(self) -> dict:
+        """Serialize with monad."""
+
+        return dict(
+            automated=some(self.automated, ProblemGradingCategorySchema.dump),
+            review=some(self.review, ProblemGradingCategorySchema.dump),
+            manual=some(self.manual, ProblemGradingCategorySchema.dump),)
+
+
+@dataclass(eq=False)
+class AssignmentGradingSchema(Model):
     """Weights and points."""
 
     points: int
 
     @classmethod
-    def load(cls, grading: dict) -> "AssignmentGrading":
+    def load(cls, grading: dict) -> "AssignmentGradingSchema":
         """Load from serialized."""
 
         return cls(**grading)
