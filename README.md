@@ -135,7 +135,7 @@ Finally, we'll initialize the grader for this problem.
 def check_hello_world(context: Context, resources: dict):
     """Check whether hello_world.cpp has been submitted."""
 
-    resources["hello_world_source_path"] = context.problem_directory.joinpath("hello_world.cpp")
+    resources["hello_world_source_path"] = context.problem_target_path.joinpath("hello_world.cpp")
     return check_file_exists(resources["hello_world_source_path"])
 ```
 

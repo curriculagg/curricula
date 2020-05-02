@@ -39,7 +39,7 @@ def validate_assignment(assignment_path: Path):
 
     validate_assignment_directory(assignment_path)
 
-    assignment = Assignment.load_from_directory(assignment_path)
+    assignment = Assignment.read(assignment_path)
     for problem in assignment.problems:
         validate_problem_directory(problem.path)
 

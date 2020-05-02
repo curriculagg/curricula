@@ -14,7 +14,7 @@ grader = Grader()
 def check_more_cases(context: Context, resources: dict):
     """Check if the program exists."""
 
-    resources["more_cases_source_path"] = context.problem_directory.joinpath("more_cases.cpp")
+    resources["more_cases_source_path"] = context.problem_target_path.joinpath("more_cases.cpp")
     return check_file_exists(resources["more_cases_source_path"])
 
 
@@ -22,7 +22,7 @@ def check_more_cases(context: Context, resources: dict):
 def build_more_cases(context: Context, more_cases_source_path: Path, resources: dict):
     """Build the program."""
 
-    resources["more_cases_path"] = context.problem_directory.joinpath("more_cases")
+    resources["more_cases_path"] = context.problem_target_path.joinpath("more_cases")
     result, resources["more_cases"] = build_gpp_executable(
         source_path=more_cases_source_path,
         destination_path=resources["more_cases_path"],

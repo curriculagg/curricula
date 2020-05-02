@@ -47,6 +47,31 @@ from ..log import log
 from ..grade.manager import import_grader
 
 
+@dataclass(eq=False)
+class BuildProblem(Problem):
+    """Add additional fields only used for build."""
+
+    short: str = None
+    number: int = None
+
+    @classmethod
+    def read(cls, reference: dict, root: Path, number: int) -> "Problem":
+        """Load a problem from the assignment path and reference."""
+
+        path = root.joinpath(reference["path"])
+        with path.joinpath(Files.PROBLEM).open() as file:
+            data = json.load(file)
+
+        self = cls.load(data)
+        self.merge(reference)
+
+        # Convenience details for rendering
+        self.short = path.parts[-1]
+        self.number = number
+
+        return self
+
+
 @dataclass(repr=False, eq=False)
 class Context:
     """Build context.
@@ -82,6 +107,7 @@ def compile_readme(
 
 
 def merge_contents(
+        context: Context,
         assignment: Assignment,
         contents_relative_path: Path,
         destination_path: Path,
@@ -93,13 +119,13 @@ def merge_contents(
     destination_path.mkdir(exist_ok=True)
 
     # First copy any assignment-wide resources
-    assignment_contents_path = assignment.path.joinpath(contents_relative_path)
+    assignment_contents_path = context.assignment_path.joinpath(contents_relative_path)
     if assignment_contents_path.exists():
         files.copy_directory(assignment_contents_path, destination_path)
 
     # Overwrite with problem contents, enable filtration
     for problem in filter(filter_problems, assignment.problems):
-        problem_contents_path = problem.path.joinpath(contents_relative_path)
+        problem_contents_path = problem.relative_path.joinpath(contents_relative_path)
         if problem_contents_path.exists():
             files.copy_directory(problem_contents_path, destination_path, merge=True)
 
@@ -145,7 +171,7 @@ def build_instructions(context: Context, assignment: Assignment):
     instructions_path = context.artifacts_path.joinpath(Paths.INSTRUCTIONS)
     instructions_path.mkdir(exist_ok=True)
     compile_readme(context, assignment, "instructions/assignment.md", instructions_path)
-    merge_contents(assignment, Paths.ASSETS, instructions_path.joinpath(Paths.ASSETS))
+    merge_contents(context, assignment, Paths.ASSETS, instructions_path.joinpath(Paths.ASSETS))
 
 
 def build_resources(context: Context, assignment: Assignment):
@@ -212,8 +238,7 @@ def generate_grading_schema(grading_path: Path, assignment: Assignment) -> dict:
             grader = import_grader(grading_path.joinpath(problem.short, Files.TESTS))
             assignment_schema["problems"][problem.short] = dict(
                 title=problem.title,
-                directory=problem.directory,
-                percentage=problem.percentage,
+                target_path=str(problem.relative_path),
                 tasks=grader.dump())
     return assignment_schema
 
@@ -277,7 +302,7 @@ def get_readme(environment: jinja2.Environment, item: Union[Problem, Assignment]
 def has_readme(item: Union[Problem, Assignment], *component: str) -> bool:
     """Check whether a problem has a solution README."""
 
-    return item.path.joinpath(*component, Files.README).exists()
+    return item.relative_path.joinpath(*component, Files.README).exists()
 
 
 BUILD_STEPS = (
@@ -296,7 +321,7 @@ def build(template_path: Path, assignment_path: Path, artifacts_path: Path, **op
 
     # Load the assignment object
     log.debug("loading assignment")
-    assignment = Assignment.load_from_directory(assignment_path)
+    assignment = Assignment.read(assignment_path)
 
     # Set up templating
     problem_template_paths = {f"problem/{problem.short}": problem.path for problem in assignment.problems}
