@@ -67,10 +67,24 @@ class BuildProblem(Problem):
 
         if "title" in reference:
             data["title"] = reference["title"]
-        if "grading" in reference:
-            for category in "automated", "review", "manual":
-                for key in reference["grading"][category]:
-                    data["grading"][category][key] = reference["grading"][category][key]
+
+        data["grading"]["enabled"] = reference["grading"].get("enabled", True)
+        data["grading"]["weight"] = reference["grading"].get("weight", "1")
+        for category in "automated", "review", "manual":
+            category_data = data["grading"][category]
+            if category_data is None:
+                continue
+
+            if category in reference["grading"]:
+                reference_category_data = reference["grading"][category]
+
+                if "enabled" in reference_category_data:
+                    category_data["enabled"] = reference_category_data
+                if "weight" in reference_category_data:
+                    category_data["weight"] = reference_category_data["weight"]
+
+            if "weight" not in category_data:
+                category_data["weight"] = "1"
 
         self = cls.load(data)
 
@@ -95,19 +109,19 @@ class BuildAssignment(Assignment):
         with path.joinpath(Files.ASSIGNMENT).open() as file:
             data = json.load(file)
 
+        data["short"] = data.get("short", path.parts[-1])
         self = cls.load(data, problems=[])
 
         counter = 1
         for reference in data.pop("problems"):
             number = None
-            if reference["grading"] > 0:
+            if any(filter(None, reference["grading"])):
                 number = counter
                 counter += 1
 
             problem = BuildProblem.read(self, reference, path, number)
             self.problems.append(problem)
 
-        data["short"] = data.get("short", path.parts[-1])
         self.path = path
 
         return self

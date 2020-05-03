@@ -77,13 +77,12 @@ class ProblemGradingCategory(Model):
 
     enabled: bool
 
-    # Overwrite
+    # Intrinsic
     name: Optional[str]
     minutes: Optional[float]
 
-    # Reference
+    # Overwrite
     weight: Decimal
-    points: Decimal
 
     @classmethod
     def load(cls, data: dict) -> "ProblemGradingCategory":
@@ -92,7 +91,6 @@ class ProblemGradingCategory(Model):
         return cls(
             enabled=data.get("enabled", True),
             weight=Decimal(data["weight"]),
-            points=Decimal(data["points"]),
             name=data["name"],
             minutes=data["minutes"],)
 
@@ -102,7 +100,6 @@ class ProblemGradingCategory(Model):
         return dict(
             enabled=self.enabled,
             weight=str(self.weight),
-            points=str(self.points),
             name=self.name,
             minutes=self.minutes,)
 
@@ -110,6 +107,9 @@ class ProblemGradingCategory(Model):
 @dataclass(eq=False)
 class ProblemGrading(Model):
     """Data for each grading method."""
+
+    enabled: bool
+    weight: Decimal
 
     automated: ProblemGradingCategory
     review: ProblemGradingCategory
@@ -120,17 +120,21 @@ class ProblemGrading(Model):
         """Deserialize each method."""
 
         return cls(
-            automated=ProblemGradingCategory.load(data["automated"]),
-            review=ProblemGradingCategory.load(data["review"]),
-            manual=ProblemGradingCategory.load(data["manual"]),)
+            enabled=data.get("enabled", True),
+            weight=Decimal(data["weight"]),
+            automated=some(data["automated"], ProblemGradingCategory.load),
+            review=some(data["review"], ProblemGradingCategory.load),
+            manual=some(data["manual"], ProblemGradingCategory.load),)
 
     def dump(self) -> dict:
         """Serialize with monad."""
 
         return dict(
-            automated=self.automated.dump(),
-            review=self.review.dump(),
-            manual=self.manual.dump(),)
+            enabled=self.enabled,
+            weight=str(self.weight),
+            automated=some(self.automated, ProblemGradingCategory.dump),
+            review=some(self.review, ProblemGradingCategory.dump),
+            manual=some(self.manual, ProblemGradingCategory.dump),)
 
 
 @dataclass(eq=False)
@@ -203,16 +207,16 @@ class Dates(Model):
 
 
 @dataclass(eq=False)
-class AssignmentGradingSchema(Model):
+class AssignmentGrading(Model):
     """Weights and points."""
 
     points: int
 
     @classmethod
-    def load(cls, grading: dict) -> "AssignmentGradingSchema":
+    def load(cls, data: dict) -> "AssignmentGrading":
         """Load from serialized."""
 
-        return cls(**grading)
+        return cls(points=data["points"])
 
 
 @dataclass(eq=False)
@@ -247,6 +251,7 @@ class Assignment(Model):
     authors: List[Author]
     dates: Dates
     problems: List[Problem]
+    grading: AssignmentGrading
     notes: Optional[str] = None
     meta: Meta = Meta()
 
@@ -259,7 +264,8 @@ class Assignment(Model):
             title=data["title"],
             authors=list(map(Author.load, data["authors"])),
             dates=Dates.load(data["dates"]),
-            problems=problems if problems is None else list(map(Problem.load, data["problems"])),
+            problems=problems if problems is not None else list(map(Problem.load, data["problems"])),
+            grading=AssignmentGrading.load(data["grading"]),
             notes=data.get("notes"),
             meta=Meta.load(data) if "meta" in data else Meta())
 
