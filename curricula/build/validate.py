@@ -43,12 +43,45 @@ def validate_assignment(assignment_path: Path):
 
     validate_assignment_directory(assignment_path)
 
-    assignment = Assignment.read(assignment_path)
-    for problem in assignment.problems:
-        validate_problem_directory(problem.path)
+    with assignment_path.joinpath(Files.ASSIGNMENT).open() as file:
+        data = json.load(file)
+
+    for problem_reference in data["problems"]:
+        validate_problem_directory(assignment_path.joinpath(problem_reference["path"]))
 
 
 def validate(assignment_path: Path):
     """Do a bunch of checks """
 
     validate_assignment(assignment_path)
+
+
+def resolve_local(uri: str) -> dict:
+    """Resolve a locally referenced schema."""
+
+    with root.joinpath("schema", uri).open() as file:
+        return json.load(file)
+
+
+def create_validator(schema_path: Path) -> jsonschema.Draft7Validator:
+    """Create a validator with a local resolver.
+
+    For convenience, we'll simply override the handler for refs
+    passed without a protocol prefix. This allows PyCharm to
+    understand the ref location and do path checking in the source
+    schema file.
+    """
+
+    resolver = jsonschema.RefResolver(
+        base_uri=str(schema_path),
+        referrer=ASSIGNMENT_SCHEMA,
+        handlers={"": resolve_local})
+    return jsonschema.Draft7Validator(schema=ASSIGNMENT_SCHEMA, resolver=resolver)
+
+
+assignment_validator = create_validator(root / "schema" / "assignment.schema.json")
+assignment_validator.validate({
+    "authors": [
+        {}
+    ]
+})

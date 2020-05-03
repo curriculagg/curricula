@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "title": "Author",
+  "description": "Author of a problem or assignment",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string",
+      "pattern": ".+@.+\\..+"
+    }
+  },
+  "required": [
+    "name",
+    "email"
+  ]
+}

@@ -11,13 +11,12 @@
     "error"
   ],
   "grading": {
-    "minutes": 5,
     "automated": {
-
+      "weight": 1
     },
-    "review": true,
-    "manual": {
-      "enabled": false
-    }
+    "review": {
+      "weight": 1
+    },
+    "manual": null
   }
 }

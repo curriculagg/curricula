@@ -1,0 +1,34 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "title": "Problem Reference Grading",
+  "description": "Weight and overrides for how the problem is graded.",
+  "type": "object",
+  "properties": {
+    "enabled": {
+      "type": "boolean"
+    },
+    "weight": {
+      "type": "number",
+      "minimum": 0
+    },
+    "points": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "automated": {
+      "$ref": "problem_reference_grading_category.schema.json"
+    },
+    "review": {
+      "$ref": "problem_reference_grading_category.schema.json"
+    },
+    "manual": {
+      "$ref": "problem_reference_grading_category.schema.json"
+    }
+  },
+  "required": [
+    "weight"
+  ]
+}

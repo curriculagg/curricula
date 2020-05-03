@@ -37,6 +37,8 @@ from pathlib import Path
 from typing import Dict, Union, List, Callable
 from dataclasses import dataclass, field
 
+from .validate import validate
+
 from ..models import Assignment, Problem
 from ..shared import Files, Paths
 from ..library.template import jinja2_create_environment
@@ -62,7 +64,7 @@ class BuildProblem(Problem):
         with path.joinpath(Files.PROBLEM).open() as file:
             data = json.load(file)
 
-        data["short"] = reference.get("short", path.parts[-1])
+        data["short"] = reference.get("short", data.get("short", path.parts[-1]))
         data["relative_path"] = reference.get("relative_path", path.parts[-1])
 
         if "title" in reference:
@@ -70,6 +72,7 @@ class BuildProblem(Problem):
 
         data["grading"]["enabled"] = reference["grading"].get("enabled", True)
         data["grading"]["weight"] = reference["grading"].get("weight", "1")
+        data["grading"]["points"] = reference["grading"].get("points")
         for category in "automated", "review", "manual":
             category_data = data["grading"][category]
             if category_data is None:
@@ -82,9 +85,13 @@ class BuildProblem(Problem):
                     category_data["enabled"] = reference_category_data
                 if "weight" in reference_category_data:
                     category_data["weight"] = reference_category_data["weight"]
+                if "points" in reference_category_data:
+                    category_data["points"] = reference_category_data["points"]
 
             if "weight" not in category_data:
                 category_data["weight"] = "1"
+            if "points" not in category_data:
+                category_data["points"] = None
 
         self = cls.load(data)
 
@@ -377,6 +384,9 @@ def build(template_path: Path, assignment_path: Path, artifacts_path: Path, **op
     """Build the assignment at a given path."""
 
     log.info(f"building {assignment_path} to {artifacts_path}")
+
+    # Validate first
+    validate(assignment_path)
 
     # Load the assignment object
     log.debug("loading assignment")

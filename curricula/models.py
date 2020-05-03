@@ -4,7 +4,7 @@ import datetime
 from decimal import Decimal
 from pathlib import Path
 from dataclasses import dataclass, asdict, field
-from typing import Optional, List, Any, Callable, TypeVar, Dict
+from typing import Optional, List, Any, Callable, TypeVar
 from abc import ABC, abstractmethod
 
 from .shared import *
@@ -33,15 +33,6 @@ def some(value: Optional[T], method: Callable[[T], Any]) -> Optional[T]:
     if value is None:
         return value
     return method(value)
-
-
-def overwrite(over: dict, under: dict):
-    """Overwrite a dictionary."""
-
-    for key in over:
-        if isinstance(over[key], dict) and key in under and isinstance(under[key], dict):
-            overwrite(over[key], under[key])
-        under[key] = over[key]
 
 
 @dataclass(eq=False)
@@ -83,6 +74,7 @@ class ProblemGradingCategory(Model):
 
     # Overwrite
     weight: Decimal
+    points: Decimal
 
     @classmethod
     def load(cls, data: dict) -> "ProblemGradingCategory":
@@ -90,18 +82,20 @@ class ProblemGradingCategory(Model):
 
         return cls(
             enabled=data.get("enabled", True),
-            weight=Decimal(data["weight"]),
             name=data["name"],
-            minutes=data["minutes"],)
+            minutes=data["minutes"],
+            weight=Decimal(data["weight"]),
+            points=Decimal(data["points"]),)
 
     def dump(self) -> dict:
         """Use string format."""
 
         return dict(
             enabled=self.enabled,
-            weight=str(self.weight),
             name=self.name,
-            minutes=self.minutes,)
+            minutes=self.minutes,
+            weight=str(self.weight),
+            points=str(self.points),)
 
 
 @dataclass(eq=False)
@@ -110,6 +104,7 @@ class ProblemGrading(Model):
 
     enabled: bool
     weight: Decimal
+    points: Decimal
 
     automated: ProblemGradingCategory
     review: ProblemGradingCategory
@@ -122,6 +117,7 @@ class ProblemGrading(Model):
         return cls(
             enabled=data.get("enabled", True),
             weight=Decimal(data["weight"]),
+            points=Decimal(data["points"]),
             automated=some(data["automated"], ProblemGradingCategory.load),
             review=some(data["review"], ProblemGradingCategory.load),
             manual=some(data["manual"], ProblemGradingCategory.load),)
@@ -132,6 +128,7 @@ class ProblemGrading(Model):
         return dict(
             enabled=self.enabled,
             weight=str(self.weight),
+            points=str(self.points),
             automated=some(self.automated, ProblemGradingCategory.dump),
             review=some(self.review, ProblemGradingCategory.dump),
             manual=some(self.manual, ProblemGradingCategory.dump),)
@@ -184,14 +181,14 @@ class Problem(Model):
 
 
 @dataclass(eq=False)
-class Dates(Model):
+class AssignmentDates(Model):
     """Assignment dates."""
 
     assigned: datetime.datetime
     due: datetime.datetime
 
     @classmethod
-    def load(cls, data: dict) -> "Dates":
+    def load(cls, data: dict) -> "AssignmentDates":
         """Convert to datetime."""
 
         return cls(
@@ -220,26 +217,26 @@ class AssignmentGrading(Model):
 
 
 @dataclass(eq=False)
-class Meta(Model):
+class AssignmentMeta(Model):
     """Metadata about an assignment."""
 
     built: datetime.datetime = field(default_factory=datetime.datetime.now)
-    version: str = version
+    curricula: str = version
 
     @classmethod
-    def load(cls, data: dict) -> "Meta":
+    def load(cls, data: dict) -> "AssignmentMeta":
         """Deserialize datetime."""
 
         return cls(
             built=parse_datetime(data["built"]),
-            version=data["version"],)
+            curricula=data["version"],)
 
     def dump(self) -> dict:
         """Serialize the datetime here too."""
 
         return dict(
             built=dump_datetime(self.built),
-            version=version,)
+            curricula=version,)
 
 
 @dataclass(eq=False)
@@ -249,11 +246,11 @@ class Assignment(Model):
     short: str
     title: str
     authors: List[Author]
-    dates: Dates
+    dates: AssignmentDates
     problems: List[Problem]
     grading: AssignmentGrading
     notes: Optional[str] = None
-    meta: Meta = Meta()
+    meta: AssignmentMeta = AssignmentMeta()
 
     @classmethod
     def load(cls, data: dict, problems: List[Problem] = None) -> "Assignment":
@@ -263,19 +260,14 @@ class Assignment(Model):
             short=data["short"],
             title=data["title"],
             authors=list(map(Author.load, data["authors"])),
-            dates=Dates.load(data["dates"]),
+            dates=AssignmentDates.load(data["dates"]),
             problems=problems if problems is not None else list(map(Problem.load, data["problems"])),
             grading=AssignmentGrading.load(data["grading"]),
             notes=data.get("notes"),
-            meta=Meta.load(data) if "meta" in data else Meta())
+            meta=AssignmentMeta.load(data) if "meta" in data else AssignmentMeta())
 
     def dump(self) -> dict:
-        """Dump the assignment to JSON.
-
-        This method is not symmetric to load, and should therefore
-        probably not be called dump. It is intended for use in
-        generating the grading schema.
-        """
+        """Dump the assignment to JSON."""
 
         return dict(
             short=self.short,
@@ -283,5 +275,6 @@ class Assignment(Model):
             authors=[author.dump() for author in self.authors],
             dates=self.dates.dump(),
             problems=[problem.dump() for problem in self.problems],
+            grading=self.grading.dump(),
             notes=self.notes,
             meta=self.meta.dump())
