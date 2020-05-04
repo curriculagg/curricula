@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name="curricula",
-    version="0.1.0",
+    version="0.1.2",
     description="A content manager and grading toolkit for evaluating student code",
     url="https://github.com/csci104/curricula",
     author="Noah Kim",
@@ -22,6 +22,7 @@ setup(
     packages=find_packages(),
     package_data={"curricula": [
         "build/schema/*.json",
+        "grade/include/*.hpp",
         "grade/include/**/*.hpp"]},
     include_package_data=True,
     zip_safe=False,
