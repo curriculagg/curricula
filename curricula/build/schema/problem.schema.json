@@ -15,54 +15,12 @@
       "type": "string"
     },
     "grading": {
-      "type": "object",
-      "properties": {
-        "enabled": {
-          "type": "boolean"
-        },
-        "weight": {
-          "type": "string",
-          "minLength": 1
-        },
-        "points": {
-          "type": "string",
-          "minLength": 1
-        },
-        "automated": {
-          "$ref": "#category"
-        },
-        "review": {
-          "type": "boolean"
-        },
-        "manual": {
-          "type": "boolean"
-        }
-      },
-      "required": [
-        "enabled",
-        "weight",
-        "automated",
-        "review",
-        "manual"
-      ]
+      "$ref": "problem/problem_grading.schema.json"
     },
     "authors": {
       "type": "array",
       "items": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "email": {
-            "type": "string",
-            "pattern": ".+@.+\\..+"
-          }
-        },
-        "required": [
-          "name",
-          "email"
-        ]
+        "$ref": "author.schema.json"
       }
     },
     "topics": {
@@ -71,40 +29,19 @@
         "type": "string",
         "minItems": 1
       }
+    },
+    "notes": {
+      "type": "string",
+      "minLength": 1
+    },
+    "difficulty": {
+      "type": "string",
+      "minLength": 1
     }
   },
   "required": [
     "title",
-    "authors",
-    "grading"
-  ],
-  "definitions": {
-    "category": {
-      "id": "category",
-      "type": "object",
-      "properties": {
-        "enabled": {
-          "type": "boolean"
-        },
-        "name": {
-          "type": "string",
-          "minLength": 1
-        },
-        "minutes": {
-          "type": "number",
-          "minimum": 0
-        },
-        "weight": {
-          "type": "string",
-          "minLength": 1,
-          "pattern": "\\d+\\.\\d+|\\d+\\.|\\.\\d|\\d"
-        },
-        "points": {
-          "type": "string",
-          "minLength": 1,
-          "pattern": "\\d+\\.\\d+|\\d+\\.|\\.\\d|\\d"
-        }
-      }
-    }
-  }
+    "grading",
+    "authors"
+  ]
 }

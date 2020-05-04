@@ -1,0 +1,48 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "title": "Problem Grading Schema",
+  "description": "Points for problem and category weights.",
+  "type": "object",
+  "properties": {
+    "enabled": {
+      "type": "boolean"
+    },
+    "points": {
+      "type": "number",
+      "minimum": 1
+    },
+    "automated": {
+      "oneOf": [
+        {
+          "$ref": "problem_grading_category.schema.json"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "review": {
+      "oneOf": [
+        {
+          "$ref": "problem_grading_category.schema.json"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "manual": {
+      "oneOf": [
+        {
+          "$ref": "problem_grading_category.schema.json"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "points"
+  ]
+}

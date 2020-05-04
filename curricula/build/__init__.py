@@ -72,7 +72,7 @@ class BuildProblem(Problem):
 
         data["grading"]["enabled"] = reference["grading"].get("enabled", True)
         data["grading"]["weight"] = reference["grading"].get("weight", "1")
-        data["grading"]["points"] = reference["grading"].get("points")
+        data["grading"]["points"] = reference["grading"].get("points", "100")
         for category in "automated", "review", "manual":
             category_data = data["grading"][category]
             if category_data is None:
@@ -91,7 +91,7 @@ class BuildProblem(Problem):
             if "weight" not in category_data:
                 category_data["weight"] = "1"
             if "points" not in category_data:
-                category_data["points"] = None
+                category_data["points"] = "100"
 
         self = cls.load(data)
 
