@@ -1,7 +1,7 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$schema": "http://json-schema.org/draft-07/schema",
   "title": "Problem",
-  "description": "Schema for assignment metadata.",
+  "description": "Schema for a single problem.",
   "properties": {
     "short": {
       "type": "string",
@@ -15,7 +15,7 @@
       "type": "string"
     },
     "grading": {
-      "$ref": "problem/problem_grading.schema.json"
+      "$ref": "problem_grading.schema.json"
     },
     "authors": {
       "type": "array",

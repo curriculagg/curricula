@@ -15,7 +15,6 @@ class ValidationException(Exception):
 def resolve_local(uri: str) -> dict:
     """Resolve a locally referenced schema."""
 
-    print(uri)
     with root.joinpath("schema", uri).open() as file:
         return json.load(file)
 
@@ -43,11 +42,11 @@ problem_validator = create_validator(root / "schema" / "problem.schema.json")
 def validate_problem(problem_path: Path):
     """Validate with jsonschema."""
 
-    with problem_path.open() as file:
-        data = file.read()
+    with problem_path.joinpath(Files.PROBLEM).open() as file:
+        data = json.load(file)
 
     try:
-        problem_validator.validate(data, PROBLEM_SCHEMA)
+        problem_validator.validate(data)
     except jsonschema.ValidationError as exception:
         log.error(f"invalid schema in problem {problem_path}: {exception}")
         raise
