@@ -16,12 +16,12 @@
       "minimum": 0
     },
     "weight": {
-      "type": "number",
+      "type": "string",
       "minimum": 0
     },
     "points": {
       "type": [
-        "number",
+        "string",
         "null"
       ],
       "minimum": 0

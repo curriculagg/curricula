@@ -88,7 +88,7 @@ class Manager:
             context = Context(
                 target_path=target_path,
                 problem_short=problem_short,
-                problem_target_path=target_path.joinpath(problem_schema["directory"]),
+                problem_target_path=target_path.joinpath(problem_schema["relative_path"]),
                 options=options)
 
             reports[problem_short] = grader.run(context=context)

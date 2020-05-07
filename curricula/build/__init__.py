@@ -56,6 +56,8 @@ class BuildProblem(Problem):
     path: Path
     assignment: "BuildAssignment"
 
+    percentage: float = None
+
     @classmethod
     def read(cls, assignment: "BuildAssignment", reference: dict, root: Path, number: int) -> "BuildProblem":
         """Load a problem from the assignment path and reference."""
@@ -120,6 +122,7 @@ class BuildAssignment(Assignment):
         self = cls.load(data, problems=[])
 
         counter = 1
+        total_weight = 0
         for reference in data.pop("problems"):
             number = None
             if any(filter(None, reference["grading"])):
@@ -127,7 +130,11 @@ class BuildAssignment(Assignment):
                 counter += 1
 
             problem = BuildProblem.read(self, reference, path, number)
+            total_weight += problem.grading.weight
             self.problems.append(problem)
+
+        for problem in self.problems:
+            problem.percentage = problem.grading.weight / total_weight if total_weight > 0 else 0
 
         self.path = path
 
@@ -242,7 +249,7 @@ def build_resources(context: Context, assignment: BuildAssignment):
     log.debug("compiling resources")
     resources_path = context.artifacts_path.joinpath(Paths.RESOURCES)
     resources_path.mkdir(exist_ok=True)
-    aggregate_contents(assignment, Paths.RESOURCES, resources_path, rename=lambda p: p.directory)
+    aggregate_contents(assignment, Paths.RESOURCES, resources_path, rename=lambda p: p.path)
 
 
 def build_solution_readme(context: Context, assignment: Assignment, path: Path):
@@ -258,7 +265,7 @@ def build_solution_code(assignment: BuildAssignment, path: Path):
     """Compile only submission files of the solution."""
 
     log.debug("assembling solution code")
-    copied_paths = aggregate_contents(assignment, Paths.SOLUTION, path, rename=lambda p: p.directory)
+    copied_paths = aggregate_contents(assignment, Paths.SOLUTION, path, rename=lambda p: p.path)
 
     # Delete extra READMEs
     for copied_path in copied_paths:
@@ -296,11 +303,11 @@ def generate_grading_schema(grading_path: Path, assignment: Assignment) -> dict:
 
     assignment_schema = dict(title=assignment.title, short=assignment.short, problems=dict())
     for problem in assignment.problems:
-        if problem.grading.automated:
+        if problem.grading.automated is not None and problem.grading.automated.enabled:
             grader = import_grader(grading_path.joinpath(problem.short, Files.TESTS))
             assignment_schema["problems"][problem.short] = dict(
                 title=problem.title,
-                target_path=str(problem.relative_path),
+                relative_path=str(problem.relative_path),
                 tasks=grader.dump())
     return assignment_schema
 
@@ -365,10 +372,10 @@ def get_readme(environment: jinja2.Environment, item: Union[BuildProblem, BuildA
         return ""
 
 
-def has_readme(item: Union[Problem, Assignment], *component: str) -> bool:
+def has_readme(item: Union[BuildProblem, BuildAssignment], *component: str) -> bool:
     """Check whether a problem has a solution README."""
 
-    return item.relative_path.joinpath(*component, Files.README).exists()
+    return item.path.joinpath(*component, Files.README).exists()
 
 
 BUILD_STEPS = (

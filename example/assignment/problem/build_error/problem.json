@@ -12,10 +12,10 @@
   ],
   "grading": {
     "automated": {
-      "weight": 1
+      "weight": "1"
     },
     "review": {
-      "weight": 1
+      "weight": "1"
     },
     "manual": null
   }

@@ -83,7 +83,7 @@ class ProblemGradingCategory(Model):
         return cls(
             enabled=data.get("enabled", True),
             name=data["name"],
-            minutes=data["minutes"],
+            minutes=data.get("minutes"),
             weight=Decimal(data["weight"]),
             points=Decimal(data["points"]),)
 
@@ -113,6 +113,13 @@ class ProblemGrading(Model):
     @classmethod
     def load(cls, data: dict) -> "ProblemGrading":
         """Deserialize each method."""
+
+        if data["automated"] is not None and data["automated"].get("name") is None:
+            data["automated"]["name"] = "Automated Tests"
+        if data["review"] is not None and data["review"].get("name") is None:
+            data["review"]["name"] = "Code Review"
+        if data["manual"] is not None and data["manual"].get("name") is None:
+            data["manual"]["name"] = "Manual Grading"
 
         return cls(
             enabled=data.get("enabled", True),
