@@ -304,7 +304,7 @@ def generate_grading_schema(grading_path: Path, assignment: Assignment) -> dict:
     assignment_schema = dict(title=assignment.title, short=assignment.short, problems=dict())
     for problem in assignment.problems:
         if problem.grading.automated is not None and problem.grading.automated.enabled:
-            grader = import_grader(grading_path.joinpath(problem.short, Files.TESTS))
+            grader = import_grader(grading_path.joinpath(problem.short))
             assignment_schema["problems"][problem.short] = dict(
                 title=problem.title,
                 relative_path=str(problem.relative_path),

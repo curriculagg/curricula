@@ -98,6 +98,12 @@ class ProblemGradingCategory(Model):
             points=str(self.points),)
 
 
+class ProblemGradingAutomated(ProblemGradingCategory):
+    """Additional properties specific to automated grading."""
+
+    tasks: List
+
+
 @dataclass(eq=False)
 class ProblemGrading(Model):
     """Data for each grading method."""

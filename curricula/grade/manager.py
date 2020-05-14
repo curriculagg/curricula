@@ -18,15 +18,24 @@ PASSED = "\u2713"
 FAILED = "\u2717"
 
 
-def import_grader(tests_path: Path, grader_name: str = "grader") -> Grader:
+def import_grader(grading_path: Path, grader_name: str = "grader") -> Grader:
     """Import a grader from a tests file."""
 
-    sys.path.insert(0, str(tests_path.parent))
-    spec = importlib.util.spec_from_file_location(f"{tests_path.parent}.tests", str(tests_path))
-    tests = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(tests)
-    grader = getattr(tests, grader_name)
-    sys.path.pop(0)
+    # Try to import as a module
+    if grading_path.joinpath("__init__.py").is_file():
+        name = f"_curricula_grading_{grading_path.parts[-1]}"
+        spec = importlib.util.spec_from_file_location(name, str(grading_path.joinpath("__init__.py")))
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[name] = module
+
+    # Otherwise there's a tests.py
+    else:
+        name = f"_curricula_grading_{grading_path.parts[-1]}_tests"
+        spec = importlib.util.spec_from_file_location(name, str(grading_path.joinpath("tests.py")))
+        module = importlib.util.module_from_spec(spec)
+
+    spec.loader.exec_module(module)
+    grader = getattr(module, grader_name)
 
     return grader
 
@@ -62,7 +71,7 @@ class Manager:
         graders = {}
         for problem_short in schema["problems"]:
             log.debug(f"importing grader for {problem_short}")
-            grader = import_grader(grading_path.joinpath(problem_short, Files.TESTS))
+            grader = import_grader(grading_path.joinpath(problem_short))
 
             # Check dependencies
             try:

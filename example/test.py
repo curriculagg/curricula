@@ -5,7 +5,7 @@ from pathlib import Path
 root = Path(__file__).absolute().parent
 sys.path.insert(0, str(root.parent))
 
-from curricula.compose import build
+from curricula.compile import build
 from curricula.grade.manager import Manager
 from curricula.grade.tools.format import format_report_markdown
 from curricula.shared import Paths
@@ -20,7 +20,7 @@ def main():
 
     # Build
     template_path = root.joinpath("template")
-    artifacts_path = root.joinpath("artifacts")
+    artifacts_path = root.joinpath("artifacts", "assignment")
     build(
         template_path=template_path,
         assignment_path=root.joinpath("assignment"),

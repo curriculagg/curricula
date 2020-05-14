@@ -3,7 +3,7 @@
 [%- for problem_short, problem in schema.problems.items() %]
 [%- set problem_summary = summary.problems[problem_short] %]
 
-## [[ problem.title ]] ([[ problem.percentage | percentage ]])
+## [[ problem.title ]] ([[ problem.grading.weight | percentage ]])
 
 Tests score: [[ problem_summary.tests_fraction ]] ([[ problem_summary.tests_percentage | percentage ]])
 [% if problem_summary.setup_failed %]
