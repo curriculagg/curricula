@@ -5,7 +5,7 @@ from pathlib import Path
 root = Path(__file__).absolute().parent
 sys.path.insert(0, str(root.parent))
 
-from curricula.build import build
+from curricula.compose import build
 from curricula.grade.manager import Manager
 from curricula.grade.tools.format import format_report_markdown
 from curricula.shared import Paths
