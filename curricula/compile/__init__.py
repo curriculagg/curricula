@@ -35,11 +35,11 @@ import jinja2
 import json
 from pathlib import Path
 from typing import Dict, Union, List, Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from .validate import validate
+from .models import CompilationProblem, CompilationAssignment
 
-from ..models import Assignment, Problem
 from ..shared import Files, Paths
 from ..library.template import jinja2_create_environment
 from ..library import files
@@ -47,98 +47,6 @@ from ..library.utility import timed
 from ..log import log
 
 from ..grade.manager import import_grader
-
-
-class BuildProblem(Problem):
-    """Add additional fields only used for build."""
-
-    number: int
-    path: Path
-    assignment: "BuildAssignment"
-
-    percentage: float = None
-
-    @classmethod
-    def read(cls, assignment: "BuildAssignment", reference: dict, root: Path, number: int) -> "BuildProblem":
-        """Load a problem from the assignment path and reference."""
-
-        path = root.joinpath(reference["path"])
-        with path.joinpath(Files.PROBLEM).open() as file:
-            data = json.load(file)
-
-        data["short"] = reference.get("short", data.get("short", path.parts[-1]))
-        data["relative_path"] = reference.get("relative_path", path.parts[-1])
-
-        if "title" in reference:
-            data["title"] = reference["title"]
-
-        data["grading"]["enabled"] = reference["grading"].get("enabled", True)
-        data["grading"]["weight"] = reference["grading"].get("weight", "1")
-        data["grading"]["points"] = reference["grading"].get("points", "100")
-        for category in "automated", "review", "manual":
-            category_data = data["grading"][category]
-            if category_data is None:
-                continue
-
-            if category in reference["grading"]:
-                reference_category_data = reference["grading"][category]
-
-                if "enabled" in reference_category_data:
-                    category_data["enabled"] = reference_category_data
-                if "weight" in reference_category_data:
-                    category_data["weight"] = reference_category_data["weight"]
-                if "points" in reference_category_data:
-                    category_data["points"] = reference_category_data["points"]
-
-            if "weight" not in category_data:
-                category_data["weight"] = "1"
-            if "points" not in category_data:
-                category_data["points"] = "100"
-
-        self = cls.load(data)
-
-        # Convenience details for rendering
-        self.assignment = assignment
-        self.number = number
-        self.path = path
-
-        return self
-
-
-class BuildAssignment(Assignment):
-    """Additional fields for build."""
-
-    problems: List[BuildProblem]
-    path: Path = field(init=False)
-
-    @classmethod
-    def read(cls, path: Path) -> "BuildAssignment":
-        """Load an assignment from a containing directory."""
-
-        with path.joinpath(Files.ASSIGNMENT).open() as file:
-            data = json.load(file)
-
-        data["short"] = data.get("short", path.parts[-1])
-        self = cls.load(data, problems=[])
-
-        counter = 1
-        total_weight = 0
-        for reference in data.pop("problems"):
-            number = None
-            if any(filter(None, reference["grading"])):
-                number = counter
-                counter += 1
-
-            problem = BuildProblem.read(self, reference, path, number)
-            total_weight += problem.grading.weight
-            self.problems.append(problem)
-
-        for problem in self.problems:
-            problem.percentage = problem.grading.weight / total_weight if total_weight > 0 else 0
-
-        self.path = path
-
-        return self
 
 
 @dataclass(repr=False, eq=False)
@@ -157,7 +65,7 @@ class Context:
 
 def compile_readme(
         context: Context,
-        assignment: BuildAssignment,
+        assignment: CompilationAssignment,
         template_relative_path: str,
         destination_path: Path) -> Path:
     """Compile a README from an assignment.
@@ -177,10 +85,10 @@ def compile_readme(
 
 def merge_contents(
         context: Context,
-        assignment: BuildAssignment,
+        assignment: CompilationAssignment,
         contents_relative_path: Path,
         destination_path: Path,
-        filter_problems: Callable[[BuildProblem], bool] = None):
+        filter_problems: Callable[[CompilationProblem], bool] = None):
     """Compile subdirectories from problems into a single directory."""
 
     log.debug(f"merging contents to {destination_path}")
@@ -200,11 +108,11 @@ def merge_contents(
 
 
 def aggregate_contents(
-        assignment: BuildAssignment,
+        assignment: CompilationAssignment,
         contents_relative_path: Path,
         destination_path: Path,
-        filter_problems: Callable[[BuildProblem], bool] = None,
-        rename: Callable[[BuildProblem], str] = None) -> List[Path]:
+        filter_problems: Callable[[CompilationProblem], bool] = None,
+        rename: Callable[[CompilationProblem], str] = None) -> List[Path]:
     """Compile subdirectories from problems to respective directories.
 
     Different from merge in that the result is a directory of
@@ -233,7 +141,7 @@ def aggregate_contents(
     return copied_paths
 
 
-def build_instructions(context: Context, assignment: BuildAssignment):
+def build_instructions(context: Context, assignment: CompilationAssignment) -> Path:
     """Compile instruction readme and assets."""
 
     log.debug("compiling instructions")
@@ -241,18 +149,20 @@ def build_instructions(context: Context, assignment: BuildAssignment):
     instructions_path.mkdir(exist_ok=True)
     compile_readme(context, assignment, "instructions/assignment.md", instructions_path)
     merge_contents(context, assignment, Paths.ASSETS, instructions_path.joinpath(Paths.ASSETS))
+    return instructions_path
 
 
-def build_resources(context: Context, assignment: BuildAssignment):
+def build_resources(context: Context, assignment: CompilationAssignment) -> Path:
     """Compile resources files."""
 
     log.debug("compiling resources")
     resources_path = context.artifacts_path.joinpath(Paths.RESOURCES)
     resources_path.mkdir(exist_ok=True)
     aggregate_contents(assignment, Paths.RESOURCES, resources_path, rename=lambda p: p.path)
+    return resources_path
 
 
-def build_solution_readme(context: Context, assignment: Assignment, path: Path):
+def build_solution_readme(context: Context, assignment: CompilationAssignment, path: Path):
     """Generate the composite cheat sheet README."""
 
     log.debug("building cheat sheet")
@@ -261,7 +171,7 @@ def build_solution_readme(context: Context, assignment: Assignment, path: Path):
         file.write(assignment_template.render(assignment=assignment))
 
 
-def build_solution_code(assignment: BuildAssignment, path: Path):
+def build_solution_code(assignment: CompilationAssignment, path: Path):
     """Compile only submission files of the solution."""
 
     log.debug("assembling solution code")
@@ -274,7 +184,7 @@ def build_solution_code(assignment: BuildAssignment, path: Path):
             files.delete(readme_path)
 
 
-def build_solution(context: Context, assignment: BuildAssignment):
+def build_solution(context: Context, assignment: CompilationAssignment) -> Path:
     """Compile cheatsheets."""
 
     log.debug("compiling solution")
@@ -282,9 +192,10 @@ def build_solution(context: Context, assignment: BuildAssignment):
     solution_path.mkdir(exist_ok=True)
     build_solution_readme(context, assignment, solution_path)
     build_solution_code(assignment, solution_path)
+    return solution_path
 
 
-def build_grading_readme(context: Context, assignment: Assignment, path: Path):
+def build_grading_readme(context: Context, assignment: CompilationAssignment, path: Path):
     """Aggregate README for rubric."""
 
     log.debug("building grading instructions")
@@ -293,34 +204,7 @@ def build_grading_readme(context: Context, assignment: Assignment, path: Path):
         file.write(assignment_template.render(assignment=assignment))
 
 
-def generate_grading_schema(grading_path: Path, assignment: Assignment) -> dict:
-    """Generate a JSON schema describing the grading package.
-
-    This method requires the grading artifact to already have been
-    aggregated, as it has to access the individual problem graders to
-    dump their task summaries.
-    """
-
-    assignment_schema = dict(title=assignment.title, short=assignment.short, problems=dict())
-    for problem in assignment.problems:
-        if problem.grading.automated is not None and problem.grading.automated.enabled:
-            grader = import_grader(grading_path.joinpath(problem.short))
-            assignment_schema["problems"][problem.short] = dict(
-                title=problem.title,
-                relative_path=str(problem.relative_path),
-                tasks=grader.dump())
-    return assignment_schema
-
-
-def build_grading_schema(assignment: Assignment, path: Path):
-    """Generate a JSON data file with grading metadata."""
-
-    log.debug("building grading schema")
-    with path.joinpath(Files.GRADING).open("w") as file:
-        json.dump(generate_grading_schema(path, assignment), file, indent=2)
-
-
-def build_grading(context: Context, assignment: BuildAssignment):
+def build_grading(context: Context, assignment: CompilationAssignment) -> Path:
     """Compile rubrics."""
 
     log.debug("compiling grading")
@@ -340,29 +224,24 @@ def build_grading(context: Context, assignment: BuildAssignment):
         if readme_path.exists():
             files.delete(readme_path)
 
-    build_grading_schema(assignment, grading_path)
-
-
-def build_index(context: Context, assignment: Assignment):
-    """Dump the assignment into the artifacts."""
-
-    log.debug("writing index to artifacts")
-    with context.artifacts_path.joinpath("index.json").open("w") as file:
+    with grading_path.joinpath("assignment.json").open("w") as file:
         json.dump(assignment.dump(), file, indent=2)
+
+    return grading_path
 
 
 @jinja2.environmentfilter
-def get_readme(environment: jinja2.Environment, item: Union[BuildProblem, BuildAssignment], *component: str) -> str:
+def get_readme(environment: jinja2.Environment, item: Union[CompilationProblem, CompilationAssignment], *component: str) -> str:
     """Render a README with options for nested path."""
 
     readme_path = "/".join(component + (Files.README,))
 
     try:
-        if isinstance(item, BuildAssignment):
+        if isinstance(item, CompilationAssignment):
             return environment \
                 .get_template(f"assignment:{readme_path}") \
                 .render(assignment=item)
-        elif isinstance(item, BuildProblem):
+        elif isinstance(item, CompilationProblem):
             return environment \
                 .get_template(f"problem/{item.short}:{readme_path}") \
                 .render(assignment=item.assignment, problem=item)
@@ -372,7 +251,7 @@ def get_readme(environment: jinja2.Environment, item: Union[BuildProblem, BuildA
         return ""
 
 
-def has_readme(item: Union[BuildProblem, BuildAssignment], *component: str) -> bool:
+def has_readme(item: Union[CompilationProblem, CompilationAssignment], *component: str) -> bool:
     """Check whether a problem has a solution README."""
 
     return item.path.joinpath(*component, Files.README).exists()
@@ -382,8 +261,7 @@ BUILD_STEPS = (
     build_instructions,
     build_resources,
     build_solution,
-    build_grading,
-    build_index)
+    build_grading)
 
 
 @timed("build", printer=log.info)
@@ -397,7 +275,7 @@ def build(template_path: Path, assignment_path: Path, artifacts_path: Path, **op
 
     # Load the assignment object
     log.debug("loading assignment")
-    assignment = BuildAssignment.read(assignment_path)
+    assignment = CompilationAssignment.read(assignment_path)
 
     # Set up templating
     problem_template_paths = {f"problem/{problem.short}": problem.path for problem in assignment.problems}

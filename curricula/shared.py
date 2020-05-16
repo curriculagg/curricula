@@ -16,6 +16,7 @@ class Paths:
     SOLUTION = Path("solution")
     GRADING = Path("grading")
     ASSETS = Path("assets")
+    INCLUDE = Path("grade", "include")
 
     @classmethod
     def glob_assignments(cls, material_path: Path) -> Iterator[Path]:
