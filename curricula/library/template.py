@@ -8,6 +8,9 @@ root = Path(__file__).absolute().parent
 log = logging.getLogger("curricula")
 
 
+DEFAULT_TEMPLATE_PATH = root.parent.joinpath("template")
+
+
 def percentage(d: Any, digits: int = 1) -> str:
     """Convert a float to a nice-looking percentage."""
 

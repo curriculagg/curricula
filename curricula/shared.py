@@ -33,3 +33,4 @@ class Files:
     PROBLEM = "problem.json"
     GRADING = "grading.json"
     TESTS = "tests.py"
+    INDEX = "index.json"

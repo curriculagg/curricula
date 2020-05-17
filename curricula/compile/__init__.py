@@ -41,12 +41,13 @@ from .validate import validate
 from .models import CompilationProblem, CompilationAssignment
 
 from ..shared import Files, Paths
-from ..library.template import jinja2_create_environment
+from ..library.template import jinja2_create_environment, DEFAULT_TEMPLATE_PATH
 from ..library import files
 from ..library.utility import timed
 from ..log import log
 
-from ..grade.manager import import_grader
+
+root = Path(__file__).parent.absolute()
 
 
 @dataclass(repr=False, eq=False)
@@ -75,7 +76,7 @@ def compile_readme(
     """
 
     log.debug(f"compiling readme for {destination_path}")
-    template = context.environment.get_template(f"template:build/{template_relative_path}")
+    template = context.environment.get_template(f"template:compile/{template_relative_path}")
     if destination_path.is_dir():
         destination_path = destination_path.joinpath(Files.README)
     with destination_path.open("w") as file:
@@ -166,7 +167,7 @@ def build_solution_readme(context: Context, assignment: CompilationAssignment, p
     """Generate the composite cheat sheet README."""
 
     log.debug("building cheat sheet")
-    assignment_template = context.environment.get_template("template:build/solution/assignment.md")
+    assignment_template = context.environment.get_template("template:compile/solution/assignment.md")
     with path.joinpath(Files.README).open("w") as file:
         file.write(assignment_template.render(assignment=assignment))
 
@@ -199,7 +200,7 @@ def build_grading_readme(context: Context, assignment: CompilationAssignment, pa
     """Aggregate README for rubric."""
 
     log.debug("building grading instructions")
-    assignment_template = context.environment.get_template("template:build/grading/assignment.md")
+    assignment_template = context.environment.get_template("template:compile/grading/assignment.md")
     with path.joinpath(Files.README).open("w") as file:
         file.write(assignment_template.render(assignment=assignment))
 
@@ -224,14 +225,17 @@ def build_grading(context: Context, assignment: CompilationAssignment) -> Path:
         if readme_path.exists():
             files.delete(readme_path)
 
-    with grading_path.joinpath("assignment.json").open("w") as file:
+    with grading_path.joinpath(Files.INDEX).open("w") as file:
         json.dump(assignment.dump(), file, indent=2)
 
     return grading_path
 
 
 @jinja2.environmentfilter
-def get_readme(environment: jinja2.Environment, item: Union[CompilationProblem, CompilationAssignment], *component: str) -> str:
+def get_readme(
+        environment: jinja2.Environment,
+        item: Union[CompilationProblem, CompilationAssignment],
+        *component: str) -> str:
     """Render a README with options for nested path."""
 
     readme_path = "/".join(component + (Files.README,))
@@ -265,8 +269,12 @@ BUILD_STEPS = (
 
 
 @timed("build", printer=log.info)
-def build(template_path: Path, assignment_path: Path, artifacts_path: Path, **options):
+def build(assignment_path: Path, artifacts_path: Path, template_path: Path = None, **options):
     """Build the assignment at a given path."""
+
+    if template_path is None:
+        log.debug("using default templates")
+        template_path = DEFAULT_TEMPLATE_PATH
 
     log.info(f"building {assignment_path} to {artifacts_path}")
 

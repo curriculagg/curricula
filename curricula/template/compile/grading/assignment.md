@@ -8,6 +8,6 @@
 
 [% for problem in assignment.problems -%]
 [% if problem | has_readme("grading") -%]
-[%- include "template:build/grading/problem.md" -%]
+[%- include "template:compile/grading/problem.md" -%]
 [% endif %]
 [%- endfor %]

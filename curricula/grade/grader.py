@@ -1,5 +1,5 @@
 import itertools
-from typing import List, Iterable
+from typing import List, Iterable, Tuple, Iterator
 from dataclasses import dataclass, field
 
 from .report import ProblemReport
@@ -53,8 +53,14 @@ class Grader:
     output: OutputConfiguration = field(default_factory=OutputConfiguration)
 
     @property
-    def stages(self):
+    def stages(self) -> Tuple[GraderStage, ...]:
         return self.setup, self.test, self.teardown
+
+    @property
+    def tasks(self) -> Iterator[Task]:
+        yield from self.setup.tasks
+        yield from self.test.tasks
+        yield from self.teardown.tasks
 
     def check(self):
         """Topologically sort tasks, checking for cycles."""

@@ -4,25 +4,25 @@ from pathlib import Path
 from dataclasses import dataclass, field
 from decimal import Decimal
 
-from ...library.template import jinja2_create_environment
-from ...shared import Files
+from ..models import GradingAssignment, GradingProblem
+from ..task import Task
+from ...library.template import jinja2_create_environment, DEFAULT_TEMPLATE_PATH
 
 
-def sum_weights(tasks: Iterable[dict]) -> float:
-    return sum(Decimal(str(task["details"].get("weight", "1"))) for task in tasks)
+def sum_weights(tasks: Iterable[Task]) -> float:
+    return sum(Decimal(str(task.details.get("weight", "1"))) for task in tasks)
 
 
 @dataclass(eq=False)
 class ProblemSummary:
     """A summary of the results from a problem's cases."""
 
-    problem_short: str
-    problem: dict
+    problem: GradingProblem
 
     # Main tests
     tests_total: int = 0
-    tests_correct: List[dict] = field(default_factory=list)
-    tests_incorrect: List[dict] = field(default_factory=list)
+    tests_correct: List[Task] = field(default_factory=list)
+    tests_incorrect: List[Task] = field(default_factory=list)
 
     # Setup problems
     setup_failed: bool = False
@@ -56,27 +56,27 @@ class ReportSummary:
     problems: Dict[str, ProblemSummary] = field(default_factory=dict)
 
 
-def summarize(grading_schema: dict, report: dict) -> ReportSummary:
+def summarize(assignment: GradingAssignment, report: dict) -> ReportSummary:
     """Do a summary for a single student."""
 
     summary = ReportSummary()
-    for problem_short, problem in grading_schema["problems"].items():
-        problem_summary = summary.problems[problem_short] = ProblemSummary(problem_short, problem)
-        for task_name, task in problem["tasks"].items():
-            result = report[problem_short][task_name]
+    for problem in assignment.problems:
+        problem_summary = summary.problems[problem.short] = ProblemSummary(problem)
+        for task in problem.grader.tasks:
+            result = report[problem.short][task.name]
 
             # Diagnose any issues in setup
-            if task["stage"] == "setup":
+            if task.stage == "setup":
                 if not result["complete"] or not result["passing"]:
                     problem_summary.setup_failed = True
-                    problem_summary.setup_failed_task = task_name
+                    problem_summary.setup_failed_task = task.name
                     if "error" in result["details"]:
                         problem_summary.setup_error_description = result["details"]["error"]["description"]
                     elif "runtime" in result["details"]:
                         problem_summary.setup_error_traceback = result["details"]["runtime"]["stderr"]
 
             # Problem summary
-            elif task["stage"] == "test":
+            elif task.stage == "test":
                 problem_summary.tests_total += 1
                 if result["complete"] and result["passing"]:
                     problem_summary.tests_correct.append(task)
@@ -86,16 +86,18 @@ def summarize(grading_schema: dict, report: dict) -> ReportSummary:
     return summary
 
 
-def format_report_markdown(grading_path: Path, template_path: Path, report_path: Path) -> str:
+def format_report_markdown(grading_path: Path, report_path: Path, template_path: Path = None) -> str:
     """Return a formatted markdown report."""
 
-    environment = jinja2_create_environment()
-    with grading_path.joinpath(Files.GRADING).open() as file:
-        grading_schema = json.load(file)
+    if template_path is None:
+        template_path = DEFAULT_TEMPLATE_PATH
+
+    environment = jinja2_create_environment(template=template_path)
+    assignment = GradingAssignment.read(grading_path)
     with report_path.open() as file:
         report = json.load(file)
-    summary = summarize(grading_schema, report)
+    summary = summarize(assignment, report)
 
-    environment.globals.update(schema=grading_schema, summary=summary)
-    report_template = environment.from_string(template_path.read_text())
+    environment.globals.update(assignment=assignment, summary=summary)
+    report_template = environment.get_template("template:grade/report/assignment.md")
     return report_template.render() + "\n"

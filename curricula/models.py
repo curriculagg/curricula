@@ -242,7 +242,7 @@ class AssignmentMeta(Model):
 
         return cls(
             built=parse_datetime(data["built"]),
-            curricula=data["version"],)
+            curricula=data["curricula"],)
 
     def dump(self) -> dict:
         """Serialize the datetime here too."""
@@ -277,7 +277,7 @@ class Assignment(Model):
             problems=problems if problems is not None else list(map(Problem.load, data["problems"])),
             grading=AssignmentGrading.load(data["grading"]),
             notes=data.get("notes"),
-            meta=AssignmentMeta.load(data) if "meta" in data else AssignmentMeta())
+            meta=AssignmentMeta.load(data["meta"]) if "meta" in data else AssignmentMeta())
 
     def dump(self) -> dict:
         """Dump the assignment to JSON."""
