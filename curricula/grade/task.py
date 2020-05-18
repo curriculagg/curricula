@@ -26,6 +26,10 @@ class Error:
             expected=self.expected,
             received=self.received)
 
+    @classmethod
+    def load(cls, data: dict) -> "Error":
+        return cls(**data)
+
 
 @dataclass(init=False, eq=False)
 class Result(Exception, abc.ABC):
@@ -58,8 +62,18 @@ class Result(Exception, abc.ABC):
             complete=self.complete,
             passing=self.passing,
             details=self.details,
+            kind=self.kind,
             error=self.error.dump() if self.error is not None else self.error,
-            task=self.task.name)
+            task_name=self.task.name)
+
+    @classmethod
+    def load(cls, data: dict, task: "Task") -> "Result":
+        """Load a result from serialized."""
+
+        data.pop("task_name")
+        self = cls(**data)
+        self.task = task
+        return self
 
     @classmethod
     def incomplete(cls):

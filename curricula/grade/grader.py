@@ -16,12 +16,6 @@ from .configuration.sandbox import SandboxConfiguration
 from .configuration.output import OutputConfiguration
 
 
-def collapse_tasks(stages: Iterable[GraderStage]) -> Iterable[Task]:
-    """Wrapper for topological_sort."""
-
-    return itertools.chain(*(stage.tasks for stage in stages))
-
-
 def fulfills_dependencies(task: Task, report: ProblemReport):
     """Convenience."""
 
@@ -70,7 +64,7 @@ class Grader:
         topological_sort(stage.tasks for stage in self.stages)
 
         # Check task details
-        for task in collapse_tasks(self.stages):
+        for task in self.tasks:
             self.output.check_task(task)
 
     def __run(self, tasks: List[Task], report: ProblemReport, resources: dict):
@@ -136,4 +130,4 @@ class Grader:
     def dump(self) -> dict:
         """Dump the tasks to something JSON serializable."""
 
-        return {task.name: task.dump() for task in collapse_tasks(self.stages)}
+        return {task.name: task.dump() for task in self.tasks}

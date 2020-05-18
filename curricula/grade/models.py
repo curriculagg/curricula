@@ -2,14 +2,12 @@ import importlib.util
 import json
 import sys
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 from dataclasses import field
 
 from ..models import Assignment, Problem
 from ..shared import Files
-from .task import Task
 from .grader import Grader
-from .report import AssignmentReport
 
 
 def import_grader(grading_path: Path, grader_name: str = "grader") -> Grader:

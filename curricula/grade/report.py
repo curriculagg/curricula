@@ -1,8 +1,9 @@
-from typing import List, Dict
+from typing import List, Dict, Iterable
 from dataclasses import dataclass, field
 
+from .models import GradingAssignment
 from .resource import Resource
-from .task import Result
+from .task import Task, Result
 
 
 @dataclass(eq=False)
@@ -29,11 +30,27 @@ class ProblemReportStatistics:
 class ProblemReport(Resource):
     """The final report returned by the testing framework."""
 
-    lookup: Dict[str, Result] = field(default_factory=dict)
     results: List[Result] = field(default_factory=list)
+    lookup: Dict[str, Result] = field(default_factory=dict, init=False)
+
+    def __post_init__(self):
+        """Populate lookup if initialized with results."""
+
+        for result in self.results:
+            self.lookup[result.task.name] = result
+
+    def __getitem__(self, item: str) -> Result:
+        """Look up a result by task name."""
+
+        return self.lookup[item]
 
     def add(self, result: Result, hidden: bool = False):
-        """Add a result to the report."""
+        """Add a result to the report.
+
+        If we hide a result, it will not be serialized into the final report.
+        This is useful for when we don't want someone who's looking at the
+        report to know about some subset of the tests.
+        """
 
         self.lookup[result.task.name] = result
         if not hidden:
@@ -43,6 +60,12 @@ class ProblemReport(Resource):
         """Dump the result to a serializable format."""
 
         return {result.task.name: result.dump() for result in self.results}
+
+    @classmethod
+    def load(cls, data: dict, tasks: Iterable[Task]) -> "ProblemReport":
+        """Deserialize, rebinding to provided tasks."""
+
+        return ProblemReport([Result.load(data[task.name], task) for task in tasks])
 
     def statistics(self) -> ProblemReportStatistics:
         """Run the numbers."""
@@ -63,8 +86,29 @@ class ProblemReport(Resource):
         return statistics
 
 
-class AssignmentReport(dict):
+@dataclass(eq=False)
+class AssignmentReport:
     """Aggregation of problem reports."""
 
+    reports: Dict[str, ProblemReport]
+
+    def __getitem__(self, item: str) -> ProblemReport:
+        """Index problem reports by problem short."""
+
+        return self.reports[item]
+
     def dump(self) -> dict:
-        return {problem_short: problem_report.dump() for problem_short, problem_report in self.items()}
+        """Serialize as dictionary to shorten rebuild."""
+
+        return {problem_short: problem_report.dump() for problem_short, problem_report in self.reports.items()}
+
+    @classmethod
+    def load(cls, data: dict, assignment: GradingAssignment) -> "AssignmentReport":
+        """Deserialize and bind to existing tasks."""
+
+        reports = {}
+        for problem_short, problem_report_data in data.items():
+            problem = assignment.problems[problem_short]
+            reports[problem_short] = ProblemReport.load(problem_report_data, problem.grader.tasks)
+
+        return AssignmentReport(reports)
