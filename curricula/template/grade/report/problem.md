@@ -2,7 +2,7 @@
 
 ## [[ problem.title ]] ([[ problem.grading.weight | percentage ]])
 
-[[ problem_summary ]]
+[%- if problem.grading.is_automated %]
 
 Tests score: [[ problem_summary.tests_fraction ]] ([[ problem_summary.tests_percentage | percentage ]])
 [% if problem_summary.setup_failed %]
@@ -12,7 +12,8 @@ Setup failed:
 [[ problem_summary.setup_error | trim ]]
 ```
 [% else %]
-[%- for test_missed in problem_summary.tests_incorrect %]
-- -[[ test_missed["details"].get("weight", 1) ]] for [[ test_missed.name ]]
+[%- for result in problem_summary.test_results_failing %]
+- -[[ result.task.details.get("weight", 1) ]] for [[ result.task.name ]]
 [%- endfor -%]
 [%- endif -%]
+[% endif %]

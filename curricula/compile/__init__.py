@@ -176,7 +176,11 @@ def build_solution_code(assignment: CompilationAssignment, path: Path):
     """Compile only submission files of the solution."""
 
     log.debug("assembling solution code")
-    copied_paths = aggregate_contents(assignment, Paths.SOLUTION, path, rename=lambda p: p.path)
+    copied_paths = aggregate_contents(
+        assignment=assignment,
+        contents_relative_path=Paths.SOLUTION,
+        destination_path=path,
+        rename=lambda p: p.relative_path)
 
     # Delete extra READMEs
     for copied_path in copied_paths:

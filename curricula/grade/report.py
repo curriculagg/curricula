@@ -1,9 +1,15 @@
+from __future__ import annotations
+
 from typing import List, Dict, Iterable
 from dataclasses import dataclass, field
 
-from .models import GradingAssignment
 from .resource import Resource
 from .task import Task, Result
+
+import typing
+
+if typing.TYPE_CHECKING:
+    from .models import GradingAssignment
 
 
 @dataclass(eq=False)
@@ -90,12 +96,17 @@ class ProblemReport(Resource):
 class AssignmentReport:
     """Aggregation of problem reports."""
 
-    reports: Dict[str, ProblemReport]
+    reports: Dict[str, ProblemReport] = field(default_factory=dict)
 
     def __getitem__(self, item: str) -> ProblemReport:
         """Index problem reports by problem short."""
 
         return self.reports[item]
+
+    def __setitem__(self, key: str, value: ProblemReport):
+        """Set the result from a problem."""
+
+        self.reports[key] = value
 
     def dump(self) -> dict:
         """Serialize as dictionary to shorten rebuild."""
@@ -103,12 +114,12 @@ class AssignmentReport:
         return {problem_short: problem_report.dump() for problem_short, problem_report in self.reports.items()}
 
     @classmethod
-    def load(cls, data: dict, assignment: GradingAssignment) -> "AssignmentReport":
+    def load(cls, data: dict, assignment: "GradingAssignment") -> "AssignmentReport":
         """Deserialize and bind to existing tasks."""
 
         reports = {}
-        for problem_short, problem_report_data in data.items():
-            problem = assignment.problems[problem_short]
-            reports[problem_short] = ProblemReport.load(problem_report_data, problem.grader.tasks)
+        for problem in assignment.problems:
+            if problem.grading.is_automated:
+                reports[problem.short] = ProblemReport.load(data[problem.short], problem.grader.tasks)
 
         return AssignmentReport(reports)

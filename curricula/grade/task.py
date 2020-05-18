@@ -71,8 +71,10 @@ class Result(Exception, abc.ABC):
         """Load a result from serialized."""
 
         data.pop("task_name")
+        kind = data.pop("kind")
         self = cls(**data)
         self.task = task
+        self.kind = kind
         return self
 
     @classmethod

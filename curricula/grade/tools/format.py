@@ -4,7 +4,7 @@ from pathlib import Path
 from dataclasses import dataclass, field
 from decimal import Decimal
 
-from ..task import Task, Result
+from ..task import Result
 from ..models import GradingAssignment, GradingProblem
 from ..report import AssignmentReport, ProblemReport
 from ...library.template import jinja2_create_environment, DEFAULT_TEMPLATE_PATH
@@ -22,26 +22,26 @@ class ProblemSummary:
     report: ProblemReport
 
     # Main tests
-    tests_count: int = 0
-    tests_passing_count: int = field(init=False)
-    tests_failing_count: int = field(init=False)
+    test_results_count: int = 0
+    test_results_passing_count: int = 0
+    test_results_failing_count: int = 0
 
     def __post_init__(self):
         """Cache some common analysis of the data."""
 
         for task in self.problem.grader.tasks:
             if task.stage == "test":
-                self.tests_count += 1
+                self.test_results_count += 1
 
                 # Increment counts
                 result = self.report[task.name]
                 if result.passing and result.complete:
-                    self.tests_passing_count += 1
+                    self.test_results_passing_count += 1
                 else:
-                    self.tests_failing_count += 1
+                    self.test_results_failing_count += 1
 
     @property
-    def tests_passing(self) -> Iterator[Result]:
+    def test_results_passing(self) -> Iterator[Result]:
         """Count the number of tests that passed."""
 
         for task in self.problem.grader.tasks:
@@ -51,7 +51,7 @@ class ProblemSummary:
                     yield result
 
     @property
-    def tests_failing(self) -> Iterator[Result]:
+    def test_results_failing(self) -> Iterator[Result]:
         """Count the number of tests that passed."""
 
         for task in self.problem.grader.tasks:
@@ -64,18 +64,18 @@ class ProblemSummary:
     def tests_fraction(self) -> str:
         """Format a fraction."""
 
-        numerator = sum_weights(self.tests_passing)
-        denominator = numerator + sum_weights(self.tests_failing)
+        numerator = sum_weights(self.test_results_passing)
+        denominator = numerator + sum_weights(self.test_results_failing)
         return f"{numerator}/{denominator}"
 
     @property
     def tests_percentage(self) -> Decimal:
         """Compute the percentage."""
 
-        if self.tests_count == 0:
+        if self.test_results_count == 0:
             return Decimal("0")
-        numerator = sum_weights(self.tests_passing)
-        denominator = numerator + sum_weights(self.tests_failing)
+        numerator = sum_weights(self.test_results_passing)
+        denominator = numerator + sum_weights(self.test_results_failing)
         return Decimal(numerator) / Decimal(denominator)
 
 
@@ -91,7 +91,8 @@ def summarize(assignment: GradingAssignment, report: AssignmentReport) -> Report
 
     summary = ReportSummary()
     for problem in assignment.problems:
-        summary.problems[problem.short] = ProblemSummary(problem, report[problem.short])
+        if problem.grading.is_automated:
+            summary.problems[problem.short] = ProblemSummary(problem, report[problem.short])
 
     return summary
 

@@ -116,6 +116,18 @@ class ProblemGrading(Model):
     review: ProblemGradingCategory
     manual: ProblemGradingCategory
 
+    @property
+    def is_automated(self) -> bool:
+        return self.automated is not None and self.automated.enabled
+
+    @property
+    def is_review(self) -> bool:
+        return self.review is not None and self.review.enabled
+
+    @property
+    def is_manual(self) -> bool:
+        return self.manual is not None and self.manual.enabled
+
     @classmethod
     def load(cls, data: dict) -> "ProblemGrading":
         """Deserialize each method."""
