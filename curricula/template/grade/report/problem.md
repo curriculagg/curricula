@@ -1,6 +1,6 @@
 [%- set problem_summary = summary.problems[problem.short] %]
 
-## [[ problem.title ]] ([[ problem.grading.weight | percentage ]])
+## [[ problem.title ]] ([[ problem.grading.percentage() | percentage ]])
 
 [%- if problem.grading.is_automated %]
 

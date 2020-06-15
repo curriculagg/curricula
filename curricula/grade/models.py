@@ -62,6 +62,8 @@ class GradingAssignment(Assignment):
 
         problems = []
         for problem_data in data.pop("problems"):
-            problems.append(GradingProblem.read(problem_data, path.joinpath(problem_data["short"])))
+            problems.append(GradingProblem.read(
+                data=problem_data,
+                path=path.joinpath(problem_data["short"])))
 
         return GradingAssignment.load(data, problems=problems)

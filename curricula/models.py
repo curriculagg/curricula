@@ -108,6 +108,8 @@ class ProblemGradingAutomated(ProblemGradingCategory):
 class ProblemGrading(Model):
     """Data for each grading method."""
 
+    problem: "Problem"
+
     enabled: bool
     weight: Decimal
     points: Decimal
@@ -128,8 +130,11 @@ class ProblemGrading(Model):
     def is_manual(self) -> bool:
         return self.manual is not None and self.manual.enabled
 
+    def percentage(self) -> Decimal:
+        return self.weight / self.problem.assignment.grading.weight()
+
     @classmethod
-    def load(cls, data: dict) -> "ProblemGrading":
+    def load(cls, data: dict, problem: "Problem" = None) -> "ProblemGrading":
         """Deserialize each method."""
 
         if data["automated"] is not None and data["automated"].get("name") is None:
@@ -140,6 +145,7 @@ class ProblemGrading(Model):
             data["manual"]["name"] = "Manual Grading"
 
         return cls(
+            problem=problem,
             enabled=data.get("enabled", True),
             weight=Decimal(data["weight"]),
             points=Decimal(data["points"]),
@@ -177,11 +183,15 @@ class Problem(Model):
     notes: Optional[str] = None
     difficulty: Optional[str] = None
 
+    # Backlink
+    assignment: "Assignment" = field(default=None)
+
     @classmethod
-    def load(cls, data: dict) -> "Problem":
+    def load(cls, data: dict, assignment: "Assignment" = None) -> "Problem":
         """Load directly from a dictionary."""
 
-        return cls(
+        self = cls(
+            assignment=assignment,
             short=data["short"],
             title=data["title"],
             relative_path=Path(data["relative_path"]),
@@ -189,7 +199,9 @@ class Problem(Model):
             authors=list(map(Author.load, data["authors"])),
             topics=data["topics"],
             notes=data.get("notes"),
-            difficulty=data.get("difficulty"),)
+            difficulty=data.get("difficulty"))
+        self.grading.problem = self
+        return self
 
     def dump(self) -> dict:
         """Serialize 1:1."""
@@ -233,12 +245,29 @@ class AssignmentGrading(Model):
     """Weights and points."""
 
     points: int
+    assignment: "Assignment" = field(default=None)
+
+    _weight: Decimal = field(init=False)
 
     @classmethod
-    def load(cls, data: dict) -> "AssignmentGrading":
+    def load(cls, data: dict, assignment: "Assignment" = None) -> "AssignmentGrading":
         """Load from serialized."""
 
-        return cls(points=data["points"])
+        return cls(points=data["points"], assignment=assignment)
+
+    def weight(self) -> Decimal:
+        """Compute cumulative weight of all problems."""
+
+        try:
+            return self._weight
+        except AttributeError:
+            self._weight = sum(problem.grading.weight for problem in self.assignment.problems)
+            return self._weight
+
+    def dump(self) -> dict:
+        """Avoid recursion."""
+
+        return dict(points=self.points)
 
 
 @dataclass(eq=False)
@@ -281,15 +310,24 @@ class Assignment(Model):
     def load(cls, data: dict, problems: List[Problem] = None) -> "Assignment":
         """Deserialize."""
 
-        return cls(
+        if problems is None:
+            problems = list(map(Problem.load, data["problems"]))
+
+        self = cls(
             short=data["short"],
             title=data["title"],
             authors=list(map(Author.load, data["authors"])),
             dates=AssignmentDates.load(data["dates"]),
-            problems=problems if problems is not None else list(map(Problem.load, data["problems"])),
+            problems=problems,
             grading=AssignmentGrading.load(data["grading"]),
             notes=data.get("notes"),
             meta=AssignmentMeta.load(data["meta"]) if "meta" in data else AssignmentMeta())
+
+        for problem in problems:
+            problem.assignment = self
+        self.grading.assignment = self
+
+        return self
 
     def dump(self) -> dict:
         """Dump the assignment to JSON."""
