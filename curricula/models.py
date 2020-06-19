@@ -133,16 +133,35 @@ class ProblemGrading(Model):
     def percentage(self) -> Decimal:
         return self.weight / self.problem.assignment.grading.weight()
 
+    @property
+    def _category_weight(self) -> Decimal:
+        return sum((
+            self.automated.weight if self.automated and self.automated.enabled else 0,
+            self.review.weight if self.review and self.review.enabled else 0,
+            self.manual.weight if self.manual and self.manual.enabled else 0))
+
+    @property
+    def points_automated(self) -> Decimal:
+        return self.automated.weight / self._category_weight * self.points
+
+    @property
+    def points_review(self) -> Decimal:
+        return self.review.weight / self._category_weight * self.points
+
+    @property
+    def points_manual(self) -> Decimal:
+        return self.manual.weight / self._category_weight * self.points
+
     @classmethod
     def load(cls, data: dict, problem: "Problem" = None) -> "ProblemGrading":
         """Deserialize each method."""
 
         if data["automated"] is not None and data["automated"].get("name") is None:
-            data["automated"]["name"] = "Automated Tests"
+            data["automated"]["name"] = "Automated tests"
         if data["review"] is not None and data["review"].get("name") is None:
-            data["review"]["name"] = "Code Review"
+            data["review"]["name"] = "Code review"
         if data["manual"] is not None and data["manual"].get("name") is None:
-            data["manual"]["name"] = "Manual Grading"
+            data["manual"]["name"] = "Manual grading"
 
         return cls(
             problem=problem,

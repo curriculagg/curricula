@@ -44,7 +44,8 @@ class GradingProblem(Problem):
 
         self = GradingProblem.load(data)
         self.path = path
-        self.grader = import_grader(path)
+        if self.grading.is_automated:
+            self.grader = import_grader(path)
         return self
 
 

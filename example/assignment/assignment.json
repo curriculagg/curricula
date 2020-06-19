@@ -29,7 +29,14 @@
     {
       "path": "problem/only_grading",
       "grading": {
-        "weight": 1
+        "weight": 1,
+        "points": 25
+      }
+    },
+    {
+      "path": "problem/manual",
+      "grading": {
+        "weight": 2
       }
     },
     {
@@ -47,7 +54,8 @@
     {
       "path": "problem/exploits",
       "grading": {
-        "weight": 1
+        "weight": 1,
+        "enabled": false
       }
     },
     {

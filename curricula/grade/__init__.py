@@ -28,7 +28,7 @@ def run(assignment: GradingAssignment, target_path: Path, **options) -> Assignme
 
     start = timeit.default_timer()
 
-    for problem in assignment.problems:
+    for problem in filter(lambda p: p.grading.is_automated, assignment.problems):
         log.debug(f"running problem {problem.short}")
         context = Context(
             target_path=target_path,

@@ -5,7 +5,7 @@
 [%- if problem.grading.is_automated %]
 
 Tests score: [[ problem_summary.tests_fraction ]] ([[ problem_summary.tests_percentage | percentage ]])
-[% if problem_summary.setup_failed %]
+[%- if problem_summary.setup_failed %]
 Setup failed:
 
 ```
@@ -16,4 +16,14 @@ Setup failed:
 - -[[ result.task.details.get("weight", 1) ]] for [[ result.task.name ]]
 [%- endfor -%]
 [%- endif -%]
-[% endif %]
+[% endif -%]
+
+[%- if problem.grading.is_review %]
+
+Review score: ?/[[ problem.grading.points_review | pretty ]]
+[%- endif -%]
+
+[%- if problem.grading.is_manual %]
+
+Manual score: ?/[[ problem.grading.points_manual | pretty ]]
+[%- endif -%]

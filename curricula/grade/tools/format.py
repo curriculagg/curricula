@@ -7,10 +7,10 @@ from decimal import Decimal
 from ..task import Result
 from ..models import GradingAssignment, GradingProblem
 from ..report import AssignmentReport, ProblemReport
-from ...library.template import jinja2_create_environment, DEFAULT_TEMPLATE_PATH
+from ...library.template import jinja2_create_environment, DEFAULT_TEMPLATE_PATH, pretty
 
 
-def sum_weights(results: Iterable[Result]) -> float:
+def sum_weights(results: Iterable[Result]) -> Decimal:
     return sum(Decimal(str(result.task.details.get("weight", "1"))) for result in results)
 
 
@@ -66,7 +66,13 @@ class ProblemSummary:
 
         numerator = sum_weights(self.test_results_passing)
         denominator = numerator + sum_weights(self.test_results_failing)
-        return f"{numerator}/{denominator}"
+        if denominator == 0:
+            return f"0/0"
+        points_automated = self.problem.grading.points_automated
+        if denominator != points_automated:
+            numerator = numerator / denominator * points_automated
+            denominator = points_automated
+        return f"{pretty(numerator)}/{pretty(denominator)}"
 
     @property
     def tests_percentage(self) -> Decimal:

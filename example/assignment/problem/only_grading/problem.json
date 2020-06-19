@@ -15,9 +15,7 @@
     "automated": {
       "weight": "1"
     },
-    "review": {
-      "weight": "1"
-    },
+    "review": null,
     "manual": null
   }
 }

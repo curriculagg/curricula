@@ -11,6 +11,14 @@ log = logging.getLogger("curricula")
 DEFAULT_TEMPLATE_PATH = root.parent.joinpath("template")
 
 
+def pretty(decimal: Decimal) -> str:
+    """Display a number nicely."""
+
+    if int(decimal) == decimal:
+        return str(int(decimal))
+    return str(decimal)
+
+
 def percentage(d: Any, digits: int = 1) -> str:
     """Convert a float to a nice-looking percentage."""
 
@@ -22,6 +30,7 @@ def percentage(d: Any, digits: int = 1) -> str:
 
 
 JINJA2_FILTERS = {
+    "pretty": pretty,
     "datetime": lambda d: d.strftime("%B %d, %Y at %H:%M"),
     "date": lambda d: d.strftime("%B %d, %Y"),
     "percentage": percentage,
