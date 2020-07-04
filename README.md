@@ -146,7 +146,7 @@ In this task, we store the source path of file we're expecting to grade for this
 However, if it doesn't exist, the returned `CorrectnessResult` will indicate to the grader that this task has failed, and that any dependent tasks should not be executed.
 
 ```python
-@grader.setup.build(dependency="check_hello_world", sanity=True)
+@grader.setup.compile(dependency="check_hello_world", sanity=True)
 def build_hello_world(hello_world_source_path: Path, resources: dict):
     """Compile the program with gcc."""
 

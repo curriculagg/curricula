@@ -5,7 +5,7 @@ from pathlib import Path
 root = Path(__file__).absolute().parent
 sys.path.insert(0, str(root.parent))
 
-from curricula.compile import build
+from curricula.compile import compile
 from curricula.grade import run
 from curricula.grade.models import GradingAssignment
 from curricula.grade.tools.format import format_report_markdown
@@ -22,14 +22,14 @@ def main():
     # Build
     template_path = root.joinpath("template")
     artifacts_path = root.joinpath("artifacts", "assignment")
-    build(
+    compile(
         # template_path=template_path,
         assignment_path=root.joinpath("assignment"),
         artifacts_path=artifacts_path)
 
     # Grade
     assignment = GradingAssignment.read(artifacts_path.joinpath(Paths.GRADING))
-    report = run(assignment, target_path=artifacts_path.joinpath(Paths.SOLUTION))
+    report = run(assignment, assignment_path=artifacts_path.joinpath(Paths.SOLUTION))
 
     # Output
     report_path = root.joinpath("reports", "report.json")

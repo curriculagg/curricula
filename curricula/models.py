@@ -120,15 +120,15 @@ class ProblemGrading(Model):
 
     @property
     def is_automated(self) -> bool:
-        return self.automated is not None and self.automated.enabled
+        return self.automated is not None and self.automated.enabled and self.problem.grading.enabled
 
     @property
     def is_review(self) -> bool:
-        return self.review is not None and self.review.enabled
+        return self.review is not None and self.review.enabled and self.problem.grading.enabled
 
     @property
     def is_manual(self) -> bool:
-        return self.manual is not None and self.manual.enabled
+        return self.manual is not None and self.manual.enabled and self.problem.grading.enabled
 
     def percentage(self) -> Decimal:
         return self.weight / self.problem.assignment.grading.weight()

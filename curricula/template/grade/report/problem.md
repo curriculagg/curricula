@@ -5,18 +5,30 @@
 [%- if problem.grading.is_automated %]
 
 Tests score: [[ problem_summary.tests_fraction ]] ([[ problem_summary.tests_percentage | percentage ]])
-[%- if problem_summary.setup_failed %]
-Setup failed:
+[%- if problem_summary.setup_results_errored %]
 
-```
-[[ problem_summary.setup_error | trim ]]
-```
-[% else %]
+The followed tasks failed:
+
+[% for result in problem_summary.setup_results_errored -%]
+- Task [[ result.task.name ]] failed: [[ result.error.description ]]
+[%- if result.error.traceback %]
+  
+    ```
+    [[ result.error.traceback | indent | trim ]]
+    ```
+[%- endif %]
+[% endfor %]
+[% endif %]
+
+[%- if problem_summary.test_results_failing %]
+
+The following tests did not pass:
+
 [%- for result in problem_summary.test_results_failing %]
 - -[[ result.task.details.get("weight", 1) ]] for [[ result.task.name ]]
 [%- endfor -%]
 [%- endif -%]
-[% endif -%]
+[%- endif -%]
 
 [%- if problem.grading.is_review %]
 

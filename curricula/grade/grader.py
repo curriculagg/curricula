@@ -1,5 +1,4 @@
-import itertools
-from typing import List, Iterable, Tuple, Iterator
+from typing import List, Tuple, Iterator
 from dataclasses import dataclass, field
 
 from .report import ProblemReport
@@ -14,6 +13,11 @@ from .test import TestStage
 from .teardown import TeardownStage
 from .configuration.sandbox import SandboxConfiguration
 from .configuration.output import OutputConfiguration
+
+import typing
+
+if typing.TYPE_CHECKING:
+    from .models import GradingProblem
 
 
 def fulfills_dependencies(task: Task, report: ProblemReport):
@@ -45,6 +49,9 @@ class Grader:
 
     sandbox: SandboxConfiguration = field(default_factory=SandboxConfiguration)
     output: OutputConfiguration = field(default_factory=OutputConfiguration)
+
+    # Populated internally
+    problem: "GradingProblem" = field(init=False)
 
     @property
     def stages(self) -> Tuple[GraderStage, ...]:

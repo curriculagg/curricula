@@ -12,18 +12,19 @@ from pathlib import Path
 from typing import Iterator, Iterable, Tuple
 
 from ..log import log
-from .models import GradingAssignment
+from .models import GradingAssignment, GradingProblem
 from .report import AssignmentReport
 from .resource import Context
 
 
-ROOT = Path(__file__).absolute().parent
+root = Path(__file__).absolute().parent
+include = root.joinpath("include")
 
 
-def run(assignment: GradingAssignment, target_path: Path, **options) -> AssignmentReport:
+def run(assignment: GradingAssignment, assignment_path: Path, **options) -> AssignmentReport:
     """Run all tests on a submission and return a dict of results."""
 
-    log.info(f"running {target_path}")
+    log.info(f"running {assignment_path}")
     reports = AssignmentReport()
 
     start = timeit.default_timer()
@@ -31,9 +32,8 @@ def run(assignment: GradingAssignment, target_path: Path, **options) -> Assignme
     for problem in filter(lambda p: p.grading.is_automated, assignment.problems):
         log.debug(f"running problem {problem.short}")
         context = Context(
-            target_path=target_path,
-            problem_short=problem.short,
-            problem_target_path=target_path.joinpath(problem.relative_path),
+            assignment_path=assignment_path,
+            problem_path=assignment_path.joinpath(problem.relative_path),
             options=options)
 
         reports[problem.short] = problem.grader.run(context=context)

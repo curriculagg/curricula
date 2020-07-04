@@ -159,7 +159,11 @@ def build_resources(context: Context, assignment: CompilationAssignment) -> Path
     log.debug("compiling resources")
     resources_path = context.artifacts_path.joinpath(Paths.RESOURCES)
     resources_path.mkdir(exist_ok=True)
-    aggregate_contents(assignment, Paths.RESOURCES, resources_path, rename=lambda p: p.path)
+    aggregate_contents(
+        assignment=assignment,
+        contents_relative_path=Paths.RESOURCES,
+        destination_path=resources_path,
+        rename=lambda p: p.relative_path)
     return resources_path
 
 
@@ -272,8 +276,8 @@ BUILD_STEPS = (
     build_grading)
 
 
-@timed("build", printer=log.info)
-def build(assignment_path: Path, artifacts_path: Path, template_path: Path = None, **options):
+@timed("compile", printer=log.info)
+def compile(assignment_path: Path, artifacts_path: Path, template_path: Path = None, **options):
     """Build the assignment at a given path."""
 
     if template_path is None:

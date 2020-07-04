@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Callable
 
 from ...shared import Files
-from .. import validate
+from ..validate import assignment_validator, problem_validator
 
 
 Validator = Callable[[str], bool]
@@ -25,9 +25,17 @@ def validate_datetime(string: str) -> bool:
     return True
 
 
-def validate_numeric(string: str) -> bool:
+def validate_integral(string: str) -> bool:
     if not string.isnumeric():
         print("Must be a positive integer!")
+        return False
+    return True
+
+
+def validate_float(string: str) -> bool:
+    try:
+        float(string)
+    except ValueError:
         return False
     return True
 
@@ -81,11 +89,14 @@ def input_assignment_json() -> dict:
                 "assigned": validated_input("Date assigned (YYYY-MM-DD HH:MM:SS): ", validate_datetime),
                 "due": validated_input("Date due (YYYY-MM-DD HH:MM:SS): ", validate_datetime)
             },
-            "problems": []
+            "problems": [],
+            "grading": {
+                "points": int(validated_input("Total points: ", validate_integral))
+            }
         }
 
         try:
-            jsonschema.validate(assignment_json, validate.ASSIGNMENT_SCHEMA)
+            assignment_validator.validate(assignment_json)
         except jsonschema.ValidationError as exception:
             print(exception)
         else:
@@ -122,15 +133,21 @@ def input_problem_json() -> dict:
                 *map(str.strip, input("Optional topics (separated by comma): ").split(","))
             ],
             "grading": {
-                "minutes": int(validated_input("Minutes to grade (integral): ", validate_numeric)),
-                "automated": validated_input("Automated grading (y/n): ", validate_boolean).lower().startswith("y"),
-                "review": validated_input("Code review (y/n): ", validate_boolean).lower().startswith("y"),
-                "manual": validated_input("Manual grading (y/n): ", validate_boolean).lower().startswith("y"),
+                "points": int(validated_input("Total points: ", validate_integral)),
+                "automated": None,
+                "review": None,
+                "manual": None,
             }
         }
 
+        for category in "automated", "review", "manual":
+            if validated_input(f"Requires {category} grading (y/n): ", validate_boolean).lower().startswith("y"):
+                problem_json["grading"][category] = {
+                    "weight": validated_input(f"Weight for {category}: ", validate_float)
+                }
+
         try:
-            jsonschema.validate(problem_json, validate.PROBLEM_SCHEMA)
+            problem_validator.validate(problem_json)
         except jsonschema.ValidationError as exception:
             print(exception)
         else:
@@ -155,14 +172,15 @@ def generate_problem_interactive(assignment_path: Path, problem_relative_path: P
         return
 
     while True:
-        weight = validated_input("Problem weight (0.0-1.0): ", validate_weight)
         assignment_json["problems"].append({
             "path": str(problem_relative_path),
-            "percentage": float(weight)
+            "grading": {
+                "weight": validated_input("Problem weight: ", validate_float)
+            }
         })
 
         try:
-            jsonschema.validate(assignment_json, validate.ASSIGNMENT_SCHEMA)
+            assignment_validator.validate(assignment_json)
         except jsonschema.ValidationError as exception:
             print(exception)
         else:

@@ -10,7 +10,7 @@ from ..shared import Files
 from .grader import Grader
 
 
-def import_grader(grading_path: Path, grader_name: str = "grader") -> Grader:
+def import_grader(grading_path: Path, problem: "GradingProblem", grader_name: str = "grader") -> Grader:
     """Import a grader from a tests file."""
 
     # Try to import as a module
@@ -28,6 +28,7 @@ def import_grader(grading_path: Path, grader_name: str = "grader") -> Grader:
 
     spec.loader.exec_module(module)
     grader = getattr(module, grader_name)
+    grader.problem = problem
 
     return grader
 
@@ -45,7 +46,7 @@ class GradingProblem(Problem):
         self = GradingProblem.load(data)
         self.path = path
         if self.grading.is_automated:
-            self.grader = import_grader(path)
+            self.grader = import_grader(path, self)
         return self
 
 

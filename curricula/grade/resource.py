@@ -13,12 +13,19 @@ class Resource:
 
 
 @dataclass(eq=False)
+class Target:
+    """"""
+
+
+@dataclass(eq=False)
 class Context(Resource):
     """The execution context of the tests."""
 
-    target_path: Path
-    problem_short: str
-    problem_target_path: Path
+    # Problem specific
+    problem_path: Path
+    assignment_path: Path
+
+    # Extra options
     options: Dict[str, str] = field(default_factory=dict)
 
 

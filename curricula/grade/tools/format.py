@@ -1,10 +1,10 @@
 import json
-from typing import Dict, Iterable, Iterator
+from typing import Dict, Iterable, Iterator, List, Tuple
 from pathlib import Path
 from dataclasses import dataclass, field
 from decimal import Decimal
 
-from ..task import Result
+from ..task import Result, Error
 from ..models import GradingAssignment, GradingProblem
 from ..report import AssignmentReport, ProblemReport
 from ...library.template import jinja2_create_environment, DEFAULT_TEMPLATE_PATH, pretty
@@ -21,6 +21,9 @@ class ProblemSummary:
     problem: GradingProblem
     report: ProblemReport
 
+    # Setup issues
+    setup_results_errored: List[Result] = field(default_factory=list)
+
     # Main tests
     test_results_count: int = 0
     test_results_passing_count: int = 0
@@ -30,11 +33,16 @@ class ProblemSummary:
         """Cache some common analysis of the data."""
 
         for task in self.problem.grader.tasks:
+            result = self.report[task.name]
+
+            if task.stage == "setup":
+                if result.error is not None:
+                    self.setup_results_errored.append(result)
+
             if task.stage == "test":
                 self.test_results_count += 1
 
                 # Increment counts
-                result = self.report[task.name]
                 if result.passing and result.complete:
                     self.test_results_passing_count += 1
                 else:

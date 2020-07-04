@@ -13,6 +13,7 @@ class Error:
     """An error raised during a task."""
 
     description: str
+    traceback: str = None
     location: str = None
     suggestion: str = None
     expected: Any = None
@@ -21,6 +22,7 @@ class Error:
     def dump(self) -> dict:
         return dict(
             description=self.description,
+            traceback=self.traceback,
             location=self.location,
             suggestion=self.suggestion,
             expected=self.expected,

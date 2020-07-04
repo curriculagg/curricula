@@ -297,17 +297,23 @@ class ExecutableOutputFileMixin(OutputTest, Configurable):
 CompareNativeTest = Callable[[Any], CorrectnessResult]
 
 
-class CompareExitCodeOutputTest(OutputTest):
+class CompareExitCodeOutputTest(OutputTest, Configurable):
     """Checks program exit code."""
 
     test: CompareNativeTest
     resources: Optional[dict]
     details: Optional[dict]
 
-    def __init__(self, *, expected_code: int = None, expected_codes: Container[int] = None, **kwargs):
+    expected_code: int
+    expected_codes: Container[int]
+
+    def __init__(self, *, expected_code: int = none, expected_codes: Container[int] = none, **kwargs):
         """Set expected codes."""
 
         super().__init__(**kwargs)
+
+        expected_code = self.resolve("expected_code", local=expected_code, default=None)
+        expected_codes = self.resolve("expected_codes", local=expected_codes, default=None)
 
         if expected_code is None and expected_codes is None:
             raise ValueError("Runtime exit test requires either expected status or statuses!")
