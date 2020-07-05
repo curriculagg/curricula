@@ -4,14 +4,14 @@ from pathlib import Path
 from dataclasses import dataclass, field
 from decimal import Decimal
 
-from ..task import Result, Error
+from ..task import Result
 from ..models import GradingAssignment, GradingProblem
 from ..report import AssignmentReport, ProblemReport
 from ...library.template import jinja2_create_environment, DEFAULT_TEMPLATE_PATH, pretty
 
 
 def sum_weights(results: Iterable[Result]) -> Decimal:
-    return sum(Decimal(str(result.task.details.get("weight", "1"))) for result in results)
+    return sum(result.task.weight for result in results)
 
 
 @dataclass(eq=False)
@@ -29,6 +29,10 @@ class ProblemSummary:
     test_results_passing_count: int = 0
     test_results_failing_count: int = 0
 
+    # Weight
+    test_results_passing_weight: Decimal = Decimal(0)
+    test_results_total_weight: Decimal = Decimal(0)
+
     def __post_init__(self):
         """Cache some common analysis of the data."""
 
@@ -43,8 +47,10 @@ class ProblemSummary:
                 self.test_results_count += 1
 
                 # Increment counts
+                self.test_results_total_weight += task.weight
                 if result.passing and result.complete:
                     self.test_results_passing_count += 1
+                    self.test_results_passing_weight += task.weight
                 else:
                     self.test_results_failing_count += 1
 
@@ -70,20 +76,29 @@ class ProblemSummary:
 
     @property
     def tests_fraction(self) -> str:
+        return f"{self.test_results_passing_count}/{self.test_results_passing_count + self.test_results_failing_count}"
+
+    @property
+    def points_ratio(self) -> Decimal:
+        return self.problem.grading.points_automated / self.test_results_total_weight
+
+    @property
+    def points_fraction(self) -> str:
         """Format a fraction."""
 
-        numerator = sum_weights(self.test_results_passing)
-        denominator = numerator + sum_weights(self.test_results_failing)
+        numerator = self.test_results_passing_weight
+        denominator = self.test_results_total_weight
         if denominator == 0:
             return f"0/0"
-        points_automated = self.problem.grading.points_automated
-        if denominator != points_automated:
-            numerator = numerator / denominator * points_automated
-            denominator = points_automated
+
+        points_total_automated = self.problem.grading.points_automated
+        if denominator != points_total_automated:
+            numerator = numerator / denominator * points_total_automated
+            denominator = points_total_automated
         return f"{pretty(numerator)}/{pretty(denominator)}"
 
     @property
-    def tests_percentage(self) -> Decimal:
+    def points_percentage(self) -> Decimal:
         """Compute the percentage."""
 
         if self.test_results_count == 0:

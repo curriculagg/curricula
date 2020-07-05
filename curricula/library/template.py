@@ -16,7 +16,7 @@ def pretty(decimal: Decimal) -> str:
 
     if int(decimal) == decimal:
         return str(int(decimal))
-    return str(decimal)
+    return str(round(decimal, 3))
 
 
 def percentage(d: Any, digits: int = 1) -> str:

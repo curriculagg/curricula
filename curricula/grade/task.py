@@ -2,6 +2,7 @@ import abc
 import inspect
 from typing import Dict, TypeVar, Generic, Any, Type, Set
 from dataclasses import dataclass, field
+from decimal import Decimal
 
 from ..log import log
 
@@ -143,6 +144,7 @@ class Task(Generic[TResult]):
     runnable: Runnable[Result]
     details: dict
 
+    weight: Decimal
     source: str
 
     Result: Type[Result]
@@ -176,14 +178,3 @@ class Task(Generic[TResult]):
             return self.Result(complete=True, passing=True)
 
         return result
-
-    def dump(self):
-        """Return the task as JSON serializable."""
-
-        return dict(
-            name=self.name,
-            description=self.description,
-            stage=self.stage,
-            kind=self.kind,
-            dependencies=self.dependencies.dump(),
-            details=self.details)
