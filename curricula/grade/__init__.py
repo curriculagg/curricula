@@ -14,7 +14,7 @@ from typing import Iterator, Iterable, Tuple
 from ..log import log
 from .models import GradingAssignment, GradingProblem
 from .report import AssignmentReport
-from .resource import Context
+from .resource import Submission, Context
 
 
 root = Path(__file__).absolute().parent
@@ -31,12 +31,11 @@ def run(assignment: GradingAssignment, assignment_path: Path, **options) -> Assi
 
     for problem in filter(lambda p: p.grading.is_automated, assignment.problems):
         log.debug(f"running problem {problem.short}")
-        context = Context(
+        submission = Submission(
             assignment_path=assignment_path,
-            problem_path=assignment_path.joinpath(problem.relative_path),
-            options=options)
-
-        reports[problem.short] = problem.grader.run(context=context)
+            problem_path=assignment_path.joinpath(problem.relative_path))
+        context = Context(options=options)
+        reports[problem.short] = problem.grader.run(submission=submission, context=context)
 
     elapsed = timeit.default_timer() - start
     log.debug(f"finished in {round(elapsed, 5)} seconds")

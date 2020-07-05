@@ -6,6 +6,6 @@ from .test.correctness import CorrectnessResult
 from .test.complexity import ComplexityResult
 from .test.memory import MemoryResult
 from .teardown.cleanup import CleanupResult
-from .resource import Context, File, Executable, ExecutableFile
+from .resource import Submission, Context, File, Executable, ExecutableFile
 from .setup import SetupResult
 from .teardown import TeardownResult
