@@ -2,19 +2,20 @@
 #define CURRICULA_HPP
 
 #include <cstring>
+#include <iostream>
 
 #define PASS return 0;
 #define FAIL return 1;
 
-#define EXPECT_TRUE(condition) if (!(condition)) { FAIL }
-#define EXPECT_FALSE(condition) if (condition) { FAIL }
-#define EXPECT_EQUAL(left, right) if ((left) != (right)) { FAIL }
-#define EXPECT_UNEQUAL(left, right) if ((left) == (right)) { FAIL }
+#define EXPECT_TRUE(condition) if (!(condition)) { std::cerr << "failed on line " << __LINE__ << std::endl; FAIL; }
+#define EXPECT_FALSE(condition) if (condition) { std::cerr << "failed on line " << __LINE__ << std::endl; FAIL; }
+#define EXPECT_EQUAL(left, right) if ((left) != (right)) { std::cerr << "failed on line " << __LINE__ << std::endl; FAIL; }
+#define EXPECT_UNEQUAL(left, right) if ((left) == (right)) { std::cerr << "failed on line " << __LINE__ << std::endl; FAIL; }
 #define EXPECT_THROW(statement)\
 {\
     bool caught = false;\
     try { statement; } catch (...) { caught = true; }\
-    if (!caught) { FAIL }\
+    if (!caught) { std::cerr << "failed on line " << __LINE__ << std::endl; FAIL; }\
 }
 
 #define TEST(name) if (strcmp(argv[1], #name) == 0)

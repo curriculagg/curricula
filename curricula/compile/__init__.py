@@ -41,7 +41,7 @@ from .validate import validate
 from .models import CompilationProblem, CompilationAssignment
 
 from ..shared import Files, Paths
-from ..library.template import jinja2_create_environment, DEFAULT_TEMPLATE_PATH
+from ..library.template import jinja2_create_environment
 from ..library import files
 from ..library.utility import timed
 from ..log import log
@@ -280,11 +280,10 @@ BUILD_STEPS = (
 def compile(assignment_path: Path, artifacts_path: Path, template_path: Path = None, **options):
     """Build the assignment at a given path."""
 
-    if template_path is None:
-        log.debug("using default templates")
-        template_path = DEFAULT_TEMPLATE_PATH
-
     log.info(f"building {assignment_path} to {artifacts_path}")
+
+    if template_path is not None:
+        log.info(f"custom template path is {template_path}")
 
     # Validate first
     validate(assignment_path)
@@ -296,9 +295,9 @@ def compile(assignment_path: Path, artifacts_path: Path, template_path: Path = N
     # Set up templating
     problem_template_paths = {f"problem/{problem.short}": problem.path for problem in assignment.problems}
     environment = jinja2_create_environment(
-        template=template_path,
-        assignment=assignment_path,
-        **problem_template_paths)
+        assignment_template_path=assignment_path,
+        problem_template_paths=problem_template_paths,
+        custom_template_path=template_path)
     environment.filters.update(get_readme=get_readme, has_readme=has_readme)
 
     # Define context

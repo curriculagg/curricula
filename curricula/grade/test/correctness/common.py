@@ -125,35 +125,31 @@ class CompareBytesOutputTest(OutputTest, Configurable):
         """
 
         super().__init__(**kwargs)
-        self.test_out = test_out
-        self.test_out_lines = test_out_lines
-        self.test_out_lines_lists = test_out_lines_lists
+        self.test_out = self.resolve("test_out", local=test_out, default=None)
+        self.test_out_lines = self.resolve("test_out_lines", local=test_out_lines, default=None)
+        self.test_out_lines_lists = self.resolve("test_out_lines_lists", local=test_out_lines_lists, default=None)
 
         # Check resolvable
-        resolvable = tuple(filter(None, map(self.is_resolvable, (
-            "test_out",
-            "test_out_lines",
-            "test_out_lines_lists"))))
+        resolvable = tuple(filter(None, (self.test_out, self.test_out_lines, self.test_out_lines_lists)))
         if len(resolvable) != 1:
             raise ValueError("Exactly one of test_out, test_out_lines, or test_out_lines_lists is required")
 
-        self.out_transform = out_transform
-        self.out_line_transform = out_line_transform
+        self.out_transform = self.resolve("out_transform", local=out_transform, default=identity)
+        self.out_line_transform = self.resolve("out_line_transform", local=out_line_transform, default=identity)
 
     def test(self, out: bytes):
         """Call the corresponding test."""
 
-        if self.is_resolvable("test_out"):
+        if self.test_out is not None:
             return self._test_out(out)
         return self._test_out_lines_lists(out)
 
     def _test_out(self, out: bytes) -> CorrectnessResult:
         """Shortcut compare for one option block text."""
 
-        out_transform = self.resolve("out_transform", default=identity)
         test_out = self.resolve("test_out")
 
-        out = out_transform(out)
+        out = self.out_transform(out)
         passing = out == test_out
         error = None if passing else Error(
             description="unexpected output",
@@ -164,15 +160,12 @@ class CompareBytesOutputTest(OutputTest, Configurable):
     def _test_out_lines_lists(self, out: bytes) -> CorrectnessResult:
         """Used to compare multiple options of lists of lines."""
 
-        out_transform = self.resolve("out_transform", default=identity)
-        out_line_transform = self.resolve("out_line_transform", default=identity)
-        test_out_lines = self.resolve("test_out_lines", default=None)
-        if test_out_lines is not None:
-            test_out_lines_lists = [test_out_lines]
+        if self.test_out_lines is not None:
+            test_out_lines_lists = [self.test_out_lines]
         else:
-            test_out_lines_lists = self.resolve("test_out_lines_lists")
+            test_out_lines_lists = self.test_out_lines_lists
 
-        out_lines = tuple(map(out_line_transform, out_transform(out).split(b"\n")))
+        out_lines = tuple(map(self.out_line_transform, self.out_transform(out).split(b"\n")))
         passing = any(lines_match(out_lines, lines) for lines in test_out_lines_lists)
         error = None if passing else Error(
             description="unexpected output",

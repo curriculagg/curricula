@@ -10,6 +10,12 @@ def relative(root: Path, path: Path):
     return Path(*path.parts[len(root.parts):])
 
 
+def move(source: Path, destination: Path):
+    """Rename a file."""
+
+    shutil.move(str(source), str(destination))
+
+
 def copy(source: Path, destination: Path):
     """Copy a file."""
 
