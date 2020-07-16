@@ -53,6 +53,7 @@ class GradingProblem(Problem):
 class GradingAssignment(Assignment):
     """Additional details for grading."""
 
+    path: Path
     problems: List[GradingProblem]
 
     @classmethod
@@ -68,4 +69,6 @@ class GradingAssignment(Assignment):
                 data=problem_data,
                 path=path.joinpath(problem_data["short"])))
 
-        return GradingAssignment.load(data, problems=problems)
+        assignment = GradingAssignment.load(data, problems=problems)
+        assignment.path = path
+        return assignment
