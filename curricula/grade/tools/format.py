@@ -1,48 +1,113 @@
 import json
-from typing import Dict, List, Optional, Iterable
+from typing import Dict, Iterable, Iterator, List
 from pathlib import Path
 from dataclasses import dataclass, field
 from decimal import Decimal
 
-from ...library.template import jinja2_create_environment
-from ...shared import Files
+from ..task import Result
+from ..models import GradingAssignment, GradingProblem
+from ..report import AssignmentReport, ProblemReport
+from ...library.template import jinja2_create_environment, DEFAULT_TEMPLATE_PATH, pretty
 
 
-def sum_weights(tasks: Iterable[dict]) -> float:
-    return sum(Decimal(str(task["details"].get("weight", "1"))) for task in tasks)
+def sum_weights(results: Iterable[Result]) -> Decimal:
+    return sum(result.task.weight for result in results)
 
 
 @dataclass(eq=False)
 class ProblemSummary:
     """A summary of the results from a problem's cases."""
 
-    # Main tests
-    tests_total: int = 0
-    tests_correct: List[dict] = field(default_factory=list)
-    tests_incorrect: List[dict] = field(default_factory=list)
+    problem: GradingProblem
+    report: ProblemReport
 
-    # Setup problems
-    setup_failed: bool = False
-    setup_failed_task: Optional[str] = None
-    setup_error_description: Optional[str] = None
-    setup_error_traceback: Optional[str] = None
+    # Setup issues
+    setup_results_errored: List[Result] = field(default_factory=list)
+
+    # Main tests
+    test_results_count: int = 0
+    test_results_passing_count: int = 0
+    test_results_failing_count: int = 0
+
+    # Weight
+    test_results_passing_weight: Decimal = Decimal(0)
+    test_results_total_weight: Decimal = Decimal(0)
+
+    def __post_init__(self):
+        """Cache some common analysis of the data."""
+
+        for task in self.problem.grader.tasks:
+            result = self.report[task.name]
+
+            if not result.visible:
+                continue
+
+            if task.stage == "setup":
+                if result.error is not None:
+                    self.setup_results_errored.append(result)
+
+            if task.stage == "test":
+                self.test_results_count += 1
+
+                # Increment counts
+                self.test_results_total_weight += task.weight
+                if result.passing and result.complete:
+                    self.test_results_passing_count += 1
+                    self.test_results_passing_weight += task.weight
+                else:
+                    self.test_results_failing_count += 1
+
+    @property
+    def test_results_passing(self) -> Iterator[Result]:
+        """Count the number of tests that passed."""
+
+        for task in self.problem.grader.tasks:
+            if task.stage == "test":
+                result = self.report[task.name]
+                if result.passing and result.complete:
+                    yield result
+
+    @property
+    def test_results_failing(self) -> Iterator[Result]:
+        """Count the number of tests that passed."""
+
+        for task in self.problem.grader.tasks:
+            if task.stage == "test":
+                result = self.report[task.name]
+                if not result.passing or not result.complete:
+                    yield result
 
     @property
     def tests_fraction(self) -> str:
-        """Format a fraction."""
-
-        numerator = sum_weights(self.tests_correct)
-        denominator = numerator + sum_weights(self.tests_incorrect)
-        return f"{numerator}/{denominator}"
+        return f"{self.test_results_passing_count}/{self.test_results_passing_count + self.test_results_failing_count}"
 
     @property
-    def tests_percentage(self) -> Decimal:
+    def points_ratio(self) -> Decimal:
+        return self.problem.grading.points_automated / self.test_results_total_weight
+
+    @property
+    def points_fraction(self) -> str:
+        """Format a fraction."""
+
+        numerator = self.test_results_passing_weight
+        denominator = self.test_results_total_weight
+        if denominator == 0:
+            return f"0/0"
+
+        points_total_automated = self.problem.grading.points_automated
+        if denominator != points_total_automated:
+            numerator = numerator / denominator * points_total_automated
+            denominator = points_total_automated
+        return f"{pretty(numerator)}/{pretty(denominator)}"
+
+    @property
+    def points_percentage(self) -> Decimal:
         """Compute the percentage."""
 
-        if self.tests_total == 0:
+        if self.test_results_count == 0:
             return Decimal("0")
-        numerator = sum_weights(self.tests_correct)
-        denominator = numerator + sum_weights(self.tests_incorrect)
+        numerator = sum_weights(self.test_results_passing)
+        denominator = numerator + sum_weights(self.test_results_failing)
         return Decimal(numerator) / Decimal(denominator)
 
 
@@ -53,46 +118,33 @@ class ReportSummary:
     problems: Dict[str, ProblemSummary] = field(default_factory=dict)
 
 
-def summarize(grading_schema: dict, report: dict) -> ReportSummary:
+def summarize(assignment: GradingAssignment, report: AssignmentReport) -> ReportSummary:
     """Do a summary for a single student."""
 
     summary = ReportSummary()
-    for problem_short, problem in grading_schema["problems"].items():
-        problem_summary = summary.problems[problem_short] = ProblemSummary()
-        for task_name, task in problem["tasks"].items():
-            result = report[problem_short][task_name]
-
-            # Diagnose any issues in setup
-            if task["stage"] == "setup":
-                if not result["complete"] or not result["passing"]:
-                    problem_summary.setup_failed = True
-                    problem_summary.setup_failed_task = task_name
-                    if "error" in result["details"]:
-                        problem_summary.setup_error_description = result["details"]["error"]["description"]
-                    elif "runtime" in result["details"]:
-                        problem_summary.setup_error_traceback = result["details"]["runtime"]["stderr"]
-
-            # Problem summary
-            elif task["stage"] == "test":
-                problem_summary.tests_total += 1
-                if result["complete"] and result["passing"]:
-                    problem_summary.tests_correct.append(task)
-                else:
-                    problem_summary.tests_incorrect.append(task)
+    for problem in assignment.problems:
+        if problem.grading.is_automated:
+            summary.problems[problem.short] = ProblemSummary(problem, report[problem.short])
 
     return summary
 
 
-def format_report_markdown(grading_path: Path, template_path: Path, report_path: Path) -> str:
+def format_report_markdown(
+        grading_path: Path,
+        report_path: Path,
+        template_path: Path = None,
+        options: dict = None) -> str:
     """Return a formatted markdown report."""
 
-    environment = jinja2_create_environment()
-    with grading_path.joinpath(Files.GRADING).open() as file:
-        grading_schema = json.load(file)
-    with report_path.open() as file:
-        report = json.load(file)
-    summary = summarize(grading_schema, report)
+    if template_path is None:
+        template_path = DEFAULT_TEMPLATE_PATH
 
-    environment.globals.update(schema=grading_schema, summary=summary)
-    report_template = environment.from_string(template_path.read_text())
+    environment = jinja2_create_environment(custom_template_path=template_path)
+    assignment = GradingAssignment.read(grading_path)
+    with report_path.open() as file:
+        report = AssignmentReport.load(json.load(file), assignment)
+    summary = summarize(assignment, report)
+
+    environment.globals.update(assignment=assignment, summary=summary, options=options)
+    report_template = environment.get_template("template:grade/report/assignment.md")
     return report_template.render() + "\n"

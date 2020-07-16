@@ -1,4 +1,5 @@
 from typing import List, Type, Callable
+from decimal import Decimal
 
 from .task import Task, Runnable, Dependencies, Result
 from .exception import GraderException
@@ -33,7 +34,9 @@ class GraderStage:
 
             name = details.pop("name", None) or runnable.__qualname__
             description = details.pop("description", None) or runnable.__doc__
+            weight = Decimal(details.pop("weight", 1))
             dependencies = Dependencies.from_details(details)
+            tags = details.pop("tags", set())
 
             for existing_task in self.tasks:
                 if existing_task.name == name:
@@ -48,7 +51,9 @@ class GraderStage:
                 dependencies=dependencies,
                 runnable=runnable,
                 details=details,
+                weight=weight,
                 source=get_source_location(2),
+                tags=tags,
                 Result=result_type))
             return runnable
 

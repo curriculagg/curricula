@@ -1,0 +1,48 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "title": "Assignment",
+  "description": "Schema for assignment metadata.",
+  "type": "object",
+  "properties": {
+    "short": {
+      "type": "string",
+      "minLength": 1
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "authors": {
+      "type": "array",
+      "items": {
+        "$ref": "author.schema.json"
+      }
+    },
+    "dates": {
+      "$ref": "assignment_dates.schema.json"
+    },
+    "problems": {
+      "type": "array",
+      "items": {
+        "$ref": "problem_reference.schema.json"
+      }
+    },
+    "grading": {
+      "$ref": "assignment_grading.schema.json"
+    },
+    "notes": {
+      "type": "string",
+      "minLength": 1
+    },
+    "meta": {
+      "$ref": "assignment_meta.schema.json"
+    }
+  },
+  "required": [
+    "title",
+    "authors",
+    "dates",
+    "problems",
+    "grading"
+  ]
+}

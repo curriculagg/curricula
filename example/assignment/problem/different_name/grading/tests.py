@@ -14,7 +14,7 @@ grader = Grader()
 def check_name_different(context: Context, resources: dict) -> CheckResult:
     """Check whether name_different.cpp has been submitted."""
 
-    resources["name_different_source_path"] = context.problem_directory.joinpath("name_different.cpp")
+    resources["name_different_source_path"] = context.problem_target_path.joinpath("name_different.cpp")
     return check_file_exists(resources["name_different_source_path"])
 
 
@@ -22,7 +22,7 @@ def check_name_different(context: Context, resources: dict) -> CheckResult:
 def build_name_different(context: Context, name_different_source_path: Path, resources: dict) -> BuildResult:
     """Compile the program with gcc."""
 
-    resources["name_different_path"] = context.problem_directory.joinpath("name_different")
+    resources["name_different_path"] = context.problem_target_path.joinpath("name_different")
     result, resources["name_different"] = build_gpp_executable(
         source_path=name_different_source_path,
         destination_path=resources["name_different_path"],

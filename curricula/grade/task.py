@@ -2,6 +2,7 @@ import abc
 import inspect
 from typing import Dict, TypeVar, Generic, Any, Type, Set
 from dataclasses import dataclass, field
+from decimal import Decimal
 
 from ..log import log
 
@@ -13,6 +14,7 @@ class Error:
     """An error raised during a task."""
 
     description: str
+    traceback: str = None
     location: str = None
     suggestion: str = None
     expected: Any = None
@@ -21,10 +23,15 @@ class Error:
     def dump(self) -> dict:
         return dict(
             description=self.description,
+            traceback=self.traceback,
             location=self.location,
             suggestion=self.suggestion,
             expected=self.expected,
             received=self.received)
+
+    @classmethod
+    def load(cls, data: dict) -> "Error":
+        return cls(**data)
 
 
 @dataclass(init=False, eq=False)
@@ -36,6 +43,7 @@ class Result(Exception, abc.ABC):
     details: dict
     error: Error
 
+    visible: bool = field(init=False, default=True)
     kind: str = field(init=False)
     task: "Task" = field(init=False, repr=False)
 
@@ -58,14 +66,39 @@ class Result(Exception, abc.ABC):
             complete=self.complete,
             passing=self.passing,
             details=self.details,
+            kind=self.kind,
+            visible=self.visible,
             error=self.error.dump() if self.error is not None else self.error,
-            task=self.task.name)
+            task_name=self.task.name)
+
+    @classmethod
+    def load(cls, data: dict, task: "Task") -> "Result":
+        """Load a result from serialized."""
+
+        data.pop("task_name")
+        kind = data.pop("kind")
+        visible = data.pop("visible")
+        error_data = data.pop("error")
+        error = Error.load(error_data) if error_data is not None else None
+        self = cls(**data, error=error)
+        self.visible = visible
+        self.task = task
+        self.kind = kind
+        return self
 
     @classmethod
     def incomplete(cls):
         """Return a mock result if the task was not completed."""
 
         return cls(complete=False, passing=False)
+
+    @classmethod
+    def hidden(cls):
+        """Return a mock result if the task was not completed."""
+
+        base = cls.incomplete()
+        base.visible = False
+        return base
 
 
 TResult = TypeVar("TResult", bound=Result)
@@ -125,7 +158,10 @@ class Task(Generic[TResult]):
     runnable: Runnable[Result]
     details: dict
 
+    weight: Decimal
     source: str
+
+    tags: Set[str]
 
     Result: Type[Result]
 
@@ -158,14 +194,3 @@ class Task(Generic[TResult]):
             return self.Result(complete=True, passing=True)
 
         return result
-
-    def dump(self):
-        """Return the task as JSON serializable."""
-
-        return dict(
-            name=self.name,
-            description=self.description,
-            stage=self.stage,
-            kind=self.kind,
-            dependencies=self.dependencies.dump(),
-            details=self.details)

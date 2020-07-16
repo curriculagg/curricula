@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "title": "Problem",
+  "description": "Schema for a single problem.",
+  "properties": {
+    "short": {
+      "type": "string",
+      "minLength": 1
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "relative_path": {
+      "type": "string"
+    },
+    "grading": {
+      "$ref": "problem_grading.schema.json"
+    },
+    "authors": {
+      "type": "array",
+      "items": {
+        "$ref": "author.schema.json"
+      }
+    },
+    "topics": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minItems": 1
+      }
+    },
+    "notes": {
+      "type": "string",
+      "minLength": 1
+    },
+    "difficulty": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "required": [
+    "title",
+    "grading",
+    "authors"
+  ]
+}

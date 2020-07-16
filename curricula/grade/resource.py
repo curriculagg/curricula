@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from ..library import process
 from ..library import callgrind
 
-__all__ = ("Resource", "Context", "File", "Executable", "ExecutableFile")
+__all__ = ("Resource", "Submission", "Context", "File", "Executable", "ExecutableFile")
 
 
 class Resource:
@@ -13,12 +13,17 @@ class Resource:
 
 
 @dataclass(eq=False)
-class Context(Resource):
+class Submission(Resource):
     """The execution context of the tests."""
 
-    target_path: Path
-    problem_short: str
-    problem_directory: Path
+    problem_path: Path
+    assignment_path: Path
+
+
+@dataclass(eq=False)
+class Context(Resource):
+    """Extra context."""
+
     options: Dict[str, str] = field(default_factory=dict)
 
 

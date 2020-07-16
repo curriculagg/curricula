@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "title": "Assignment Meta",
+  "description": "Metadata about the build.",
+  "type": "object",
+  "properties": {
+    "built": {
+      "$ref": "datetime.schema.json"
+    },
+    "curricula": {
+      "type": "string"
+    }
+  }
+}

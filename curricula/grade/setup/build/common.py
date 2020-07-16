@@ -27,22 +27,25 @@ def build_gpp_executable(
         *map(str, source_paths),
         timeout=timeout)
 
-    error = None
+    error_description = None
+    error_traceback = None
     if runtime.raised_exception:
-        error = f"error invoking compilation of {source_path.parts[-1]}: {runtime.exception.description}"
+        error_description = f"error invoking compilation of {source_path.parts[-1]}: {runtime.exception.description}"
     elif runtime.timed_out:
-        error = f"timed out while compiling {source_path.parts[-1]}"
+        error_description = f"timed out while compiling {source_path.parts[-1]}"
     elif runtime.code != 0:
         if runtime.stderr:
-            error = runtime.stderr.decode(errors="replace")
+            error_description = "failed to compile"
+            error_traceback = runtime.stderr.decode(errors="replace")
         else:
-            error = "nonzero status code"
+            error_description = "nonzero status code during compilation"
     elif not destination_path.exists():
-        error = f"build did not produce {destination_path.parts[-1]}"
+        error_description = f"build did not produce {destination_path.parts[-1]}"
 
     # If the build failed
-    if error is not None:
-        return BuildResult(passing=False, runtime=runtime.dump(), error=Error(description=error)), None
+    if error_description is not None:
+        error = Error(description=error_description, traceback=error_traceback)
+        return BuildResult(passing=False, runtime=runtime.dump(), error=error), None
 
     # Chmod
     add_mode(destination_path, stat.S_IXOTH)

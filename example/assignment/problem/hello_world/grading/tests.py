@@ -14,15 +14,15 @@ grader = Grader()
 def check_hello_world(context: Context, resources: dict) -> CheckResult:
     """Check whether hello_world.cpp has been submitted."""
 
-    resources["hello_world_source_path"] = context.problem_directory.joinpath("hello_world.cpp")
+    resources["hello_world_source_path"] = context.problem_target_path.joinpath("hello_world.cpp")
     return check_file_exists(resources["hello_world_source_path"])
 
 
-@grader.setup.build(dependency="check_hello_world", sanity=True)
+@grader.setup.build(passing={"check_hello_world"}, sanity=True)
 def build_hello_world(context: Context, hello_world_source_path: Path, resources: dict) -> BuildResult:
     """Compile the program with gcc."""
 
-    resources["hello_world_path"] = context.problem_directory.joinpath("hello_world")
+    resources["hello_world_path"] = context.problem_target_path.joinpath("hello_world")
     result, resources["hello_world"] = build_gpp_executable(
         source_path=hello_world_source_path,
         destination_path=resources["hello_world_path"],
@@ -30,7 +30,7 @@ def build_hello_world(context: Context, hello_world_source_path: Path, resources
     return result
 
 
-@grader.test.correctness(dependency="build_hello_world")
+@grader.test.correctness(passing={"build_hello_world"})
 def test_hello_world_output(hello_world: ExecutableFile) -> CorrectnessResult:
     """Check if the program outputs as expected."""
 
@@ -38,7 +38,7 @@ def test_hello_world_output(hello_world: ExecutableFile) -> CorrectnessResult:
     return CorrectnessResult(passing=runtime.stdout.strip() == b"Hello, world!", runtime=runtime.dump())
 
 
-@grader.teardown.cleanup(dependency="build_hello_world")
+@grader.teardown.cleanup(passing={"build_hello_world"})
 def cleanup_hello_world(hello_world_path: Path):
     """Clean up executables."""
 

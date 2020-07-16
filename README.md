@@ -135,7 +135,7 @@ Finally, we'll initialize the grader for this problem.
 def check_hello_world(context: Context, resources: dict):
     """Check whether hello_world.cpp has been submitted."""
 
-    resources["hello_world_source_path"] = context.problem_directory.joinpath("hello_world.cpp")
+    resources["hello_world_source_path"] = context.problem_target_path.joinpath("hello_world.cpp")
     return check_file_exists(resources["hello_world_source_path"])
 ```
 
@@ -146,7 +146,7 @@ In this task, we store the source path of file we're expecting to grade for this
 However, if it doesn't exist, the returned `CorrectnessResult` will indicate to the grader that this task has failed, and that any dependent tasks should not be executed.
 
 ```python
-@grader.setup.build(dependency="check_hello_world", sanity=True)
+@grader.setup.compile(dependency="check_hello_world", sanity=True)
 def build_hello_world(hello_world_source_path: Path, resources: dict):
     """Compile the program with gcc."""
 

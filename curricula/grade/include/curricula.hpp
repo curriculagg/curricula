@@ -2,21 +2,25 @@
 #define CURRICULA_HPP
 
 #include <cstring>
+#include <iostream>
 
-#define EXPECT_TRUE(condition) if (!(condition)) { return 1; }
-#define EXPECT_FALSE(condition) if (condition) { return 1; }
-#define EXPECT_EQUAL(left, right) if ((left) != (right)) { return 1; }
-#define EXPECT_UNEQUAL(left, right) if ((left) == (right)) { return 1; }
+#define PASS return 0;
+#define FAIL return 1;
+
+#define EXPECT_TRUE(condition) if (!(condition)) { std::cerr << "failed on line " << __LINE__ << std::endl; FAIL; }
+#define EXPECT_FALSE(condition) if (condition) { std::cerr << "failed on line " << __LINE__ << std::endl; FAIL; }
+#define EXPECT_EQUAL(left, right) if ((left) != (right)) { std::cerr << "failed on line " << __LINE__ << std::endl; FAIL; }
+#define EXPECT_UNEQUAL(left, right) if ((left) == (right)) { std::cerr << "failed on line " << __LINE__ << std::endl; FAIL; }
 #define EXPECT_THROW(statement)\
 {\
     bool caught = false;\
     try { statement; } catch (...) { caught = true; }\
-    if (!caught) { return 1; }\
+    if (!caught) { std::cerr << "failed on line " << __LINE__ << std::endl; FAIL; }\
 }
 
-#define TEST(name) if (strcmp(argv[1], "test_" #name) == 0)
+#define TEST(name) if (strcmp(argv[1], #name) == 0)
 
-#define HARNESS_BEGIN \
+#define TESTS_BEGIN \
 int main(int argc, char** argv)\
 {\
     if (argc < 2)\
@@ -24,7 +28,7 @@ int main(int argc, char** argv)\
         return 3;\
     }\
 
-#define HARNESS_END \
+#define TESTS_END \
     return 2;\
 }
 

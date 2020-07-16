@@ -1,7 +1,10 @@
 from pathlib import Path
 from typing import Iterator
 
-__all__ = ("Paths", "Files")
+__all__ = ("version", "Paths", "Files")
+
+
+version = "0.1.0"
 
 
 class Paths:
@@ -13,6 +16,7 @@ class Paths:
     SOLUTION = Path("solution")
     GRADING = Path("grading")
     ASSETS = Path("assets")
+    INCLUDE = Path("grade", "include")
 
     @classmethod
     def glob_assignments(cls, material_path: Path) -> Iterator[Path]:
@@ -29,3 +33,4 @@ class Files:
     PROBLEM = "problem.json"
     GRADING = "grading.json"
     TESTS = "tests.py"
+    INDEX = "index.json"

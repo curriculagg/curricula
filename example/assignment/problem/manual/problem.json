@@ -11,8 +11,10 @@
   ],
   "grading": {
     "minutes": 5,
-    "automated": false,
-    "review": false,
-    "manual": true
+    "automated": null,
+    "review": null,
+    "manual": {
+      "weight": "1"
+    }
   }
 }

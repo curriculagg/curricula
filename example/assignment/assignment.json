@@ -10,39 +10,66 @@
     "assigned": "2019-01-01 00:00:00",
     "due": "2020-12-31 11:59:59"
   },
+  "grading": {
+    "points": 100
+  },
   "problems": [
     {
       "path": "problem/hello_world",
-      "percentage": 0.1
+      "grading": {
+        "weight": 1
+      }
     },
     {
       "path": "problem/more_cases",
-      "percentage": 0.1
+      "grading": {
+        "weight": 1
+      }
     },
     {
       "path": "problem/only_grading",
-      "percentage": 0.1
+      "grading": {
+        "weight": 1,
+        "points": 25
+      }
+    },
+    {
+      "path": "problem/manual",
+      "grading": {
+        "weight": 2
+      }
     },
     {
       "path": "problem/build_error",
-      "percentage": 0.1
+      "grading": {
+        "weight": 1
+      }
     },
     {
       "path": "problem/with_stdin",
-      "percentage": 0.1
+      "grading": {
+        "weight": 1
+      }
     },
     {
       "path": "problem/exploits",
-      "percentage": 0.1
+      "grading": {
+        "weight": 1,
+        "enabled": false
+      }
     },
     {
       "path": "problem/different_name",
-      "percentage": 0.1,
-      "directory": "name_different/"
+      "grading": {
+        "weight": 1
+      },
+      "relative_path": "name_different/"
     },
     {
       "path": "problem/problem_weights",
-      "percentage": 0.1
+      "grading": {
+        "weight": 1
+      }
     }
   ]
 }
