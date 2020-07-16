@@ -35,7 +35,9 @@ def run(assignment: GradingAssignment, assignment_path: Path, **options) -> Assi
             assignment_path=assignment_path,
             problem_path=assignment_path.joinpath(problem.relative_path))
         context = Context(options=options)
-        reports[problem.short] = problem.grader.run(submission=submission, context=context)
+        reports[problem.short] = problem.grader.run(
+            resources={"submission": submission, "context": context},
+            options=options)
 
     elapsed = timeit.default_timer() - start
     log.debug(f"finished in {round(elapsed, 5)} seconds")

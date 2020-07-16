@@ -1,5 +1,5 @@
 import json
-from typing import Dict, Iterable, Iterator, List, Tuple
+from typing import Dict, Iterable, Iterator, List
 from pathlib import Path
 from dataclasses import dataclass, field
 from decimal import Decimal
@@ -38,6 +38,9 @@ class ProblemSummary:
 
         for task in self.problem.grader.tasks:
             result = self.report[task.name]
+
+            if not result.visible:
+                continue
 
             if task.stage == "setup":
                 if result.error is not None:
@@ -126,18 +129,22 @@ def summarize(assignment: GradingAssignment, report: AssignmentReport) -> Report
     return summary
 
 
-def format_report_markdown(grading_path: Path, report_path: Path, template_path: Path = None) -> str:
+def format_report_markdown(
+        grading_path: Path,
+        report_path: Path,
+        template_path: Path = None,
+        options: dict = None) -> str:
     """Return a formatted markdown report."""
 
     if template_path is None:
         template_path = DEFAULT_TEMPLATE_PATH
 
-    environment = jinja2_create_environment(template=template_path)
+    environment = jinja2_create_environment(custom_template_path=template_path)
     assignment = GradingAssignment.read(grading_path)
     with report_path.open() as file:
         report = AssignmentReport.load(json.load(file), assignment)
     summary = summarize(assignment, report)
 
-    environment.globals.update(assignment=assignment, summary=summary)
+    environment.globals.update(assignment=assignment, summary=summary, options=options)
     report_template = environment.get_template("template:grade/report/assignment.md")
     return report_template.render() + "\n"

@@ -43,6 +43,7 @@ class Result(Exception, abc.ABC):
     details: dict
     error: Error
 
+    visible: bool = field(init=False, default=True)
     kind: str = field(init=False)
     task: "Task" = field(init=False, repr=False)
 
@@ -66,6 +67,7 @@ class Result(Exception, abc.ABC):
             passing=self.passing,
             details=self.details,
             kind=self.kind,
+            visible=self.visible,
             error=self.error.dump() if self.error is not None else self.error,
             task_name=self.task.name)
 
@@ -75,7 +77,11 @@ class Result(Exception, abc.ABC):
 
         data.pop("task_name")
         kind = data.pop("kind")
-        self = cls(**data)
+        visible = data.pop("visible")
+        error_data = data.pop("error")
+        error = Error.load(error_data) if error_data is not None else None
+        self = cls(**data, error=error)
+        self.visible = visible
         self.task = task
         self.kind = kind
         return self
@@ -85,6 +91,14 @@ class Result(Exception, abc.ABC):
         """Return a mock result if the task was not completed."""
 
         return cls(complete=False, passing=False)
+
+    @classmethod
+    def hidden(cls):
+        """Return a mock result if the task was not completed."""
+
+        base = cls.incomplete()
+        base.visible = False
+        return base
 
 
 TResult = TypeVar("TResult", bound=Result)
@@ -146,6 +160,8 @@ class Task(Generic[TResult]):
 
     weight: Decimal
     source: str
+
+    tags: Set[str]
 
     Result: Type[Result]
 

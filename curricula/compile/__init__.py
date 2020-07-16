@@ -295,8 +295,8 @@ def compile(assignment_path: Path, artifacts_path: Path, template_path: Path = N
     # Set up templating
     problem_template_paths = {f"problem/{problem.short}": problem.path for problem in assignment.problems}
     environment = jinja2_create_environment(
-        assignment_template_path=assignment_path,
-        problem_template_paths=problem_template_paths,
+        assignment_path=assignment_path,
+        problem_paths=problem_template_paths,
         custom_template_path=template_path)
     environment.filters.update(get_readme=get_readme, has_readme=has_readme)
 

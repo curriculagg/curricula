@@ -24,7 +24,7 @@ def compare_output(template_path: Path, report_path: Path) -> str:
     with report_path.open() as file:
         reports = json.load(file)
 
-    environment = jinja2_create_environment(template=template_path)
+    environment = jinja2_create_environment(custom_template_path=template_path)
     difference_template = environment.get_template("template:grade/compare/difference.html")
     compare_template = environment.get_template("template:grade/compare/compare.html")
 

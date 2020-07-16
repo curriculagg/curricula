@@ -36,6 +36,7 @@ class GraderStage:
             description = details.pop("description", None) or runnable.__doc__
             weight = Decimal(details.pop("weight", 1))
             dependencies = Dependencies.from_details(details)
+            tags = details.pop("tags", set())
 
             for existing_task in self.tasks:
                 if existing_task.name == name:
@@ -52,6 +53,7 @@ class GraderStage:
                 details=details,
                 weight=weight,
                 source=get_source_location(2),
+                tags=tags,
                 Result=result_type))
             return runnable
 

@@ -50,7 +50,7 @@ class ProblemReport(Resource):
 
         return self.lookup[item]
 
-    def add(self, result: Result, hidden: bool = False):
+    def add(self, result: Result):
         """Add a result to the report.
 
         If we hide a result, it will not be serialized into the final report.
@@ -59,8 +59,7 @@ class ProblemReport(Resource):
         """
 
         self.lookup[result.task.name] = result
-        if not hidden:
-            self.results.append(result)
+        self.results.append(result)
 
     def dump(self) -> dict:
         """Dump the result to a serializable format."""

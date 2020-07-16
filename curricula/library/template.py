@@ -38,8 +38,8 @@ JINJA2_FILTERS = {
 
 
 def jinja2_create_environment(
-        assignment_template_path: Path,
-        problem_template_paths: Dict[str, Path],
+        assignment_path: Path = None,
+        problem_paths: Dict[str, Path] = None,
         default_template_path: Path = DEFAULT_TEMPLATE_PATH,
         custom_template_path: Path = None) -> jinja2.Environment:
     """Configure a jinja2 environment."""
@@ -47,8 +47,14 @@ def jinja2_create_environment(
     log.debug("creating jinja2 environment")
 
     # Create a loader in the order of arguments
-    mapping = {key: jinja2.FileSystemLoader(str(path)) for key, path in problem_template_paths.items()}
-    mapping["assignment"] = jinja2.FileSystemLoader(str(assignment_template_path))
+    mapping = {}
+    if assignment_path:
+        mapping["assignment"] = jinja2.FileSystemLoader(str(assignment_path))
+    if problem_paths:
+        for key, path in problem_paths.items():
+            mapping[key] = jinja2.FileSystemLoader(str(path))
+
+    # Add custom templates
     mapping["template"] = jinja2.ChoiceLoader(
         ([jinja2.FileSystemLoader(str(custom_template_path))] if custom_template_path is not None else []) +
         [jinja2.FileSystemLoader(str(default_template_path))])
