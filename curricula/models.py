@@ -12,13 +12,13 @@ from .shared import *
 TZ = datetime.timezone(offset=datetime.timedelta(seconds=time.timezone))
 
 
-def parse_datetime(s: str) -> datetime.datetime:
+def deserialize_datetime(s: str) -> datetime.datetime:
     """Deserialize our standard format."""
 
     return datetime.datetime.strptime(s, "%Y-%m-%d %H:%M:%S").replace(tzinfo=TZ)
 
 
-def dump_datetime(d: datetime) -> str:
+def serialize_datetime(d: datetime) -> str:
     """Serialize back."""
 
     return d.strftime("%Y-%m-%d %H:%M:%S")
@@ -248,15 +248,15 @@ class AssignmentDates(Model):
         """Convert to datetime."""
 
         return cls(
-            assigned=parse_datetime(data["assigned"]),
-            due=parse_datetime(data["due"]),)
+            assigned=deserialize_datetime(data["assigned"]),
+            due=deserialize_datetime(data["due"]),)
 
     def dump(self) -> dict:
         """Specifically serialize the datetime."""
 
         return dict(
-            assigned=dump_datetime(self.assigned),
-            due=dump_datetime(self.due),)
+            assigned=serialize_datetime(self.assigned),
+            due=serialize_datetime(self.due),)
 
 
 @dataclass(eq=False)
@@ -301,14 +301,14 @@ class AssignmentMeta(Model):
         """Deserialize datetime."""
 
         return cls(
-            built=parse_datetime(data["built"]),
+            built=deserialize_datetime(data["built"]),
             curricula=data["curricula"],)
 
     def dump(self) -> dict:
         """Serialize the datetime here too."""
 
         return dict(
-            built=dump_datetime(self.built),
+            built=serialize_datetime(self.built),
             curricula=version,)
 
 

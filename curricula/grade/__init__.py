@@ -25,19 +25,17 @@ def run(assignment: GradingAssignment, assignment_path: Path, **options) -> Assi
     """Run all tests on a submission and return a dict of results."""
 
     log.info(f"running {assignment_path}")
-    reports = AssignmentReport()
+    reports = AssignmentReport.create(assignment)
 
     start = timeit.default_timer()
 
+    context = Context(options=options)
     for problem in filter(lambda p: p.grading.is_automated, assignment.problems):
         log.debug(f"running problem {problem.short}")
         submission = Submission(
             assignment_path=assignment_path,
             problem_path=assignment_path.joinpath(problem.relative_path))
-        context = Context(options=options)
-        reports[problem.short] = problem.grader.run(
-            resources={"submission": submission, "context": context},
-            options=options)
+        reports[problem.short] = problem.grader.run(context=context, submission=submission)
 
     elapsed = timeit.default_timer() - start
     log.debug(f"finished in {round(elapsed, 5)} seconds")

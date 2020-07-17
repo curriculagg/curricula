@@ -19,15 +19,14 @@ def get_diagnostics(grading_path: Path, assignment_report_path: Path) -> str:
     for problem in assignment.problems:
         problem_report = assignment_report[problem.short]
 
-        visible_tasks = list(filter(lambda p: p.visible, problem_report.results))
-        results_passing_count = sum(1 for _ in filter(lambda p: p.passing, visible_tasks))
+        results_passing_count = sum(1 for _ in filter(lambda p: p.passing, problem_report.results))
 
-        output.print(f"Problem {problem.short}: {results_passing_count}/{len(visible_tasks)}")
+        output.print(f"Problem {problem.short}: {results_passing_count}/{len(problem_report.results)}")
         output.indent()
 
         for task in problem.grader.tasks:
-            result = problem_report[task.name]
-            if not result.visible:
+            result = problem_report.get(task.name)
+            if result is None:
                 continue
 
             if not result.complete:

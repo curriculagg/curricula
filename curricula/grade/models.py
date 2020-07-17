@@ -71,4 +71,5 @@ class GradingAssignment(Assignment):
 
         assignment = GradingAssignment.load(data, problems=problems)
         assignment.path = path
+
         return assignment

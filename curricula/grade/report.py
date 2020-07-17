@@ -1,10 +1,12 @@
 from __future__ import annotations
 
-from typing import List, Dict, Iterable
+import datetime
+from typing import List, Dict, Iterable, Optional
 from dataclasses import dataclass, field
 
 from .resource import Resource
 from .task import Task, Result
+from ..models import serialize_datetime
 
 import typing
 
@@ -36,6 +38,7 @@ class ProblemReportStatistics:
 class ProblemReport(Resource):
     """The final report returned by the testing framework."""
 
+    partial: bool = field(default=False)
     results: List[Result] = field(default_factory=list)
     lookup: Dict[str, Result] = field(default_factory=dict, init=False)
 
@@ -50,6 +53,11 @@ class ProblemReport(Resource):
 
         return self.lookup[item]
 
+    def get(self, item: str) -> Optional[Result]:
+        """Mimic lookup get."""
+
+        return self.lookup.get(item)
+
     def add(self, result: Result):
         """Add a result to the report.
 
@@ -58,8 +66,8 @@ class ProblemReport(Resource):
         report to know about some subset of the tests.
         """
 
-        self.lookup[result.task.name] = result
         self.results.append(result)
+        self.lookup[result.task.name] = result
 
     def dump(self) -> dict:
         """Dump the result to a serializable format."""
@@ -70,7 +78,14 @@ class ProblemReport(Resource):
     def load(cls, data: dict, tasks: Iterable[Task]) -> "ProblemReport":
         """Deserialize, rebinding to provided tasks."""
 
-        return ProblemReport([Result.load(data[task.name], task) for task in tasks])
+        report = ProblemReport()
+        for task in tasks:
+            result_data = data.get(task.name)
+            if result_data is not None:
+                report.add(Result.load(result_data, task))
+            else:
+                report.partial = True
+        return report
 
     def statistics(self) -> ProblemReportStatistics:
         """Run the numbers."""
@@ -92,33 +107,90 @@ class ProblemReport(Resource):
 
 
 @dataclass(eq=False)
+class AssignmentReportMetaAssignment:
+    """Structured data about the origin assignment."""
+
+    short: str
+    # hash: str
+
+    @classmethod
+    def create(cls, assigment: GradingAssignment) -> "AssignmentReportMetaAssignment":
+        return AssignmentReportMetaAssignment(short=assigment.short)
+
+    @classmethod
+    def load(cls, data: dict):
+        return AssignmentReportMetaAssignment(**data)
+
+    def dump(self) -> dict:
+        return dict(short=self.short)
+
+
+@dataclass(eq=False)
+class AssignmentReportMeta:
+    """Metadata associated with a assignment report."""
+
+    assignment: AssignmentReportMetaAssignment
+    timestamp: datetime.datetime
+    partial: bool
+
+    @classmethod
+    def create(cls, assigment: GradingAssignment, partial: bool = False) -> "AssignmentReportMeta":
+        return AssignmentReportMeta(
+            assignment=AssignmentReportMetaAssignment(short=assigment.short),
+            timestamp=datetime.datetime.now(),
+            partial=partial)
+
+    @classmethod
+    def load(cls, data: dict):
+        assignment = AssignmentReportMetaAssignment.load(data.pop("assignment"))
+        return AssignmentReportMeta(assignment=assignment, **data)
+
+    def dump(self) -> dict:
+        return dict(
+            assignment=self.assignment.dump(),
+            timestamp=serialize_datetime(self.timestamp),
+            partial=self.partial)
+
+
+@dataclass(eq=False)
 class AssignmentReport:
     """Aggregation of problem reports."""
 
-    reports: Dict[str, ProblemReport] = field(default_factory=dict)
+    meta: AssignmentReportMeta
+    problems: Dict[str, ProblemReport] = field(default_factory=dict)
 
     def __getitem__(self, item: str) -> ProblemReport:
         """Index problem reports by problem short."""
 
-        return self.reports[item]
+        return self.problems[item]
 
     def __setitem__(self, key: str, value: ProblemReport):
         """Set the result from a problem."""
 
-        self.reports[key] = value
+        self.problems[key] = value
+        self.meta.partial = self.meta.partial or value.partial
 
     def dump(self) -> dict:
         """Serialize as dictionary to shorten rebuild."""
 
-        return {problem_short: problem_report.dump() for problem_short, problem_report in self.reports.items()}
+        problems = {problem_short: problem_report.dump() for problem_short, problem_report in self.problems.items()}
+        return dict(problems=problems, meta=self.meta.dump())
+
+    @classmethod
+    def create(cls, assigment: "GradingAssignment") -> "AssignmentReport":
+        """Create from assignment for metadata."""
+
+        return AssignmentReport(meta=AssignmentReportMeta.create(assigment))
 
     @classmethod
     def load(cls, data: dict, assignment: "GradingAssignment") -> "AssignmentReport":
         """Deserialize and bind to existing tasks."""
 
-        reports = {}
+        meta = AssignmentReportMeta.load(data["meta"])
+        report = AssignmentReport(meta=meta)
+
         for problem in assignment.problems:
             if problem.grading.is_automated:
-                reports[problem.short] = ProblemReport.load(data[problem.short], problem.grader.tasks)
+                report[problem.short] = ProblemReport.load(data["problems"][problem.short], problem.grader.tasks)
 
-        return AssignmentReport(reports)
+        return report

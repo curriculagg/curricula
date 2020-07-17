@@ -136,13 +136,16 @@ def format_report_markdown(
         options: dict = None) -> str:
     """Return a formatted markdown report."""
 
+    assignment = GradingAssignment.read(grading_path)
+    with report_path.open() as file:
+        report = AssignmentReport.load(json.load(file), assignment)
+    if report.meta.partial:
+        return "Cannot format a partial report!"
+
     if template_path is None:
         template_path = DEFAULT_TEMPLATE_PATH
 
     environment = jinja2_create_environment(custom_template_path=template_path)
-    assignment = GradingAssignment.read(grading_path)
-    with report_path.open() as file:
-        report = AssignmentReport.load(json.load(file), assignment)
     summary = summarize(assignment, report)
 
     environment.globals.update(assignment=assignment, summary=summary, options=options)
