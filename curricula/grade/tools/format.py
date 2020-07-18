@@ -139,7 +139,7 @@ def format_report_markdown(
     assignment = GradingAssignment.read(grading_path)
     with report_path.open() as file:
         report = AssignmentReport.load(json.load(file), assignment)
-    if report.meta.partial:
+    if report.partial:
         return "Cannot format a partial report!"
 
     if template_path is None:

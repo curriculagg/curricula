@@ -1,17 +1,16 @@
 from __future__ import annotations
 
 import datetime
-from typing import List, Dict, Iterable, Optional
+from typing import Dict, Optional
 from dataclasses import dataclass, field
 
-from .resource import Resource
-from .task import Task, Result
-from ..models import serialize_datetime
+from .task import Result
+from ..models import serialize_datetime, deserialize_datetime
 
 import typing
 
 if typing.TYPE_CHECKING:
-    from .models import GradingAssignment
+    from .models import GradingAssignment, GradingProblem
 
 
 @dataclass(eq=False)
@@ -35,63 +34,81 @@ class ProblemReportStatistics:
 
 
 @dataclass(eq=False)
-class ProblemReport(Resource):
+class ProblemReportProblemReference:
+    """Reference to original problem."""
+
+    short: str
+
+    def dump(self) -> dict:
+        return dict(short=self.short)
+
+    @classmethod
+    def create(cls, problem: "GradingProblem") -> "ProblemReportProblemReference":
+        return ProblemReportProblemReference(short=problem.short)
+
+    @classmethod
+    def load(cls, data: dict) -> "ProblemReportProblemReference":
+        return ProblemReportProblemReference(**data)
+
+
+@dataclass(eq=False)
+class ProblemReport:
     """The final report returned by the testing framework."""
 
-    partial: bool = field(default=False)
-    results: List[Result] = field(default_factory=list)
-    lookup: Dict[str, Result] = field(default_factory=dict, init=False)
-
-    def __post_init__(self):
-        """Populate lookup if initialized with results."""
-
-        for result in self.results:
-            self.lookup[result.task.name] = result
+    problem: ProblemReportProblemReference
+    results: Dict[str, Result] = field(default_factory=dict)
+    partial: bool = True
 
     def __getitem__(self, item: str) -> Result:
         """Look up a result by task name."""
 
-        return self.lookup[item]
+        return self.results[item]
 
     def get(self, item: str) -> Optional[Result]:
         """Mimic lookup get."""
 
-        return self.lookup.get(item)
+        return self.results.get(item)
 
     def add(self, result: Result):
-        """Add a result to the report.
+        """Add a result to the report."""
 
-        If we hide a result, it will not be serialized into the final report.
-        This is useful for when we don't want someone who's looking at the
-        report to know about some subset of the tests.
-        """
-
-        self.results.append(result)
-        self.lookup[result.task.name] = result
+        self.results[result.task.name] = result
 
     def dump(self) -> dict:
         """Dump the result to a serializable format."""
 
-        return {result.task.name: result.dump() for result in self.results}
+        results = {result.task.name: result.dump() for result in self.results.values()}
+        return dict(problem=self.problem.dump(), results=results, partial=self.partial)
 
     @classmethod
-    def load(cls, data: dict, tasks: Iterable[Task]) -> "ProblemReport":
+    def create(cls, problem: GradingProblem) -> "ProblemReport":
+        """Create a new problem."""
+
+        return ProblemReport(problem=ProblemReportProblemReference.create(problem))
+
+    @classmethod
+    def load(cls, data: dict, problem: GradingProblem) -> "ProblemReport":
         """Deserialize, rebinding to provided tasks."""
 
-        report = ProblemReport()
-        for task in tasks:
-            result_data = data.get(task.name)
+        partial = data["partial"]
+        results = {}
+        for task in problem.grader.tasks:
+            result_data = data["results"].get(task.name)
             if result_data is not None:
-                report.add(Result.load(result_data, task))
+                results[task.name] = Result.load(result_data, task)
             else:
-                report.partial = True
-        return report
+                partial = True
+
+        return ProblemReport(
+            problem=ProblemReportProblemReference.load(data["problem"]),
+            results=results,
+            partial=partial)
 
     def statistics(self) -> ProblemReportStatistics:
         """Run the numbers."""
 
         statistics = ProblemReportStatistics()
-        for result in self.results:
+        for result in self.results.values():
             statistics.tasks_total += 1
             if result.complete:
                 statistics.tasks_complete += 1
@@ -107,57 +124,40 @@ class ProblemReport(Resource):
 
 
 @dataclass(eq=False)
-class AssignmentReportMetaAssignment:
+class AssignmentReportAssignmentReference:
     """Structured data about the origin assignment."""
 
     short: str
     # hash: str
 
-    @classmethod
-    def create(cls, assigment: GradingAssignment) -> "AssignmentReportMetaAssignment":
-        return AssignmentReportMetaAssignment(short=assigment.short)
-
-    @classmethod
-    def load(cls, data: dict):
-        return AssignmentReportMetaAssignment(**data)
-
     def dump(self) -> dict:
         return dict(short=self.short)
 
-
-@dataclass(eq=False)
-class AssignmentReportMeta:
-    """Metadata associated with a assignment report."""
-
-    assignment: AssignmentReportMetaAssignment
-    timestamp: datetime.datetime
-    partial: bool
-
     @classmethod
-    def create(cls, assigment: GradingAssignment, partial: bool = False) -> "AssignmentReportMeta":
-        return AssignmentReportMeta(
-            assignment=AssignmentReportMetaAssignment(short=assigment.short),
-            timestamp=datetime.datetime.now(),
-            partial=partial)
+    def create(cls, assignment: GradingAssignment) -> "AssignmentReportAssignmentReference":
+        return AssignmentReportAssignmentReference(short=assignment.short)
 
     @classmethod
     def load(cls, data: dict):
-        assignment = AssignmentReportMetaAssignment.load(data.pop("assignment"))
-        return AssignmentReportMeta(assignment=assignment, **data)
-
-    def dump(self) -> dict:
-        return dict(
-            assignment=self.assignment.dump(),
-            timestamp=serialize_datetime(self.timestamp),
-            partial=self.partial)
+        return AssignmentReportAssignmentReference(**data)
 
 
 @dataclass(eq=False)
 class AssignmentReport:
     """Aggregation of problem reports."""
 
-    meta: AssignmentReportMeta
+    assignment: AssignmentReportAssignmentReference
     problems: Dict[str, ProblemReport] = field(default_factory=dict)
+    timestamp: datetime.datetime = field(default_factory=datetime.datetime.now)
+    partial: bool = False
+
+    def __post_init__(self):
+        """Check if any initialized problems are partial."""
+
+        for problem in self.problems.values():
+            if problem.partial:
+                self.partial = True
+                break
 
     def __getitem__(self, item: str) -> ProblemReport:
         """Index problem reports by problem short."""
@@ -168,29 +168,38 @@ class AssignmentReport:
         """Set the result from a problem."""
 
         self.problems[key] = value
-        self.meta.partial = self.meta.partial or value.partial
+        self.partial = self.partial or value.partial
 
     def dump(self) -> dict:
         """Serialize as dictionary to shorten rebuild."""
 
         problems = {problem_short: problem_report.dump() for problem_short, problem_report in self.problems.items()}
-        return dict(problems=problems, meta=self.meta.dump())
+        return dict(
+            assignment=self.assignment.dump(),
+            problems=problems,
+            timestamp=serialize_datetime(self.timestamp),
+            partial=self.partial)
 
     @classmethod
     def create(cls, assigment: "GradingAssignment") -> "AssignmentReport":
         """Create from assignment for metadata."""
 
-        return AssignmentReport(meta=AssignmentReportMeta.create(assigment))
+        return AssignmentReport(assignment=AssignmentReportAssignmentReference.create(assigment))
 
     @classmethod
     def load(cls, data: dict, assignment: "GradingAssignment") -> "AssignmentReport":
         """Deserialize and bind to existing tasks."""
 
-        meta = AssignmentReportMeta.load(data["meta"])
-        report = AssignmentReport(meta=meta)
+        assignment_reference = AssignmentReportAssignmentReference.load(data.pop("assignment"))
+        timestamp = deserialize_datetime(data.pop("timestamp"))
 
+        problems = {}
         for problem in assignment.problems:
             if problem.grading.is_automated:
-                report[problem.short] = ProblemReport.load(data["problems"][problem.short], problem.grader.tasks)
+                problems[problem.short] = ProblemReport.load(data["problems"][problem.short], problem)
 
-        return report
+        return AssignmentReport(
+            assignment=assignment_reference,
+            problems=problems,
+            timestamp=timestamp,
+            partial=data["partial"])

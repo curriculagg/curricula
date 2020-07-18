@@ -1,4 +1,3 @@
-import textwrap
 import json
 from pathlib import Path
 
@@ -19,9 +18,9 @@ def get_diagnostics(grading_path: Path, assignment_report_path: Path) -> str:
     for problem in assignment.problems:
         problem_report = assignment_report[problem.short]
 
-        results_passing_count = sum(1 for _ in filter(lambda p: p.passing, problem_report.results))
+        results_passing_count = sum(1 for _ in filter(lambda p: p.passing, problem_report.results.values()))
 
-        output.print(f"Problem {problem.short}: {results_passing_count}/{len(problem_report.results)}")
+        output.print(f"Problem {problem.short}: {results_passing_count}/{len(problem_report.results.values())}")
         output.indent()
 
         for task in problem.grader.tasks:

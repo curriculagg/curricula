@@ -24,8 +24,8 @@ def fulfills_dependencies(task: Task, report: ProblemReport):
     """Convenience."""
 
     return all((
-        all(report.lookup[dependency].passing for dependency in task.dependencies.passing),
-        all(report.lookup[dependency].complete for dependency in task.dependencies.complete)))
+        all(report[dependency].passing for dependency in task.dependencies.passing),
+        all(report[dependency].complete for dependency in task.dependencies.complete)))
 
 
 @dataclass(eq=False, init=False)
@@ -150,7 +150,7 @@ class Grader:
         is_visible = TaskFilter(context, self.problem.short)
 
         # Final report
-        report = ProblemReport()
+        report = ProblemReport.create(self.problem)
 
         # Apply configuration
         log.debug("enabling configurators")
