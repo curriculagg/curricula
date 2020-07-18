@@ -39,9 +39,6 @@ class ProblemSummary:
         for task in self.problem.grader.tasks:
             result = self.report[task.name]
 
-            if not result.visible:
-                continue
-
             if task.stage == "setup":
                 if result.error is not None:
                     self.setup_results_errored.append(result)
@@ -83,7 +80,7 @@ class ProblemSummary:
 
     @property
     def points_ratio(self) -> Decimal:
-        return self.problem.grading.points_automated / self.test_results_total_weight
+        return self.problem.grading.automated.points / self.test_results_total_weight
 
     @property
     def points_fraction(self) -> str:
@@ -94,7 +91,7 @@ class ProblemSummary:
         if denominator == 0:
             return f"0/0"
 
-        points_total_automated = self.problem.grading.points_automated
+        points_total_automated = self.problem.grading.automated.points
         if denominator != points_total_automated:
             numerator = numerator / denominator * points_total_automated
             denominator = points_total_automated

@@ -57,7 +57,7 @@ class ProblemReport:
 
     problem: ProblemReportProblemReference
     results: Dict[str, Result] = field(default_factory=dict)
-    partial: bool = True
+    partial: bool = False
 
     def __getitem__(self, item: str) -> Result:
         """Look up a result by task name."""
@@ -78,7 +78,7 @@ class ProblemReport:
         """Dump the result to a serializable format."""
 
         results = {result.task.name: result.dump() for result in self.results.values()}
-        return dict(problem=self.problem.dump(), results=results, partial=self.partial)
+        return dict(problem=self.problem.dump(), partial=self.partial, results=results)
 
     @classmethod
     def create(cls, problem: GradingProblem) -> "ProblemReport":
@@ -176,9 +176,9 @@ class AssignmentReport:
         problems = {problem_short: problem_report.dump() for problem_short, problem_report in self.problems.items()}
         return dict(
             assignment=self.assignment.dump(),
-            problems=problems,
             timestamp=serialize_datetime(self.timestamp),
-            partial=self.partial)
+            partial=self.partial,
+            problems=problems)
 
     @classmethod
     def create(cls, assigment: "GradingAssignment") -> "AssignmentReport":

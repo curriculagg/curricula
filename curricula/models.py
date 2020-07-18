@@ -6,6 +6,7 @@ from pathlib import Path
 from dataclasses import dataclass, asdict, field
 from typing import Optional, List, Any, Callable, TypeVar
 from abc import ABC, abstractmethod
+from functools import lru_cache
 
 from .shared import *
 
@@ -131,9 +132,12 @@ class ProblemGrading(Model):
         return self.manual is not None and self.manual.enabled and self.problem.grading.enabled
 
     def percentage(self) -> Decimal:
+        """Percentage weight of the problem in the assignment."""
+
         return self.weight / self.problem.assignment.grading.weight()
 
     @property
+    @lru_cache(maxsize=1)
     def _category_weight(self) -> Decimal:
         return sum((
             self.automated.weight if self.automated and self.automated.enabled else 0,
@@ -141,16 +145,16 @@ class ProblemGrading(Model):
             self.manual.weight if self.manual and self.manual.enabled else 0))
 
     @property
-    def points_automated(self) -> Decimal:
-        return self.automated.weight / self._category_weight * self.points
+    def percentage_automated(self) -> Decimal:
+        return self.automated.weight / self._category_weight
 
     @property
-    def points_review(self) -> Decimal:
-        return self.review.weight / self._category_weight * self.points
+    def percentage_review(self) -> Decimal:
+        return self.review.weight / self._category_weight
 
     @property
-    def points_manual(self) -> Decimal:
-        return self.manual.weight / self._category_weight * self.points
+    def percentage_manual(self) -> Decimal:
+        return self.manual.weight / self._category_weight
 
     @classmethod
     def load(cls, data: dict, problem: "Problem" = None) -> "ProblemGrading":
@@ -266,22 +270,17 @@ class AssignmentGrading(Model):
     points: int
     assignment: "Assignment" = field(default=None)
 
-    _weight: Decimal = field(init=False)
-
     @classmethod
     def load(cls, data: dict, assignment: "Assignment" = None) -> "AssignmentGrading":
         """Load from serialized."""
 
         return cls(points=data["points"], assignment=assignment)
 
+    @lru_cache(maxsize=1)
     def weight(self) -> Decimal:
         """Compute cumulative weight of all problems."""
 
-        try:
-            return self._weight
-        except AttributeError:
-            self._weight = sum(problem.grading.weight for problem in self.assignment.problems)
-            return self._weight
+        return sum(problem.grading.weight for problem in self.assignment.problems)
 
     def dump(self) -> dict:
         """Avoid recursion."""

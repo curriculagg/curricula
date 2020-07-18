@@ -1,7 +1,6 @@
 from curricula.grade.shortcuts import *
 
 grader = Grader()
-grader.output.add_required_task_detail("weight", 1)
 
 
 @grader.test.correctness(weight=10)

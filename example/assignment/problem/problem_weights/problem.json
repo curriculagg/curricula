@@ -13,7 +13,8 @@
   "grading": {
     "minutes": 5,
     "automated": {
-      "weight": "1"
+      "weight": "1",
+      "points": "22.2"
     },
     "review": {
       "weight": "1"

@@ -11,18 +11,18 @@ grader = Grader()
 
 
 @grader.setup.check(sanity=True)
-def check_more_cases(context: Context, resources: dict):
+def check_more_cases(submission: Submission, resources: dict):
     """Check if the program exists."""
 
-    resources["more_cases_source_path"] = context.problem_target_path.joinpath("more_cases.cpp")
+    resources["more_cases_source_path"] = submission.problem_path.joinpath("more_cases.cpp")
     return check_file_exists(resources["more_cases_source_path"])
 
 
 @grader.setup.build(passing={"check_more_cases"}, sanity=True)
-def build_more_cases(context: Context, more_cases_source_path: Path, resources: dict):
+def build_more_cases(submission: Submission, more_cases_source_path: Path, resources: dict):
     """Build the program."""
 
-    resources["more_cases_path"] = context.problem_target_path.joinpath("more_cases")
+    resources["more_cases_path"] = submission.problem_path.joinpath("more_cases")
     result, resources["more_cases"] = build_gpp_executable(
         source_path=more_cases_source_path,
         destination_path=resources["more_cases_path"],
@@ -35,7 +35,7 @@ def test_pass(more_cases: ExecutableFile):
     """Test basic pass."""
 
     runtime = more_cases.execute("pass")
-    return CorrectnessResult(passing=runtime.stdout == "pass")
+    return CorrectnessResult(passing=runtime.stdout.strip() == b"pass")
 
 
 @grader.test.correctness(passing={"build_more_cases"})
@@ -43,7 +43,7 @@ def test_fail(more_cases: ExecutableFile):
     """Test basic fail."""
 
     runtime = more_cases.execute("fail")
-    return CorrectnessResult(passing=runtime.stdout == "pass")
+    return CorrectnessResult(passing=runtime.stdout.strip() == b"pass")
 
 
 @grader.test.correctness(passing={"build_more_cases"})
@@ -51,7 +51,7 @@ def test_fault(more_cases: ExecutableFile):
     """Test basic fail."""
 
     runtime = more_cases.execute("fault")
-    return CorrectnessResult(passing=runtime.stdout == "pass")
+    return CorrectnessResult(passing=runtime.stdout.strip() == b"pass")
 
 
 @grader.test.correctness(passing={"build_more_cases"})
@@ -59,7 +59,7 @@ def test_hang(more_cases: ExecutableFile):
     """Test basic fail."""
 
     runtime = more_cases.execute("hang", timeout=1)
-    return CorrectnessResult(passing=runtime.stdout == "pass")
+    return CorrectnessResult(passing=runtime.stdout.strip() == b"pass")
 
 
 @grader.teardown.cleanup(passing={"build_more_cases"})

@@ -17,58 +17,58 @@
     {
       "path": "problem/hello_world",
       "grading": {
-        "weight": 1
+        "weight": "1"
       }
     },
     {
       "path": "problem/more_cases",
       "grading": {
-        "weight": 1
+        "weight": "1"
       }
     },
     {
       "path": "problem/only_grading",
       "grading": {
-        "weight": 1,
+        "weight": "1",
         "points": 25
       }
     },
     {
       "path": "problem/manual",
       "grading": {
-        "weight": 2
+        "weight": "2"
       }
     },
     {
       "path": "problem/build_error",
       "grading": {
-        "weight": 1
+        "weight": "1"
       }
     },
     {
       "path": "problem/with_stdin",
       "grading": {
-        "weight": 1
+        "weight": "1"
       }
     },
     {
       "path": "problem/exploits",
       "grading": {
-        "weight": 1,
+        "weight": "1",
         "enabled": false
       }
     },
     {
       "path": "problem/different_name",
       "grading": {
-        "weight": 1
+        "weight": "1"
       },
       "relative_path": "name_different/"
     },
     {
       "path": "problem/problem_weights",
       "grading": {
-        "weight": 1
+        "weight": "1"
       }
     }
   ]

@@ -8,18 +8,18 @@ grader = Grader()
 
 
 @grader.setup.check(sanity=True)
-def check_build_error(context: Context, resources: dict):
+def check_build_error(submission: Submission, resources: dict):
     """Check if the program exists."""
 
-    resources["build_error_source_path"] = context.problem_target_path.joinpath("build_error.cpp")
+    resources["build_error_source_path"] = submission.problem_path.joinpath("build_error.cpp")
     return check_file_exists(resources["build_error_source_path"])
 
 
 @grader.setup.build(passing={"check_build_error"}, sanity=True)
-def build_build_error(context: Context, build_error_source_path: Path):
+def build_build_error(submission: Submission, build_error_source_path: Path):
     """Build the script."""
 
     result, _ = build_gpp_executable(
         source_path=build_error_source_path,
-        destination_path=context.problem_target_path.joinpath("build_error"))
+        destination_path=submission.problem_path.joinpath("build_error"))
     return result

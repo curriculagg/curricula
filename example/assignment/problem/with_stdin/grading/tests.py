@@ -11,10 +11,10 @@ grader = Grader()
 
 
 @grader.setup.check(sanity=True)
-def check_with_stdin(context: Context, resources: dict) -> CheckResult:
+def check_with_stdin(submission: Submission, resources: dict) -> CheckResult:
     """Check whether with_stdin.cpp has been submitted."""
 
-    resources["with_stdin_source_path"] = context.problem_target_path.joinpath("with_stdin.cpp")
+    resources["with_stdin_source_path"] = submission.problem_path.joinpath("with_stdin.cpp")
     return check_file_exists(resources["with_stdin_source_path"])
 
 

@@ -11,18 +11,18 @@ grader = Grader()
 
 
 @grader.setup.check(sanity=True)
-def check_hello_world(context: Context, resources: dict) -> CheckResult:
+def check_hello_world(submission: Submission, resources: dict) -> CheckResult:
     """Check whether hello_world.cpp has been submitted."""
 
-    resources["hello_world_source_path"] = context.problem_target_path.joinpath("hello_world.cpp")
+    resources["hello_world_source_path"] = submission.problem_path.joinpath("hello_world.cpp")
     return check_file_exists(resources["hello_world_source_path"])
 
 
 @grader.setup.build(passing={"check_hello_world"}, sanity=True)
-def build_hello_world(context: Context, hello_world_source_path: Path, resources: dict) -> BuildResult:
+def build_hello_world(submission: Submission, hello_world_source_path: Path, resources: dict) -> BuildResult:
     """Compile the program with gcc."""
 
-    resources["hello_world_path"] = context.problem_target_path.joinpath("hello_world")
+    resources["hello_world_path"] = submission.problem_path.joinpath("hello_world")
     result, resources["hello_world"] = build_gpp_executable(
         source_path=hello_world_source_path,
         destination_path=resources["hello_world_path"],
