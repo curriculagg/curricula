@@ -1,13 +1,12 @@
 from __future__ import annotations
 
+import typing
 import datetime
 from typing import Dict, Optional
 from dataclasses import dataclass, field
 
 from .task import Result
 from ..models import serialize_datetime, deserialize_datetime
-
-import typing
 
 if typing.TYPE_CHECKING:
     from .models import GradingAssignment, GradingProblem
@@ -103,24 +102,6 @@ class ProblemReport:
             problem=ProblemReportProblemReference.load(data["problem"]),
             results=results,
             partial=partial)
-
-    def statistics(self) -> ProblemReportStatistics:
-        """Run the numbers."""
-
-        statistics = ProblemReportStatistics()
-        for result in self.results.values():
-            statistics.tasks_total += 1
-            if result.complete:
-                statistics.tasks_complete += 1
-            if result.passing:
-                statistics.tasks_passed += 1
-            if result.task.stage == "test":
-                statistics.tests_total += 1
-                if result.complete:
-                    statistics.tests_complete += 1
-                if result.passing:
-                    statistics.tests_passed += 1
-        return statistics
 
 
 @dataclass(eq=False)

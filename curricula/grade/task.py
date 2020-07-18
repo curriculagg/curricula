@@ -1,7 +1,7 @@
 import abc
 import inspect
 from typing import Dict, TypeVar, Generic, Any, Type, Set
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 from decimal import Decimal
 
 from ..log import log
@@ -21,13 +21,7 @@ class Error:
     received: Any = None
 
     def dump(self) -> dict:
-        return dict(
-            description=self.description,
-            traceback=self.traceback,
-            location=self.location,
-            suggestion=self.suggestion,
-            expected=self.expected,
-            received=self.received)
+        return asdict(self)
 
     @classmethod
     def load(cls, data: dict) -> "Error":
@@ -86,6 +80,12 @@ class Result(Exception, abc.ABC):
 
         return cls(complete=False, passing=False)
 
+    @classmethod
+    def default(cls):
+        """Called in special cases if no result is returned."""
+
+        return cls(complete=True, passing=True)
+
 
 TResult = TypeVar("TResult", bound=Result)
 
@@ -126,9 +126,7 @@ class Dependencies:
             complete=cls.normalize_from_details("complete", details))
 
     def dump(self):
-        return dict(
-            passing=list(self.passing),
-            complete=list(self.complete))
+        return dict(passing=list(self.passing), complete=list(self.complete))
 
 
 @dataclass(eq=False)
@@ -146,37 +144,23 @@ class Task(Generic[TResult]):
 
     weight: Decimal
     source: str
-
     tags: Set[str]
 
     Result: Type[Result]
 
-    def __hash__(self):
-        """Used for dictionary building."""
-
-        return id(self)
-
-    def inject(self, resources: dict) -> TResult:
-        """Build injection map for method."""
+    def run(self, resources: Dict[str, Any]) -> TResult:
+        """Do the dependency injection for the runnable."""
 
         dependencies = {}
         for name, parameter in inspect.signature(self.runnable).parameters.items():
             dependency = resources.get(name, parameter.default)
             if dependency == parameter.empty:
-                raise ValueError(f"could not satisfy dependency {name}")
+                raise ValueError(f"caught in {self.name}: could not satisfy dependency {name}")
             dependencies[name] = dependency
-        return self.runnable(**dependencies)
-
-    def run(self, resources: Dict[str, Any]) -> TResult:
-        """Do the dependency injection for the runnable."""
-
-        try:
-            result = self.inject(resources)
-        except ValueError as error:
-            raise ValueError(f"caught in {self.name}: {error}")
+        result = self.runnable(**dependencies)
 
         if result is None:
             log.debug(f"task {self.name} did not return a result")
-            return self.Result(complete=True, passing=True)
+            return self.Result.default()
 
         return result

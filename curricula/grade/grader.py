@@ -83,10 +83,12 @@ def _run(
     for task in tasks:
         log.debug(f"running task {task.name}")
 
-        # Check conditions for whether this case is visible
+        # Check conditions for whether this case is filtered out, if so report is partial
         if not is_visible(task):
             report.partial = True
             continue
+
+        # If we can't run it, mark as incomplete
         elif not fulfills_dependencies(task, report):
             result = task.Result.incomplete()
 
@@ -115,9 +117,10 @@ class Grader:
     test: TestStage = field(default_factory=TestStage)
     teardown: TeardownStage = field(default_factory=TeardownStage)
 
+    # Configuration
     sandbox: SandboxConfiguration = field(default_factory=SandboxConfiguration)
 
-    # Populated internally
+    # Populated on import
     problem: "GradingProblem" = field(init=False)
 
     @property

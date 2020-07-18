@@ -9,20 +9,24 @@ from ..report import AssignmentReport
 def get_diagnostics(grading_path: Path, assignment_report_path: Path) -> str:
     """Check if tests passed, displaying errors."""
 
+    # Load the assignment
     assignment = GradingAssignment.read(grading_path)
     with assignment_report_path.open() as file:
         assignment_report = AssignmentReport.load(json.load(file), assignment)
 
+    # Create buffer
     output = Printer()
 
+    # Iterate problems
     for problem in assignment.problems:
         problem_report = assignment_report[problem.short]
-
         results_passing_count = sum(1 for _ in filter(lambda p: p.passing, problem_report.results.values()))
 
+        # Problem summary header
         output.print(f"Problem {problem.short}: {results_passing_count}/{len(problem_report.results.values())}")
-        output.indent()
 
+        # Iterate results
+        output.indent()
         for task in problem.grader.tasks:
             result = problem_report.get(task.name)
             if result is None:
