@@ -27,11 +27,9 @@ class ProblemSummary:
     # Main tests
     test_results_count: int = 0
     test_results_passing_count: int = 0
-    test_results_failing_count: int = 0
 
     # Weight
     test_results_passing_weight: Decimal = Decimal(0)
-    test_results_total_weight: Decimal = Decimal(0)
 
     def __post_init__(self):
         """Cache some common analysis of the data."""
@@ -47,12 +45,9 @@ class ProblemSummary:
                 self.test_results_count += 1
 
                 # Increment counts
-                self.test_results_total_weight += task.weight
                 if result.passing and result.complete:
                     self.test_results_passing_count += 1
                     self.test_results_passing_weight += task.weight
-                else:
-                    self.test_results_failing_count += 1
 
     @property
     def test_results_passing(self) -> Iterator[Result]:
@@ -75,19 +70,15 @@ class ProblemSummary:
                     yield result
 
     @property
-    def tests_fraction(self) -> str:
-        return f"{self.test_results_passing_count}/{self.test_results_passing_count + self.test_results_failing_count}"
-
-    @property
-    def points_ratio(self) -> Decimal:
-        return self.problem.grading.automated.points / self.test_results_total_weight
+    def passing_fraction(self) -> str:
+        return f"{self.test_results_passing_count}/{self.test_results_count}"
 
     @property
     def points_fraction(self) -> str:
         """Format a fraction."""
 
         numerator = self.test_results_passing_weight
-        denominator = self.test_results_total_weight
+        denominator = self.problem.grader.test.weight
         if denominator == 0:
             return f"0/0"
 
@@ -103,8 +94,12 @@ class ProblemSummary:
 
         if self.test_results_count == 0:
             return Decimal("0")
-        numerator = sum_weights(self.test_results_passing)
-        denominator = numerator + sum_weights(self.test_results_failing)
+
+        numerator = self.test_results_passing_weight
+        denominator = self.problem.grader.test.weight
+        if denominator == 0:
+            return Decimal("0")
+
         return Decimal(numerator) / Decimal(denominator)
 
 

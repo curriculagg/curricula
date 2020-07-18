@@ -1,4 +1,5 @@
 import abc
+from decimal import Decimal
 
 from ..task import Result
 from ..stage import GraderStage
@@ -19,6 +20,12 @@ class TestStage(GraderStage):
     """Test endpoints."""
 
     name = "test"
+
+    @property
+    def weight(self) -> Decimal:
+        """Get the cumulative weight of all tasks."""
+
+        return sum(task.weight for task in self.tasks)
 
     def code(self, **details):
         """Code quality."""

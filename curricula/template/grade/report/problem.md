@@ -6,7 +6,7 @@ Total score:
 
 [%- if problem.grading.is_automated %]
 
-Tests score ([[ problem.grading.percentage_automated | percentage ]]): [[ problem_summary.tests_fraction ]] tests, **[[ problem_summary.points_fraction ]] points ([[ problem_summary.points_percentage | percentage ]])**
+Tests score ([[ problem.grading.percentage_automated | percentage ]]): [[ problem_summary.passing_fraction ]] tests, **[[ problem_summary.points_fraction ]] points ([[ problem_summary.points_percentage | percentage ]])**
 [%- if problem_summary.setup_results_errored %]
 
 The followed tasks failed:
@@ -22,12 +22,12 @@ The followed tasks failed:
 [%- endfor %]
 [%- endif %]
 
-[%- if problem_summary.test_results_failing_count > 0 %]
+[%- if problem_summary.test_results_passing_count < problem_summary.test_results_count %]
 
 The following tests did not pass:
 
 [%- for result in problem_summary.test_results_failing %]
-- -[[ (result.task.weight * problem_summary.points_ratio) | pretty ]] for test `[[ result.task.name ]]`
+- -[[ (result.task.weight * problem.grading.point_ratio) | pretty ]] for test `[[ result.task.name ]]`
 [%- endfor -%]
 [%- endif -%]
 [%- endif -%]

@@ -13,26 +13,6 @@ if typing.TYPE_CHECKING:
 
 
 @dataclass(eq=False)
-class ProblemReportStatistics:
-    """Rudimentary sums from the report results."""
-
-    tasks_total: int = 0
-    tasks_complete: int = 0
-    tasks_passed: int = 0
-    tests_total: int = 0
-    tests_complete: int = 0
-    tests_passed: int = 0
-
-    def __str__(self) -> str:
-        """Format nicely."""
-
-        tasks_percentage = round(self.tasks_complete/(self.tasks_complete or 1) * 100, 2)
-        tests_percentage = round(self.tests_passed/(self.tests_complete or 1) * 100, 2)
-        return (f"{self.tasks_complete}/{self.tasks_complete} tasks complete ({tasks_percentage}%), "
-                f"{self.tests_passed}/{self.tests_total} tests passed ({tests_percentage}%)")
-
-
-@dataclass(eq=False)
 class ProblemReportProblemReference:
     """Reference to original problem."""
 

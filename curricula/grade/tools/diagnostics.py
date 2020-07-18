@@ -45,11 +45,9 @@ def get_diagnostics(grading_path: Path, assignment_report_path: Path) -> str:
                         output.print("Traceback: ")
                         output.print(result.error.traceback.strip(), indentation=2)
                     if result.error.expected:
-                        output.print("Expected:")
-                        output.print(result.error.expected, indentation=2)
+                        output.print(f"Expected: {repr(result.error.expected)}")
                     if result.error.received:
-                        output.print("Received:")
-                        output.print(result.error.received, indentation=2)
+                        output.print(f"Received: {repr(result.error.received)}")
                 output.dedent()
             else:
                 output.print(f"✓ {task.name} passed")

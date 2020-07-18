@@ -4,8 +4,10 @@ import sys
 from pathlib import Path
 from typing import List
 from dataclasses import field
+from decimal import Decimal
+from functools import lru_cache
 
-from ..models import Assignment, Problem
+from ..models import Assignment, Problem, ProblemGrading, Author
 from ..shared import Files
 from .grader import Grader
 
@@ -33,11 +35,23 @@ def import_grader(grading_path: Path, problem: "GradingProblem", grader_name: st
     return grader
 
 
+class GradingProblemGrading(ProblemGrading):
+    """Override to add grader-specific computations."""
+
+    problem: "GradingProblem"
+
+    @property
+    @lru_cache(maxsize=1)
+    def point_ratio(self) -> Decimal:
+        return self.points / self.problem.grader.test.weight
+
+
 class GradingProblem(Problem):
     """Additional details for grading."""
 
     path: Path = field(init=False)
     grader: Grader = field(init=False)
+    grading: GradingProblemGrading
 
     @classmethod
     def read(cls, data: dict, path: Path) -> "GradingProblem":
@@ -54,6 +68,7 @@ class GradingAssignment(Assignment):
     """Additional details for grading."""
 
     path: Path
+
     problems: List[GradingProblem]
 
     @classmethod

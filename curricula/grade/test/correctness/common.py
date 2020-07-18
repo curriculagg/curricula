@@ -153,7 +153,7 @@ class CompareBytesOutputTest(OutputTest, Configurable):
         passing = out == test_out
         error = None if passing else Error(
             description="unexpected output",
-            expected=[test_out.decode(errors="replace")],
+            expected=test_out.decode(errors="replace"),
             received=out.decode(errors="replace"))
         return CorrectnessResult(passing=passing, error=error)
 
@@ -167,11 +167,10 @@ class CompareBytesOutputTest(OutputTest, Configurable):
 
         out_lines = tuple(map(self.out_line_transform, self.out_transform(out).split(b"\n")))
         passing = any(lines_match(out_lines, lines) for lines in test_out_lines_lists)
+        expected = tuple(b"\n".join(test_out_lines).decode(errors="replace") for test_out_lines in test_out_lines_lists)
         error = None if passing else Error(
             description="unexpected output",
-            expected=tuple(
-                b"\n".join(test_out_lines).decode(errors="replace")
-                for test_out_lines in test_out_lines_lists),
+            expected=expected[0] if len(expected) == 1 else expected,
             received=b"\n".join(out_lines).decode(errors="replace"))
         return CorrectnessResult(passing=passing, error=error)
 

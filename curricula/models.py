@@ -138,7 +138,7 @@ class ProblemGrading(Model):
 
     @property
     @lru_cache(maxsize=1)
-    def _category_weight(self) -> Decimal:
+    def weight_total(self) -> Decimal:
         return sum((
             self.automated.weight if self.automated and self.automated.enabled else 0,
             self.review.weight if self.review and self.review.enabled else 0,
@@ -146,15 +146,15 @@ class ProblemGrading(Model):
 
     @property
     def percentage_automated(self) -> Decimal:
-        return self.automated.weight / self._category_weight
+        return self.automated.weight / self.weight_total
 
     @property
     def percentage_review(self) -> Decimal:
-        return self.review.weight / self._category_weight
+        return self.review.weight / self.weight_total
 
     @property
     def percentage_manual(self) -> Decimal:
-        return self.manual.weight / self._category_weight
+        return self.manual.weight / self.weight_total
 
     @classmethod
     def load(cls, data: dict, problem: "Problem" = None) -> "ProblemGrading":
@@ -213,12 +213,15 @@ class Problem(Model):
     def load(cls, data: dict, assignment: "Assignment" = None) -> "Problem":
         """Load directly from a dictionary."""
 
+        # Get override types
+        problem_grading_type = cls.__annotations__.get("grading", ProblemGrading)
+
         self = cls(
             assignment=assignment,
             short=data["short"],
             title=data["title"],
             relative_path=Path(data["relative_path"]),
-            grading=ProblemGrading.load(data["grading"]),
+            grading=problem_grading_type.load(data["grading"]),
             authors=list(map(Author.load, data["authors"])),
             topics=data["topics"],
             notes=data.get("notes"),
@@ -319,8 +322,10 @@ class Assignment(Model):
     title: str
     authors: List[Author]
     dates: AssignmentDates
+
     problems: List[Problem]
     grading: AssignmentGrading
+
     notes: Optional[str] = None
     meta: AssignmentMeta = AssignmentMeta()
 
