@@ -14,9 +14,9 @@ class Error:
     """An error raised during a task."""
 
     description: str
-    traceback: str = None
-    location: str = None
     suggestion: str = None
+    location: str = None
+    traceback: str = None
     expected: Any = None
     received: Any = None
 
