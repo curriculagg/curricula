@@ -3,7 +3,7 @@ from pathlib import Path
 
 from ..task import Error
 from . import SetupResult
-from ...library.process import InteractiveStreamTimeoutExpired
+from ...library.process import TimeoutExpired
 
 
 def make_open_interactive(
@@ -24,7 +24,7 @@ def make_open_interactive(
                     interactive.stdout.read(condition=read_condition, timeout=read_condition_timeout)
         except OSError:
             return SetupResult(passing=False, error=Error(description="failed to open process"))
-        except InteractiveStreamTimeoutExpired:
+        except TimeoutExpired:
             return SetupResult(passing=False, error=Error(description=f"{executable_name} timed out"))
 
     return test

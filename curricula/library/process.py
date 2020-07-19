@@ -1,34 +1,31 @@
 import subprocess
 import timeit
-import os
 import time
-import signal
 
-try:
-    import fcntl
-except ImportError:
-    fcntl = None
-
-from typing import Optional, Tuple, Callable, IO
+from typing import Optional, Tuple, Callable, IO, TypeVar, Any
 from dataclasses import dataclass, asdict, field
 from contextlib import contextmanager
+from functools import lru_cache
 from pathlib import Path
 
 
 @dataclass(eq=False)
-class RuntimeException:
+class ProcessError:
     """Error that occurs during process runtime."""
 
     description: str
     error_number: Optional[int] = None
 
     @classmethod
-    def from_os_error(cls, error: OSError) -> "RuntimeException":
+    def from_os_error(cls, error: OSError) -> "ProcessError":
         """Create from OS error."""
 
-        return RuntimeException(
-            description="executable format error" if error.errno == 8 else "failed to run executable",
-            error_number=error.errno)
+        if error.errno == 8:
+            description = "executable format error"
+        else:
+            description = "failed to run executable"
+
+        return ProcessError(description=description, error_number=error.errno)
 
     def dump(self) -> dict:
         """Serialize."""
@@ -36,86 +33,109 @@ class RuntimeException:
         return asdict(self)
 
 
+T = TypeVar("T")
+
+
+@lru_cache(maxsize=None)
+def nullable(function: Callable[[Any], T]) -> Callable[[Optional[Any]], Optional[T]]:
+    """None should pass through."""
+
+    return lambda value: function(value) if value is not None else None
+
+
 @dataclass(eq=False)
-class Interaction:
-    """Container for single interaction with a process."""
+class ProcessCreation:
+    """Information about how a process was started."""
 
     args: Tuple[str, ...]
     cwd: Optional[Path]
 
-    elapsed: Optional[float] = None
+    def dump(self) -> dict:
+        """Simple serialization."""
+
+        dump = getattr(super(), "dump", dict)()
+        dump.update(
+            args=self.args,
+            cwd=nullable(str)(self.cwd))
+        return dump
+
+
+@dataclass(eq=False)
+class ProcessStreams:
+    """Container for streamed data."""
+
     stdin: Optional[bytes] = None
     stdout: Optional[bytes] = None
     stderr: Optional[bytes] = None
 
     def dump(self) -> dict:
-        """Make the runtime JSON serializable."""
+        """Decode any stream data from bytes."""
 
-        dump = asdict(self)
-        for field_name in "stdout", "stdin", "stderr":
-            if dump[field_name] is not None:
-                dump[field_name] = dump[field_name].decode(errors="replace")
-        if dump["cwd"]:
-            dump["cwd"] = str(dump["cwd"])
+        dump = getattr(super(), "dump", dict)()
+        dump.update(
+            stdin=nullable(bytes.decode)(self.stdin),
+            stdout=nullable(bytes.decode)(self.stdout),
+            stderr=nullable(bytes.decode)(self.stderr))
         return dump
 
 
 @dataclass(eq=False)
-class Runtime(Interaction):
+class Interaction(ProcessStreams, ProcessCreation):
+    """Container for single interaction with a process."""
+
+    elapsed: Optional[float] = None
+
+    def dump(self) -> dict:
+        """Make the runtime JSON serializable."""
+
+        dump = super().dump()
+        dump.update(elapsed=self.elapsed)
+        return dump
+
+
+@dataclass(eq=False)
+class Runtime(ProcessStreams, ProcessCreation):
     """Runtime data extracted from running an external process."""
 
+    # Elapsed time to finish
+    elapsed: Optional[float] = None
+
+    # A process must terminate one of three ways
     code: Optional[int] = None
 
+    # Timeout to avoid hanging indefinitely
     timeout: Optional[float] = None
     timed_out: bool = False
 
+    # Exception preventing start
     raised_exception: bool = False
-    exception: Optional[RuntimeException] = None
+    exception: Optional[ProcessError] = None
 
 
-class InteractiveStreamTimeoutExpired(RuntimeError):
+@dataclass(eq=False)
+class TimeoutExpired(RuntimeError):
+    """Raised waiting for process termination or blocking I/O."""
+
+    # Any extra data in the buffer
     buffer: bytes
 
-    def __init__(self, buffer: bytes):
-        self.buffer = buffer
 
-
-class InteractiveStream:
-    """Custom IO stream for Interactive."""
+@dataclass(eq=False)
+class Stream:
+    """Base class for a process stream wrapper."""
 
     file: IO[bytes]
-    history: bytes
 
+    # Track all data passed through stream
+    history: bytes = field(init=False, default=b"")
+
+
+@dataclass(eq=False)
+class Readable(Stream):
+    """Custom IO stream for Interactive."""
+
+    # Poll rate for reading
     POLL: float = 0.001
-
-    def __init__(self, file: IO[bytes], read: bool, write: bool):
-        """Create the stream."""
-
-        self.file = file
-        self.history = b""
-
-        if read:
-            self._set_nonblock()
-
-        # Disable methods
-        if not read:
-            self.read = None
-        if not write:
-            self.write = None
-
-    def _set_nonblock(self):
-        """Disable blocking for read."""
-
-        flags = fcntl.fcntl(self.file, fcntl.F_GETFL)
-        fcntl.fcntl(self.file, fcntl.F_SETFL, flags | os.O_NONBLOCK)
-
-    def _read_nonblock(self) -> Optional[bytes]:
-        """Read or return None if no data."""
-
-        data = self.file.read()
-        if data is not None:
-            self.history += data
-        return data
 
     def _read_block(self, condition: Callable[[bytes], bool] = None, timeout: float = None) -> Optional[bytes]:
         """Block until something besides None is returned."""
@@ -134,7 +154,7 @@ class InteractiveStream:
                     break
             if timeout is not None and timeit.default_timer() >= timeout_time:
                 self.history += buffer
-                raise InteractiveStreamTimeoutExpired(buffer=buffer)
+                raise TimeoutExpired(buffer=buffer)
             time.sleep(self.POLL)
 
         self.history += buffer
@@ -142,7 +162,6 @@ class InteractiveStream:
 
     def read(
             self,
-            block: bool = True,
             condition: Callable[[bytes], bool] = None,
             timeout: float = None) -> Optional[bytes]:
         """Read from a stream.
@@ -152,9 +171,12 @@ class InteractiveStream:
         None, break after timeout and return buffer or None.
         """
 
-        if block:
-            return self._read_block(condition=condition, timeout=timeout)
-        return self._read_nonblock()
+        return self._read_block(condition=condition, timeout=timeout)
+
+
+@dataclass(eq=False)
+class Writable(Stream):
+    """Provides a print-like wrapper for an output stream."""
 
     def write(
             self,
@@ -182,9 +204,9 @@ class Interactive:
     _process: subprocess.Popen
     _start_time: float
     cwd: Optional[Path]
-    stdin: InteractiveStream
-    stdout: InteractiveStream
-    stderr: InteractiveStream
+    stdin: Writable
+    stdout: Readable
+    stderr: Readable
 
     _recording: Optional[Interaction] = None
 
@@ -197,12 +219,11 @@ class Interactive:
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             stdin=subprocess.PIPE,
-            preexec_fn=config.process_setup,
             cwd=str(cwd) if cwd is not None else None)
         self.cwd = cwd
-        self.stdin = InteractiveStream(self._process.stdin, read=False, write=True)
-        self.stdout = InteractiveStream(self._process.stdout, read=True, write=False)
-        self.stderr = InteractiveStream(self._process.stdout, read=True, write=False)
+        self.stdin = Writable(self._process.stdin)
+        self.stdout = Readable(self._process.stdout)
+        self.stderr = Readable(self._process.stderr)
         self._start_time = timeit.default_timer()
 
     def poll(self) -> bool:
@@ -246,7 +267,7 @@ class Interactive:
             timed_out = True
         except OSError as error:
             raised_exception = True
-            exception = RuntimeException.from_os_error(error)
+            exception = ProcessError.from_os_error(error)
 
         stop_time = timeit.default_timer()
         return Runtime(
@@ -261,57 +282,6 @@ class Interactive:
             raised_exception=raised_exception,
             exception=exception,
             timed_out=timed_out)
-
-
-def demote_user(user_uid: int, user_gid: int):
-    """Set the user of the process."""
-
-    os.setgid(user_gid)
-    os.setuid(user_uid)
-
-
-@dataclass(eq=False)
-class SubprocessConfiguration:
-    """Global settings."""
-
-    custom_process_setup: Optional[Callable[[], None]] = None
-
-    demote_user_enabled: bool = False
-    demote_user_uid: int = field(init=False)
-    demote_user_gid: int = field(init=False)
-
-    def set_custom_process_setup(self, custom_process_setup: Callable[[], None]):
-        """Can be used as a decorator."""
-
-        self.custom_process_setup = custom_process_setup
-
-    def clear_custom_process_setup(self):
-        """Return to default."""
-
-        self.custom_process_setup = None
-
-    def enable_demote_user(self, uid: int, gid: int):
-        """Globally enable user demotion in run."""
-
-        self.demote_user_enabled = True
-        self.demote_user_uid = uid
-        self.demote_user_gid = gid
-
-    def disable_demote_user(self):
-        """Globally disable user demotion."""
-
-        self.demote_user_enabled = False
-
-    def process_setup(self):
-        """Do not overwrite."""
-
-        if self.custom_process_setup is not None:
-            self.custom_process_setup()
-        if self.demote_user_enabled:
-            demote_user(self.demote_user_uid, self.demote_user_gid)
-
-
-config = SubprocessConfiguration()
 
 
 def run(*args: str, stdin: bytes = None, timeout: float = None, cwd: Path = None) -> Runtime:
@@ -333,25 +303,23 @@ def run(*args: str, stdin: bytes = None, timeout: float = None, cwd: Path = None
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 stdin=subprocess.PIPE,
-                preexec_fn=config.process_setup,
                 cwd=str(cwd) if cwd is not None else None)
         else:
             process = subprocess.Popen(
                 args,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                preexec_fn=config.process_setup,
                 cwd=str(cwd) if cwd is not None else None)
 
     # Catch common errors
     except OSError as error:
-        exception = RuntimeException.from_os_error(error)
+        exception = ProcessError.from_os_error(error)
         return Runtime(args=args, cwd=cwd, timeout=timeout, stdin=stdin, raised_exception=True, exception=exception)
     except ValueError:
-        exception = RuntimeException(description="failed to open process")
+        exception = ProcessError(description="failed to open process")
         return Runtime(args=args, cwd=cwd, timeout=timeout, stdin=stdin, raised_exception=True, exception=exception)
     except subprocess.SubprocessError as exception:
-        exception = RuntimeException(description=str(exception))
+        exception = ProcessError(description=str(exception))
         return Runtime(args=args, cwd=cwd, timeout=timeout, stdin=stdin, raised_exception=True, exception=exception)
 
     # Wait for the process to finish with timeout
@@ -382,5 +350,7 @@ def run(*args: str, stdin: bytes = None, timeout: float = None, cwd: Path = None
         stderr=stderr)
 
 
-def interactive(*args: str) -> Interactive:
+def interact(*args: str) -> Interactive:
+    """Shorthand for interactive, makes the interface nicer."""
+
     return Interactive(args=args)

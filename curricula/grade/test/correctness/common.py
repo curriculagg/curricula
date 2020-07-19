@@ -6,7 +6,7 @@ from pathlib import Path
 from . import CorrectnessResult
 from .. import Test
 from ...task import Error
-from ....library.process import Runtime, Interactive, InteractiveStreamTimeoutExpired, Interaction
+from ....library.process import Runtime, Interactive, TimeoutExpired, Interaction
 from ....library.configurable import none, not_none, Configurable
 
 __all__ = (
@@ -342,7 +342,7 @@ def write_then_read(
                     block=True,
                     condition=read_condition,
                     timeout=read_condition_timeout)
-            except InteractiveStreamTimeoutExpired:
+            except TimeoutExpired:
                 raise CorrectnessResult(
                     passing=False,
                     error=Error(description="timed out"),

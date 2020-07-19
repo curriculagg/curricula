@@ -12,7 +12,6 @@ from .dependency import topological_sort
 from .setup import SetupStage
 from .test import TestStage
 from .teardown import TeardownStage
-from .configuration.sandbox import SandboxConfiguration
 
 import typing
 
@@ -117,9 +116,6 @@ class Grader:
     test: TestStage = field(default_factory=TestStage)
     teardown: TeardownStage = field(default_factory=TeardownStage)
 
-    # Configuration
-    sandbox: SandboxConfiguration = field(default_factory=SandboxConfiguration)
-
     # Populated on import
     problem: "GradingProblem" = field(init=False)
 
@@ -155,10 +151,6 @@ class Grader:
         # Final report
         report = ProblemReport.create(self.problem)
 
-        # Apply configuration
-        log.debug("enabling configurators")
-        self.sandbox.apply()
-
         # Run each stage
         for stage in self.stages:
             if len(stage.tasks) > 0:
@@ -166,9 +158,5 @@ class Grader:
                 _run(stage.tasks, is_visible, resources, report)
             else:
                 log.debug(f"no tasks for stage {stage.name}")
-
-        # Revert, trusting plugin
-        log.debug("reverting configurators")
-        self.sandbox.revert()
 
         return report
