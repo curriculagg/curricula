@@ -20,7 +20,9 @@ class Error:
     expected: Any = None
     received: Any = None
 
-    def dump(self) -> dict:
+    def dump(self, thin: bool = False) -> dict:
+        if thin:
+            return dict(description=self.description, suggestion=self.suggestion)
         return asdict(self)
 
     @classmethod
@@ -52,15 +54,17 @@ class Result(Exception, abc.ABC):
         self.error = error
         self.details = details or dict()
 
-    def dump(self) -> dict:
+    def dump(self, thin: bool = False) -> dict:
         """Serialize the result for JSON."""
 
-        return dict(
+        dump = dict(
             complete=self.complete,
             passing=self.passing,
-            details=self.details,
             kind=self.kind,
-            error=self.error.dump() if self.error is not None else self.error)
+            error=self.error.dump(thin=thin) if self.error is not None else self.error)
+        if not thin:
+            dump.update(details=self.details)
+        return dump
 
     @classmethod
     def load(cls, data: dict, task: "Task") -> "Result":

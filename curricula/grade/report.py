@@ -53,10 +53,10 @@ class ProblemReport:
 
         self.results[result.task.name] = result
 
-    def dump(self) -> dict:
+    def dump(self, thin: bool = False) -> dict:
         """Dump the result to a serializable format."""
 
-        results = {result.task.name: result.dump() for result in self.results.values()}
+        results = {result.task.name: result.dump(thin=thin) for result in self.results.values()}
         return dict(problem=self.problem.dump(), partial=self.partial, results=results)
 
     @classmethod
@@ -131,15 +131,14 @@ class AssignmentReport:
         self.problems[key] = value
         self.partial = self.partial or value.partial
 
-    def dump(self) -> dict:
+    def dump(self, thin: bool = False) -> dict:
         """Serialize as dictionary to shorten rebuild."""
 
-        problems = {problem_short: problem_report.dump() for problem_short, problem_report in self.problems.items()}
         return dict(
             assignment=self.assignment.dump(),
             timestamp=serialize_datetime(self.timestamp),
             partial=self.partial,
-            problems=problems)
+            problems={short: report.dump(thin=thin) for short, report in self.problems.items()})
 
     @classmethod
     def create(cls, assigment: "GradingAssignment") -> "AssignmentReport":
