@@ -61,7 +61,10 @@ class Result(Exception, abc.ABC):
             complete=self.complete,
             passing=self.passing,
             kind=self.kind,
-            error=self.error.dump(thin=thin) if self.error is not None else self.error)
+            error=self.error.dump(thin=thin) if self.error is not None else self.error,
+            task=dict(
+                name=self.task.name,
+                description=self.task.description))
         if not thin:
             dump.update(details=self.details)
         return dump
@@ -70,6 +73,7 @@ class Result(Exception, abc.ABC):
     def load(cls, data: dict, task: "Task") -> "Result":
         """Load a result from serialized."""
 
+        data.pop("task")
         kind = data.pop("kind")
         error_data = data.pop("error")
         error = Error.load(error_data) if error_data is not None else None

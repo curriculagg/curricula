@@ -17,13 +17,14 @@ class ProblemReportProblemReference:
     """Reference to original problem."""
 
     short: str
+    title: str
 
     def dump(self) -> dict:
-        return dict(short=self.short)
+        return dict(short=self.short, title=self.title)
 
     @classmethod
     def create(cls, problem: "GradingProblem") -> "ProblemReportProblemReference":
-        return ProblemReportProblemReference(short=problem.short)
+        return ProblemReportProblemReference(short=problem.short, title=problem.title)
 
     @classmethod
     def load(cls, data: dict) -> "ProblemReportProblemReference":
@@ -89,14 +90,15 @@ class AssignmentReportAssignmentReference:
     """Structured data about the origin assignment."""
 
     short: str
+    title: str
     # hash: str
 
     def dump(self) -> dict:
-        return dict(short=self.short)
+        return dict(short=self.short, title=self.title)
 
     @classmethod
     def create(cls, assignment: GradingAssignment) -> "AssignmentReportAssignmentReference":
-        return AssignmentReportAssignmentReference(short=assignment.short)
+        return AssignmentReportAssignmentReference(short=assignment.short, title=assignment.title)
 
     @classmethod
     def load(cls, data: dict):
