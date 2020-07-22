@@ -29,7 +29,7 @@ def main():
 
     # Grade
     assignment = GradingAssignment.read(artifacts_path.joinpath(Paths.GRADING))
-    report = run(assignment, assignment_path=artifacts_path.joinpath(Paths.SOLUTION))
+    report = run(assignment, submission_path=artifacts_path.joinpath(Paths.SOLUTION))
 
     # Output
     report_path = root.joinpath("reports", "report.json")

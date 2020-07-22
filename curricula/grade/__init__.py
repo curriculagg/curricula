@@ -21,10 +21,10 @@ root = Path(__file__).absolute().parent
 include = root.joinpath("include")
 
 
-def run(assignment: GradingAssignment, assignment_path: Path, **options) -> AssignmentReport:
+def run(assignment: GradingAssignment, submission_path: Path, **options) -> AssignmentReport:
     """Run all tests on a submission and return a dict of results."""
 
-    log.info(f"running {assignment_path}")
+    log.info(f"running {submission_path}")
     reports = AssignmentReport.create(assignment)
 
     start = timeit.default_timer()
@@ -33,8 +33,8 @@ def run(assignment: GradingAssignment, assignment_path: Path, **options) -> Assi
     for problem in filter(lambda p: p.grading.is_automated, assignment.problems):
         log.debug(f"running problem {problem.short}")
         submission = Submission(
-            assignment_path=assignment_path,
-            problem_path=assignment_path.joinpath(problem.relative_path))
+            assignment_path=submission_path,
+            problem_path=submission_path.joinpath(problem.relative_path))
         reports[problem.short] = problem.grader.run(context=context, submission=submission)
 
     elapsed = timeit.default_timer() - start
