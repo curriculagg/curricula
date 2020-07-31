@@ -44,22 +44,29 @@ from ..log import log
 from .validate import validate
 from .content import *
 from .models import CompilationProblem, CompilationAssignment
-from .compilation import Compilation, CompilationUnit, Context, Configuration
+from .compilation import Target, Unit, Result, Context, Configuration
 
 
 root = Path(__file__).parent.absolute()
 
 
-class InstructionsCompilationUnit(CompilationUnit):
+class InstructionsUnit(Unit):
     """Builds the instructions and assets."""
 
     output_path: Path
     readme_builder: ReadmeBuilder
     asset_merger: DirectoryMerger
 
+    NAME = "instructions"
+    README = f"{NAME}/readme"
+    ASSETS = f"{NAME}/assets"
+
     def __init__(self, configuration: Configuration):
+        """Create builders."""
+
         super().__init__(configuration)
         self.output_path = self.configuration.artifacts_path.joinpath(Paths.INSTRUCTIONS)
+
         self.readme_builder = ReadmeBuilder(
             configuration=self.configuration,
             readme_relative_path=Paths.DOT,
@@ -69,27 +76,44 @@ class InstructionsCompilationUnit(CompilationUnit):
             contents_relative_path=Paths.ASSETS,
             destination_path=self.output_path.joinpath(Paths.ASSETS))
 
-    def compile_readme(self, assignment: CompilationAssignment, context: Context):
+    def compile_readme(self, assignment: CompilationAssignment, context: Context, result: Result):
+        """Combine instructions."""
+
         run, _ = self.readme_builder.run_if_should(assignment, context)
         log.info(f"""instructions: {"built" if run else "skipped"} readme""")
+        if run:
+            result.units_compiled.add(self.NAME)
+            result.tags_compiled.add(self.README)
 
-    def merge_assets(self, assignment: CompilationAssignment, context: Context):
+    def merge_assets(self, assignment: CompilationAssignment, context: Context, result: Result):
+        """Combine instruction assets into one folder."""
+
         run, _ = self.asset_merger.run_if_should(assignment, context)
         log.info(f"""instructions: {"merged" if run else "skipped"} assets""")
+        if run:
+            result.units_compiled.add(self.NAME)
+            result.tags_compiled.add(self.ASSETS)
 
-    def compile(self, assignment: CompilationAssignment, context: Context):
+    def compile(self, assignment: CompilationAssignment, context: Context, result: Result):
+        """Create directory and add README and assets."""
+
         self.output_path.mkdir(exist_ok=True)
-        self.compile_readme(assignment, context)
-        self.merge_assets(assignment, context)
+        self.compile_readme(assignment, context, result)
+        self.merge_assets(assignment, context, result)
 
 
-class ResourcesCompilationUnit(CompilationUnit):
+class ResourcesUnit(Unit):
     """Builds the instructions and assets."""
 
     output_path: Path
     content_aggregator: DirectoryAggregator
 
+    NAME = "resources"
+    RESOURCES = f"{NAME}/resources"
+
     def __init__(self, configuration: Configuration):
+        """Only a content aggregator here."""
+
         super().__init__(configuration)
         self.output_path = self.configuration.artifacts_path.joinpath(Paths.RESOURCES)
         self.content_aggregator = DirectoryAggregator(
@@ -97,17 +121,26 @@ class ResourcesCompilationUnit(CompilationUnit):
             destination_path=self.output_path,
             directory_name=lambda p: p.short)
 
-    def compile(self, assignment: CompilationAssignment, context: Context):
+    def compile(self, assignment: CompilationAssignment, context: Context, result: Result):
+        """Bring the problem resources into one directory."""
+
         run, _ = self.content_aggregator.run_if_should(assignment, context)
         log.info(f"""resources: {"aggregated" if run else "skipped"} resources""")
+        if run:
+            result.units_compiled.add(self.NAME)
+            result.tags_compiled.add(self.RESOURCES)
 
 
-class SolutionCompilationUnit(CompilationUnit):
+class SolutionUnit(Unit):
     """Creates cheat sheet and solution code."""
 
     output_path: Path
     readme_builder: ReadmeBuilder
     content_aggregator: DirectoryAggregator
+
+    NAME = "solution"
+    README = f"{NAME}/readme"
+    CONTENTS = f"{NAME}/contents"
 
     def __init__(self, configuration: Configuration):
         super().__init__(configuration)
@@ -122,11 +155,14 @@ class SolutionCompilationUnit(CompilationUnit):
             destination_path=self.output_path,
             directory_name=lambda p: p.short)
 
-    def compile_readme(self, assignment: CompilationAssignment, context: Context):
+    def compile_readme(self, assignment: CompilationAssignment, context: Context, result: Result):
         run, _ = self.readme_builder.run_if_should(assignment, context)
         log.info(f"""solution: {"built" if run else "skipped"} readme""")
+        if run:
+            result.units_compiled.add(self.NAME)
+            result.tags_compiled.add(self.README)
 
-    def aggregate_contents(self, assignment: CompilationAssignment, context: Context):
+    def aggregate_contents(self, assignment: CompilationAssignment, context: Context, result: Result):
         run, copied_paths = self.content_aggregator.run_if_should(assignment, context)
         log.info(f"""solution: {"merged" if run else "skipped"} contents""")
 
@@ -136,18 +172,27 @@ class SolutionCompilationUnit(CompilationUnit):
             if readme_path.exists():
                 files.delete(readme_path)
 
-    def compile(self, assignment: CompilationAssignment, context: Context):
+        if run:
+            result.units_compiled.add(self.NAME)
+            result.tags_compiled.add(self.CONTENTS)
+
+    def compile(self, assignment: CompilationAssignment, context: Context, result: Result):
         self.output_path.mkdir(exist_ok=True)
-        self.compile_readme(assignment, context)
-        self.aggregate_contents(assignment, context)
+        self.compile_readme(assignment, context, result)
+        self.aggregate_contents(assignment, context, result)
 
 
-class GradingCompilationUnit(CompilationUnit):
+class GradingUnit(Unit):
     """Assemble grading scripts and rubric."""
 
     output_path: Path
     readme_builder: ReadmeBuilder
     content_aggregator: DirectoryAggregator
+
+    NAME = "grading"
+    README = f"{NAME}/readme"
+    CONTENTS = f"{NAME}/contents"
+    INDEX = f"{NAME}/index"
 
     def __init__(self, configuration: Configuration):
         super().__init__(configuration)
@@ -163,39 +208,49 @@ class GradingCompilationUnit(CompilationUnit):
             filter_problems=lambda p: p.grading.automated,
             directory_name=lambda p: p.short)
 
-    def compile_readme(self, assignment: CompilationAssignment, context: Context):
+    def compile_readme(self, assignment: CompilationAssignment, context: Context, result: Result):
         run, _ = self.readme_builder.run_if_should(assignment, context)
         log.info(f"""solution: {"built" if run else "skipped"} readme""")
 
-    def aggregate_contents(self, assignment: CompilationAssignment, context: Context):
+        if run:
+            result.units_compiled.add(self.NAME)
+            result.tags_compiled.add(self.README)
+
+    def aggregate_contents(self, assignment: CompilationAssignment, context: Context, result: Result):
         run, copied_paths = self.content_aggregator.run_if_should(assignment, context)
         log.info(f"""solution: {"merged" if run else "skipped"} contents""")
 
-        # Delete extra READMEs
-        for copied_path in copied_paths:
-            readme_path = copied_path.joinpath(Files.README)
-            if readme_path.exists():
-                files.delete(readme_path)
+        if run:
+            # Delete extra READMEs
+            for copied_path in copied_paths:
+                readme_path = copied_path.joinpath(Files.README)
+                if readme_path.exists():
+                    files.delete(readme_path)
 
-    def dump_index(self, assignment: CompilationAssignment):
+            result.units_compiled.add(self.NAME)
+            result.tags_compiled.add(self.CONTENTS)
+
+    def dump_index(self, assignment: CompilationAssignment, result: Result):
         with self.output_path.joinpath(Files.INDEX).open("w") as file:
             json.dump(assignment.dump(), file, indent=2)
+        result.units_compiled.add(self.NAME)
+        result.tags_compiled.add(self.INDEX)
 
-    def compile(self, assignment: CompilationAssignment, context: Context):
+    def compile(self, assignment: CompilationAssignment, context: Context, result: Result):
         self.output_path.mkdir(exist_ok=True)
-        self.compile_readme(assignment, context)
-        self.aggregate_contents(assignment, context)
-        self.dump_index(assignment)
+        self.compile_readme(assignment, context, result)
+        self.aggregate_contents(assignment, context, result)
+        self.dump_index(assignment, result)
 
 
-class CurriculaCompilation(Compilation):
+class CurriculaTarget(Target):
     """Repeatable build instructions."""
 
     custom_template_path: Path
-    instructions: InstructionsCompilationUnit
-    resources: ResourcesCompilationUnit
-    solution: SolutionCompilationUnit
-    grading: GradingCompilationUnit
+    instructions: InstructionsUnit
+    resources: ResourcesUnit
+    solution: SolutionUnit
+    grading: GradingUnit
 
     def __init__(
             self,
@@ -214,12 +269,12 @@ class CurriculaCompilation(Compilation):
         if self.custom_template_path is not None:
             log.info(f"custom template path is {self.custom_template_path}")
 
-        self.instructions = InstructionsCompilationUnit(self.configuration)
-        self.resources = ResourcesCompilationUnit(self.configuration)
-        self.solution = SolutionCompilationUnit(self.configuration)
-        self.grading = GradingCompilationUnit(self.configuration)
+        self.instructions = InstructionsUnit(self.configuration)
+        self.resources = ResourcesUnit(self.configuration)
+        self.solution = SolutionUnit(self.configuration)
+        self.grading = GradingUnit(self.configuration)
 
-    def compile(self, paths_modified: Optional[Set[Path]] = None):
+    def compile(self, paths_modified: Optional[Set[Path]] = None) -> Result:
         """Generate context and compile."""
 
         log.info(f"building {self.configuration.assignment_path} to {self.configuration.artifacts_path}")
@@ -247,19 +302,25 @@ class CurriculaCompilation(Compilation):
         # Create output directory
         self.configuration.artifacts_path.mkdir(exist_ok=True, parents=True)
 
+        # Create a mutable result
+        result = Result()
+
         # Run units
-        self.instructions.compile(assignment, context)
-        self.resources.compile(assignment, context)
-        self.solution.compile(assignment, context)
-        self.grading.compile(assignment, context)
+        self.instructions.compile(assignment, context, result)
+        self.resources.compile(assignment, context, result)
+        self.solution.compile(assignment, context, result)
+        self.grading.compile(assignment, context, result)
+
+        return result
 
 
 @timed("compile", printer=log.info)
 def compile(assignment_path: Path, artifacts_path: Path, custom_template_path: Path = None, **options):
     """Build the assignment at a given path."""
 
-    CurriculaCompilation(
+    result = CurriculaTarget(
         assignment_path=assignment_path,
         artifacts_path=artifacts_path,
         custom_template_path=custom_template_path,
         options=options).compile()
+    print(result.tags_compiled)

@@ -2,7 +2,7 @@ import jinja2
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Callable, Union, Set, Optional, Tuple, TypeVar
+from typing import List, Callable, Union, Optional, Tuple, TypeVar
 
 from ..shared import Files
 from ..library import files
@@ -20,12 +20,14 @@ __all__ = (
     "DirectoryAggregator")
 
 
-def get_readme_path(relative_path: str = None):
+def get_readme_path(relative_path: Union[str, Path] = None):
     """Return the expected README.md path."""
 
     if relative_path is None:
         return Path(Files.README)
-    return Path(relative_path).joinpath(Files.README)
+    if isinstance(relative_path, str):
+        relative_path = Path(relative_path)
+    return relative_path.joinpath(Files.README)
 
 
 @jinja2.environmentfilter
@@ -35,7 +37,7 @@ def get_readme(
         relative_path: str = None) -> str:
     """Render a README with options for nested path."""
 
-    readme_path = get_readme_path(relative_path)
+    readme_path = get_readme_path(relative_path).as_posix()
 
     try:
         if isinstance(item, CompilationAssignment):
@@ -48,15 +50,15 @@ def get_readme(
             raise ValueError("invalid item passed to get_readme")
         return environment.get_template(path).render(**data)
 
-    except jinja2.exceptions.TemplateNotFound as exception:
-        log.error(f"error finding {item.short}:{readme_path} in {exception.templates}")
+    except jinja2.exceptions.TemplateNotFound:
+        log.error(f"error finding problem/{item.short}:{readme_path}")
         return ""
 
 
-def has_readme(item: Union[CompilationProblem, CompilationAssignment], *component: str) -> bool:
+def has_readme(item: Union[CompilationProblem, CompilationAssignment], relative_path: str = None) -> bool:
     """Check whether a problem has a solution README."""
 
-    return item.path.joinpath(*component, Files.README).exists()
+    return item.path.joinpath(relative_path or "", Files.README).exists()
 
 
 T = TypeVar("T")
@@ -68,7 +70,7 @@ class ReadmeBuilder:
 
     configuration: Configuration
     readme_relative_path: Path
-    template_relative_path: str
+    template_relative_path: Path
     destination_path: Path
 
     def __post_init__(self):
@@ -81,7 +83,7 @@ class ReadmeBuilder:
         """Render the template returning the written path."""
 
         log.debug(f"building {self.readme_relative_path}/README.md to {self.destination_path}")
-        template = context.environment.get_template(f"template:compile/{self.template_relative_path}")
+        template = context.environment.get_template(f"template:compile/{self.template_relative_path.as_posix()}")
         with self.destination_path.open("w") as file:
             file.write(template.render(assignment=assignment))
         return self.destination_path
@@ -187,7 +189,7 @@ class DirectoryAggregator(DirectoryShouldRun):
         if assignment_contents_path.exists():
             files.copy_directory(assignment_contents_path, self.destination_path)
 
-        directory_name = self.directory_name or (lambda p: p.short)
+        directory_name = self.directory_name or (lambda p: p.relative_path)
 
         # Copy per problem, enable filtration
         copied_paths = []

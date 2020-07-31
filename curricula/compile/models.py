@@ -26,7 +26,7 @@ class CompilationProblem(Problem):
             data = json.load(file)
 
         data["short"] = reference.get("short", data.get("short", path.parts[-1]))
-        data["relative_path"] = reference.get("relative_path", path.parts[-1])
+        data["relative_path"] = reference.get("relative_path", data["short"])
 
         if "title" in reference:
             data["title"] = reference["title"]

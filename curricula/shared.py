@@ -40,10 +40,10 @@ class Files:
 class Templates:
 
     class Instructions:
-        ASSIGNMENT = "instructions/assignment.md"
+        ASSIGNMENT = Paths.INSTRUCTIONS.joinpath("assignment.md")
 
     class Solution:
-        ASSIGNMENT = "solution/assignment.md"
+        ASSIGNMENT = Paths.SOLUTION.joinpath("assignment.md")
 
     class Grading:
-        ASSIGNMENT = "grading/assignment.md"
+        ASSIGNMENT = Paths.GRADING.joinpath("assignment.md")
