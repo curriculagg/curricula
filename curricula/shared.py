@@ -38,12 +38,5 @@ class Files:
 
 
 class Templates:
-
-    class Instructions:
-        ASSIGNMENT = Paths.INSTRUCTIONS.joinpath("assignment.md")
-
-    class Solution:
-        ASSIGNMENT = Paths.SOLUTION.joinpath("assignment.md")
-
-    class Grading:
-        ASSIGNMENT = Paths.GRADING.joinpath("assignment.md")
+    ASSIGNMENT = "assignment.md"
+    PROBLEM = "problem.md"

@@ -4,12 +4,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Callable, Union, Optional, Tuple, TypeVar
 
-from ..shared import Files
+from ..shared import Files, Templates
 from ..library import files
 from ..log import log
 
 from .models import CompilationProblem, CompilationAssignment
-from .compilation import Configuration, Context
+from .framework import Configuration, Context
 
 __all__ = (
     "get_readme_path",
@@ -83,7 +83,8 @@ class ReadmeBuilder:
         """Render the template returning the written path."""
 
         log.debug(f"building {self.readme_relative_path}/README.md to {self.destination_path}")
-        template = context.environment.get_template(f"template:compile/{self.template_relative_path.as_posix()}")
+        template_path = self.template_relative_path.joinpath(Templates.ASSIGNMENT)
+        template = context.environment.get_template(f"template:compile/{template_path.as_posix()}")
         with self.destination_path.open("w") as file:
             file.write(template.render(assignment=assignment))
         return self.destination_path
@@ -94,6 +95,12 @@ class ReadmeBuilder:
         if context.paths_modified is None:
             return True
 
+        # Check if a template has been modified
+        for path in context.paths_modified:
+            if path in self.configuration.custom_template_path:
+                return True
+
+        # Check if a README has been modified
         readme_path = get_readme_path(self.template_relative_path)
         used_paths = {assignment.path.joinpath(readme_path)}
         for problem in assignment.problems:
