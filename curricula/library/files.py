@@ -65,7 +65,7 @@ def delete_directory(path: Path):
 def replace_directory(path: Path):
     """Make sure a directory is present and empty."""
 
-    if path.exists():
+    if path.is_file() or path.is_dir():
         delete(path)
     path.mkdir(parents=True)
 

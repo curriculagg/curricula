@@ -8,6 +8,7 @@ name = "pypi"
 [packages]
 jinja2 = "*"
 jsonschema = "*"
+watchdog = "*"
 
 [requires]
 python_version = "3.7"

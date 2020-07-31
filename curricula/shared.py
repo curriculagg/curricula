@@ -1,13 +1,14 @@
 from pathlib import Path
 from typing import Iterator
 
-__all__ = ("version", "Paths", "Files")
+__all__ = ("version", "Paths", "Files", "Templates")
 
 
 version = "0.1.0"
 
 
 class Paths:
+    DOT = Path()
     ASSIGNMENT = Path("assignment")
     PROBLEM = Path("problem")
     ARTIFACTS = Path("artifacts")
@@ -34,3 +35,15 @@ class Files:
     GRADING = "grading.json"
     TESTS = "tests.py"
     INDEX = "index.json"
+
+
+class Templates:
+
+    class Instructions:
+        ASSIGNMENT = "instructions/assignment.md"
+
+    class Solution:
+        ASSIGNMENT = "solution/assignment.md"
+
+    class Grading:
+        ASSIGNMENT = "grading/assignment.md"

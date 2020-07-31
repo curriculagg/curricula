@@ -31,283 +31,235 @@ However, the problems are linked to assignments in the assignment.json
 file via relative path, so the problem directory could be anywhere.
 """
 
-import jinja2
 import json
 from pathlib import Path
-from typing import Dict, Union, List, Callable
-from dataclasses import dataclass
+from typing import Set, Optional
 
-from .validate import validate
-from .models import CompilationProblem, CompilationAssignment
-
-from ..shared import Files, Paths
+from ..shared import Files, Paths, Templates
 from ..library.template import jinja2_create_environment
 from ..library import files
 from ..library.utility import timed
 from ..log import log
 
+from .validate import validate
+from .content import *
+from .models import CompilationProblem, CompilationAssignment
+from .compilation import Compilation, CompilationUnit, Context, Configuration
+
 
 root = Path(__file__).parent.absolute()
 
 
-@dataclass(repr=False, eq=False)
-class Context:
-    """Build context.
+class InstructionsCompilationUnit(CompilationUnit):
+    """Builds the instructions and assets."""
 
-    The build context is simply a container for information about the
-    build that's passed to each step.
-    """
+    output_path: Path
+    readme_builder: ReadmeBuilder
+    asset_merger: DirectoryMerger
 
-    environment: jinja2.Environment
-    assignment_path: Path
-    artifacts_path: Path
-    options: Dict[str, str]
+    def __init__(self, configuration: Configuration):
+        super().__init__(configuration)
+        self.output_path = self.configuration.artifacts_path.joinpath(Paths.INSTRUCTIONS)
+        self.readme_builder = ReadmeBuilder(
+            configuration=self.configuration,
+            readme_relative_path=Paths.DOT,
+            template_relative_path=Templates.Instructions.ASSIGNMENT,
+            destination_path=self.output_path)
+        self.asset_merger = DirectoryMerger(
+            contents_relative_path=Paths.ASSETS,
+            destination_path=self.output_path.joinpath(Paths.ASSETS))
 
+    def compile_readme(self, assignment: CompilationAssignment, context: Context):
+        run, _ = self.readme_builder.run_if_should(assignment, context)
+        log.info(f"""instructions: {"built" if run else "skipped"} readme""")
 
-def compile_readme(
-        context: Context,
-        assignment: CompilationAssignment,
-        template_relative_path: str,
-        destination_path: Path) -> Path:
-    """Compile a README from an assignment.
+    def merge_assets(self, assignment: CompilationAssignment, context: Context):
+        run, _ = self.asset_merger.run_if_should(assignment, context)
+        log.info(f"""instructions: {"merged" if run else "skipped"} assets""")
 
-    This function returns the final path of the README, which may be
-    different if the provided destination is a directory.
-    """
-
-    log.debug(f"compiling readme for {destination_path}")
-    template = context.environment.get_template(f"template:compile/{template_relative_path}")
-    if destination_path.is_dir():
-        destination_path = destination_path.joinpath(Files.README)
-    with destination_path.open("w") as file:
-        file.write(template.render(assignment=assignment))
-    return destination_path
-
-
-def merge_contents(
-        context: Context,
-        assignment: CompilationAssignment,
-        contents_relative_path: Path,
-        destination_path: Path,
-        filter_problems: Callable[[CompilationProblem], bool] = None):
-    """Compile subdirectories from problems into a single directory."""
-
-    log.debug(f"merging contents to {destination_path}")
-
-    destination_path.mkdir(exist_ok=True)
-
-    # First copy any assignment-wide resources
-    assignment_contents_path = context.assignment_path.joinpath(contents_relative_path)
-    if assignment_contents_path.exists():
-        files.copy_directory(assignment_contents_path, destination_path)
-
-    # Overwrite with problem contents, enable filtration
-    for problem in filter(filter_problems, assignment.problems):
-        problem_contents_path = problem.relative_path.joinpath(contents_relative_path)
-        if problem_contents_path.exists():
-            files.copy_directory(problem_contents_path, destination_path, merge=True)
+    def compile(self, assignment: CompilationAssignment, context: Context):
+        self.output_path.mkdir(exist_ok=True)
+        self.compile_readme(assignment, context)
+        self.merge_assets(assignment, context)
 
 
-def aggregate_contents(
-        assignment: CompilationAssignment,
-        contents_relative_path: Path,
-        destination_path: Path,
-        filter_problems: Callable[[CompilationProblem], bool] = None,
-        rename: Callable[[CompilationProblem], str] = None) -> List[Path]:
-    """Compile subdirectories from problems to respective directories.
+class ResourcesCompilationUnit(CompilationUnit):
+    """Builds the instructions and assets."""
 
-    Different from merge in that the result is a directory of
-    directories. Returns a list of the resultant folders that were
-    copied into the destination.
-    """
+    output_path: Path
+    content_aggregator: DirectoryAggregator
 
-    log.debug(f"aggregating contents to {destination_path}")
+    def __init__(self, configuration: Configuration):
+        super().__init__(configuration)
+        self.output_path = self.configuration.artifacts_path.joinpath(Paths.RESOURCES)
+        self.content_aggregator = DirectoryAggregator(
+            contents_relative_path=Paths.RESOURCES,
+            destination_path=self.output_path,
+            directory_name=lambda p: p.short)
 
-    destination_path.mkdir(exist_ok=True)
-
-    # First compile assignment-wide assets
-    assignment_contents_path = assignment.path.joinpath(contents_relative_path)
-    if assignment_contents_path.exists():
-        files.copy_directory(assignment_contents_path, destination_path)
-
-    # Copy per problem, enable filtration
-    copied_paths = []
-    for problem in filter(filter_problems, assignment.problems):
-        problem_contents_path = problem.path.joinpath(contents_relative_path)
-        if problem_contents_path.exists():
-            problem_destination_path = destination_path.joinpath(problem.short if rename is None else rename(problem))
-            copied_paths.append(problem_destination_path)
-            files.copy_directory(problem_contents_path, problem_destination_path)
-
-    return copied_paths
+    def compile(self, assignment: CompilationAssignment, context: Context):
+        run, _ = self.content_aggregator.run_if_should(assignment, context)
+        log.info(f"""resources: {"aggregated" if run else "skipped"} resources""")
 
 
-def build_instructions(context: Context, assignment: CompilationAssignment) -> Path:
-    """Compile instruction readme and assets."""
+class SolutionCompilationUnit(CompilationUnit):
+    """Creates cheat sheet and solution code."""
 
-    log.debug("compiling instructions")
-    instructions_path = context.artifacts_path.joinpath(Paths.INSTRUCTIONS)
-    instructions_path.mkdir(exist_ok=True)
-    compile_readme(context, assignment, "instructions/assignment.md", instructions_path)
-    merge_contents(context, assignment, Paths.ASSETS, instructions_path.joinpath(Paths.ASSETS))
-    return instructions_path
+    output_path: Path
+    readme_builder: ReadmeBuilder
+    content_aggregator: DirectoryAggregator
 
+    def __init__(self, configuration: Configuration):
+        super().__init__(configuration)
+        self.output_path = self.configuration.artifacts_path.joinpath(Paths.SOLUTION)
+        self.readme_builder = ReadmeBuilder(
+            configuration=self.configuration,
+            readme_relative_path=Paths.SOLUTION,
+            template_relative_path=Templates.Solution.ASSIGNMENT,
+            destination_path=self.output_path)
+        self.content_aggregator = DirectoryAggregator(
+            contents_relative_path=Paths.SOLUTION,
+            destination_path=self.output_path,
+            directory_name=lambda p: p.short)
 
-def build_resources(context: Context, assignment: CompilationAssignment) -> Path:
-    """Compile resources files."""
+    def compile_readme(self, assignment: CompilationAssignment, context: Context):
+        run, _ = self.readme_builder.run_if_should(assignment, context)
+        log.info(f"""solution: {"built" if run else "skipped"} readme""")
 
-    log.debug("compiling resources")
-    resources_path = context.artifacts_path.joinpath(Paths.RESOURCES)
-    resources_path.mkdir(exist_ok=True)
-    aggregate_contents(
-        assignment=assignment,
-        contents_relative_path=Paths.RESOURCES,
-        destination_path=resources_path,
-        rename=lambda p: p.relative_path)
-    return resources_path
+    def aggregate_contents(self, assignment: CompilationAssignment, context: Context):
+        run, copied_paths = self.content_aggregator.run_if_should(assignment, context)
+        log.info(f"""solution: {"merged" if run else "skipped"} contents""")
 
+        # Delete extra READMEs
+        for copied_path in copied_paths:
+            readme_path = copied_path.joinpath(Files.README)
+            if readme_path.exists():
+                files.delete(readme_path)
 
-def build_solution_readme(context: Context, assignment: CompilationAssignment, path: Path):
-    """Generate the composite cheat sheet README."""
-
-    log.debug("building cheat sheet")
-    assignment_template = context.environment.get_template("template:compile/solution/assignment.md")
-    with path.joinpath(Files.README).open("w") as file:
-        file.write(assignment_template.render(assignment=assignment))
-
-
-def build_solution_code(assignment: CompilationAssignment, path: Path):
-    """Compile only submission files of the solution."""
-
-    log.debug("assembling solution code")
-    copied_paths = aggregate_contents(
-        assignment=assignment,
-        contents_relative_path=Paths.SOLUTION,
-        destination_path=path,
-        rename=lambda p: p.relative_path)
-
-    # Delete extra READMEs
-    for copied_path in copied_paths:
-        readme_path = copied_path.joinpath(Files.README)
-        if readme_path.exists():
-            files.delete(readme_path)
+    def compile(self, assignment: CompilationAssignment, context: Context):
+        self.output_path.mkdir(exist_ok=True)
+        self.compile_readme(assignment, context)
+        self.aggregate_contents(assignment, context)
 
 
-def build_solution(context: Context, assignment: CompilationAssignment) -> Path:
-    """Compile cheatsheets."""
+class GradingCompilationUnit(CompilationUnit):
+    """Assemble grading scripts and rubric."""
 
-    log.debug("compiling solution")
-    solution_path = context.artifacts_path.joinpath(Paths.SOLUTION)
-    solution_path.mkdir(exist_ok=True)
-    build_solution_readme(context, assignment, solution_path)
-    build_solution_code(assignment, solution_path)
-    return solution_path
+    output_path: Path
+    readme_builder: ReadmeBuilder
+    content_aggregator: DirectoryAggregator
 
+    def __init__(self, configuration: Configuration):
+        super().__init__(configuration)
+        self.output_path = self.configuration.artifacts_path.joinpath(Paths.GRADING)
+        self.readme_builder = ReadmeBuilder(
+            configuration=self.configuration,
+            readme_relative_path=Paths.GRADING,
+            template_relative_path=Templates.Grading.ASSIGNMENT,
+            destination_path=self.output_path)
+        self.content_aggregator = DirectoryAggregator(
+            contents_relative_path=Paths.GRADING,
+            destination_path=self.output_path,
+            filter_problems=lambda p: p.grading.automated,
+            directory_name=lambda p: p.short)
 
-def build_grading_readme(context: Context, assignment: CompilationAssignment, path: Path):
-    """Aggregate README for rubric."""
+    def compile_readme(self, assignment: CompilationAssignment, context: Context):
+        run, _ = self.readme_builder.run_if_should(assignment, context)
+        log.info(f"""solution: {"built" if run else "skipped"} readme""")
 
-    log.debug("building grading instructions")
-    assignment_template = context.environment.get_template("template:compile/grading/assignment.md")
-    with path.joinpath(Files.README).open("w") as file:
-        file.write(assignment_template.render(assignment=assignment))
+    def aggregate_contents(self, assignment: CompilationAssignment, context: Context):
+        run, copied_paths = self.content_aggregator.run_if_should(assignment, context)
+        log.info(f"""solution: {"merged" if run else "skipped"} contents""")
 
+        # Delete extra READMEs
+        for copied_path in copied_paths:
+            readme_path = copied_path.joinpath(Files.README)
+            if readme_path.exists():
+                files.delete(readme_path)
 
-def build_grading(context: Context, assignment: CompilationAssignment) -> Path:
-    """Compile rubrics."""
+    def dump_index(self, assignment: CompilationAssignment):
+        with self.output_path.joinpath(Files.INDEX).open("w") as file:
+            json.dump(assignment.dump(), file, indent=2)
 
-    log.debug("compiling grading")
-
-    grading_path = context.artifacts_path.joinpath(Paths.GRADING)
-    grading_path.mkdir(exist_ok=True)
-    build_grading_readme(context, assignment, grading_path)
-    copied_paths = aggregate_contents(
-        assignment,
-        Paths.GRADING,
-        grading_path,
-        filter_problems=lambda p: p.grading.automated)
-
-    # Delete extra READMEs
-    for copied_path in copied_paths:
-        readme_path = copied_path.joinpath(Files.README)
-        if readme_path.exists():
-            files.delete(readme_path)
-
-    with grading_path.joinpath(Files.INDEX).open("w") as file:
-        json.dump(assignment.dump(), file, indent=2)
-
-    return grading_path
-
-
-@jinja2.environmentfilter
-def get_readme(
-        environment: jinja2.Environment,
-        item: Union[CompilationProblem, CompilationAssignment],
-        *component: str) -> str:
-    """Render a README with options for nested path."""
-
-    readme_path = "/".join(component + (Files.README,))
-
-    try:
-        if isinstance(item, CompilationAssignment):
-            return environment \
-                .get_template(f"assignment:{readme_path}") \
-                .render(assignment=item)
-        elif isinstance(item, CompilationProblem):
-            return environment \
-                .get_template(f"problem/{item.short}:{readme_path}") \
-                .render(assignment=item.assignment, problem=item)
-
-    except jinja2.exceptions.TemplateNotFound as exception:
-        log.error(f"error finding {exception}")
-        return ""
+    def compile(self, assignment: CompilationAssignment, context: Context):
+        self.output_path.mkdir(exist_ok=True)
+        self.compile_readme(assignment, context)
+        self.aggregate_contents(assignment, context)
+        self.dump_index(assignment)
 
 
-def has_readme(item: Union[CompilationProblem, CompilationAssignment], *component: str) -> bool:
-    """Check whether a problem has a solution README."""
+class CurriculaCompilation(Compilation):
+    """Repeatable build instructions."""
 
-    return item.path.joinpath(*component, Files.README).exists()
+    custom_template_path: Path
+    instructions: InstructionsCompilationUnit
+    resources: ResourcesCompilationUnit
+    solution: SolutionCompilationUnit
+    grading: GradingCompilationUnit
 
+    def __init__(
+            self,
+            assignment_path: Path,
+            artifacts_path: Path,
+            custom_template_path: Path = None,
+            options: dict = None):
+        """Initialize the compilation and do static setup."""
 
-BUILD_STEPS = (
-    build_instructions,
-    build_resources,
-    build_solution,
-    build_grading)
+        super().__init__(Configuration(
+            assignment_path=assignment_path,
+            artifacts_path=artifacts_path,
+            options=options))
+
+        self.custom_template_path = custom_template_path
+        if self.custom_template_path is not None:
+            log.info(f"custom template path is {self.custom_template_path}")
+
+        self.instructions = InstructionsCompilationUnit(self.configuration)
+        self.resources = ResourcesCompilationUnit(self.configuration)
+        self.solution = SolutionCompilationUnit(self.configuration)
+        self.grading = GradingCompilationUnit(self.configuration)
+
+    def compile(self, paths_modified: Optional[Set[Path]] = None):
+        """Generate context and compile."""
+
+        log.info(f"building {self.configuration.assignment_path} to {self.configuration.artifacts_path}")
+
+        # Validate first
+        validate(self.configuration.assignment_path)
+
+        # Load the assignment object
+        log.debug("loading assignment")
+        assignment = CompilationAssignment.read(self.configuration.assignment_path)
+
+        # Set up templating
+        problem_template_paths = {f"problem/{problem.short}": problem.path for problem in assignment.problems}
+        environment = jinja2_create_environment(
+            assignment_path=self.configuration.assignment_path,
+            problem_paths=problem_template_paths,
+            custom_template_path=self.custom_template_path)
+        environment.filters.update(get_readme=get_readme, has_readme=has_readme)
+        environment.globals["configuration"] = self.configuration
+
+        # Define context
+        log.debug("setting context")
+        context = Context(environment=environment, paths_modified=paths_modified)
+
+        # Create output directory
+        self.configuration.artifacts_path.mkdir(exist_ok=True, parents=True)
+
+        # Run units
+        self.instructions.compile(assignment, context)
+        self.resources.compile(assignment, context)
+        self.solution.compile(assignment, context)
+        self.grading.compile(assignment, context)
 
 
 @timed("compile", printer=log.info)
-def compile(assignment_path: Path, artifacts_path: Path, template_path: Path = None, **options):
+def compile(assignment_path: Path, artifacts_path: Path, custom_template_path: Path = None, **options):
     """Build the assignment at a given path."""
 
-    log.info(f"building {assignment_path} to {artifacts_path}")
-
-    if template_path is not None:
-        log.info(f"custom template path is {template_path}")
-
-    # Validate first
-    validate(assignment_path)
-
-    # Load the assignment object
-    log.debug("loading assignment")
-    assignment = CompilationAssignment.read(assignment_path)
-
-    # Set up templating
-    problem_template_paths = {f"problem/{problem.short}": problem.path for problem in assignment.problems}
-    environment = jinja2_create_environment(
+    CurriculaCompilation(
         assignment_path=assignment_path,
-        problem_paths=problem_template_paths,
-        custom_template_path=template_path)
-    environment.filters.update(get_readme=get_readme, has_readme=has_readme)
-
-    # Define context
-    log.debug("setting context")
-    context = Context(environment, assignment_path, artifacts_path, options)
-    environment.globals["context"] = context
-
-    # Create output directory
-    artifacts_path.mkdir(exist_ok=True, parents=True)
-
-    # Build
-    for step in BUILD_STEPS:
-        step(context, assignment)
+        artifacts_path=artifacts_path,
+        custom_template_path=custom_template_path,
+        options=options).compile()

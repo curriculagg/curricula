@@ -21,9 +21,10 @@ setup(
     # Packaging
     packages=find_packages(),
     package_data={"curricula": [
-        "build/schema/*.json",
+        "compile/schema/*.json",
         "grade/include/*.hpp",
-        "grade/include/**/*.hpp"]},
+        "grade/include/**/*.hpp",
+        "template/**/*"]},
     include_package_data=True,
     zip_safe=False,
     install_requires=["jinja2", "jsonschema"])
