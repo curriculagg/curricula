@@ -31,7 +31,7 @@ class GradeWorkflow(Workflow):
         report = run(assignment, solution_path, **self.configuration.options)
 
         with report_path.open("w") as file:
-            json.dump(report, file, indent=2)
+            json.dump(report.dump(), file, indent=2)
 
         with formatted_report_path.open("w") as file:
             file.write(format_report_markdown(

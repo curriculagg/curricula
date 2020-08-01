@@ -96,6 +96,7 @@ class Target:
 
         self.configuration = configuration
         self.units = dict()
+        self.workflows = list()
 
     def unit(self, unit_type: Type[Unit]):
         """Add a unit by its constructor."""
@@ -114,5 +115,5 @@ class Target:
         for unit_name, unit in self.units.items():
             result[unit_name] = unit.compile(assignment, context)
         for workflow in self.workflows:
-            workflow.run(result)
+            workflow.run(assignment, result)
         return result
