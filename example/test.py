@@ -38,7 +38,7 @@ def main():
         dump(report.dump(), file, indent=2)
     with report_path.parent.joinpath("report.md").open("w") as file:
         file.write(format_report_markdown(
-            grading_path=artifacts_path.joinpath(Paths.GRADING),
+            assignment=assignment,
             report_path=report_path))
 
 

@@ -6,11 +6,10 @@ from ..models import GradingAssignment
 from ..report import AssignmentReport
 
 
-def get_diagnostics(grading_path: Path, assignment_report_path: Path) -> str:
+def get_diagnostics(assignment: GradingAssignment, assignment_report_path: Path) -> str:
     """Check if tests passed, displaying errors."""
 
     # Load the assignment
-    assignment = GradingAssignment.read(grading_path)
     with assignment_report_path.open() as file:
         assignment_report = AssignmentReport.load(json.load(file), assignment)
 

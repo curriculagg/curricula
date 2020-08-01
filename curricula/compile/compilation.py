@@ -43,7 +43,8 @@ from .validate import validate
 from .content import ReadmeBuilder, DirectoryMerger, DirectoryAggregator, get_readme, has_readme
 from .models import CompilationAssignment
 from .framework import Unit, UnitResult, Context, Configuration, Target, TargetResult
-
+from .workflows.grade import GradeWorkflow
+from .workflows.site import SiteWorkflow
 
 root = Path(__file__).parent.absolute()
 
@@ -274,20 +275,20 @@ class CurriculaTarget(Target):
 
     configuration: Configuration
 
-    instructions: InstructionsUnit
-    resources: ResourcesUnit
-    solution: SolutionUnit
-    grading: GradingUnit
-
     def __init__(self, configuration: Configuration):
         """Initialize the compilation and do static setup."""
 
         super().__init__(configuration)
 
-        self.register(InstructionsUnit)
-        self.register(ResourcesUnit)
-        self.register(SolutionUnit)
-        self.register(GradingUnit)
+        # Register compilation units
+        self.unit(InstructionsUnit)
+        self.unit(ResourcesUnit)
+        self.unit(SolutionUnit)
+        self.unit(GradingUnit)
+
+        # Register additional workflows
+        self.workflow(GradeWorkflow)
+        self.workflow(SiteWorkflow)
 
     def compile(self, **context_options) -> TargetResult:
         """Generate context and compile."""

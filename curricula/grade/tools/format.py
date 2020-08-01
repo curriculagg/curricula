@@ -1,3 +1,5 @@
+import jinja2
+
 import json
 from typing import Dict, Iterable, Iterator, List
 from pathlib import Path
@@ -121,24 +123,29 @@ def summarize(assignment: GradingAssignment, report: AssignmentReport) -> Report
     return summary
 
 
+def create_format_environment(custom_template_path: Path = None) -> jinja2.Environment:
+    """Create the requisite environment."""
+
+    if custom_template_path is None:
+        custom_template_path = DEFAULT_TEMPLATE_PATH
+    return jinja2_create_environment(custom_template_path=custom_template_path)
+
+
 def format_report_markdown(
-        grading_path: Path,
+        assignment: GradingAssignment,
         report_path: Path,
-        template_path: Path = None,
+        environment: jinja2.Environment = None,
         options: dict = None) -> str:
     """Return a formatted markdown report."""
 
-    assignment = GradingAssignment.read(grading_path)
     with report_path.open() as file:
         report = AssignmentReport.load(json.load(file), assignment)
     if report.partial:
         return "Cannot format a partial report!"
 
-    if template_path is None:
-        template_path = DEFAULT_TEMPLATE_PATH
-
-    environment = jinja2_create_environment(custom_template_path=template_path)
     summary = summarize(assignment, report)
+    if environment is None:
+        environment = create_format_environment()
 
     environment.globals.update(assignment=assignment, summary=summary, options=options)
     report_template = environment.get_template("template:grade/report/assignment.md")

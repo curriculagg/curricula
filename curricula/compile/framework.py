@@ -4,7 +4,7 @@ import jinja2
 
 from pathlib import Path
 from dataclasses import dataclass, field
-from typing import Dict, Set, Optional, List, Type
+from typing import Dict, Set, Optional, Type, List
 
 from .models import CompilationAssignment
 from ..log import log
@@ -71,11 +71,25 @@ class Unit(abc.ABC):
         """Compile the unit given the context."""
 
 
+class Workflow(abc.ABC):
+    """Invoked after compilation."""
+
+    configuration: Configuration
+
+    def __init__(self, configuration: Configuration):
+        self.configuration = configuration
+
+    @abc.abstractmethod
+    def run(self, assignment: CompilationAssignment, result: TargetResult):
+        """Invoked after compilation."""
+
+
 class Target:
     """A complete compilation target."""
 
     configuration: Configuration
     units: Dict[str, Unit]
+    workflows: List[Workflow]
 
     def __init__(self, configuration: Configuration):
         """Set configuration reference."""
@@ -83,10 +97,15 @@ class Target:
         self.configuration = configuration
         self.units = dict()
 
-    def register(self, unit_type: Type[Unit]):
+    def unit(self, unit_type: Type[Unit]):
         """Add a unit by its constructor."""
 
         self.units[unit_type.name] = unit_type(self.configuration)
+
+    def workflow(self, workflow_type: Type[Workflow]):
+        """Add a workflow."""
+
+        self.workflows.append(workflow_type(self.configuration))
 
     def compile(self, assignment: CompilationAssignment, context: Context) -> TargetResult:
         """Compile and return results."""
@@ -94,8 +113,6 @@ class Target:
         result = TargetResult()
         for unit_name, unit in self.units.items():
             result[unit_name] = unit.compile(assignment, context)
+        for workflow in self.workflows:
+            workflow.run(result)
         return result
-
-
-class Workflow(abc.ABC):
-    """Invoked after compilation."""
