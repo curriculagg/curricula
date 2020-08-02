@@ -97,14 +97,14 @@ class ReadmeBuilder:
 
         # Check if a template has been modified
         for path in context.paths_modified:
-            if path in self.configuration.custom_template_path:
+            if files.contains(self.configuration.custom_template_path, path):
                 return True
 
         # Check if a README has been modified
-        readme_path = get_readme_path(self.template_relative_path)
-        used_paths = {assignment.path.joinpath(readme_path)}
+        readme_path = get_readme_path(self.readme_relative_path)
+        used_paths = {assignment.path.joinpath(readme_path).resolve()}
         for problem in assignment.problems:
-            used_paths.add(problem.path.joinpath(readme_path))
+            used_paths.add(problem.path.joinpath(readme_path).resolve())
 
         return len(context.paths_modified.intersection(used_paths)) > 0
 
@@ -135,7 +135,7 @@ class DirectoryShouldRun:
 
         for path_modified in context.paths_modified:
             for path in paths:
-                if path_modified in path:
+                if files.contains(path, path_modified):
                     return True
 
         return False

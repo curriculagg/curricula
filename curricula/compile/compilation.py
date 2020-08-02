@@ -176,13 +176,13 @@ class SolutionUnit(Unit):
         run, copied_paths = self.content_aggregator.run_if_should(assignment, context)
         log.info(f"""solution: {"merged" if run else "skipped"} contents""")
 
-        # Delete extra READMEs
-        for copied_path in copied_paths:
-            readme_path = copied_path.joinpath(Files.README)
-            if readme_path.exists():
-                files.delete(readme_path)
-
         if run:
+            # Delete extra READMEs
+            for copied_path in copied_paths:
+                readme_path = copied_path.joinpath(Files.README)
+                if readme_path.exists():
+                    files.delete(readme_path)
+
             result.compiled = True
             result.tags.add(self.CONTENTS)
 

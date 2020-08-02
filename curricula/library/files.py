@@ -4,6 +4,17 @@ import distutils.dir_util
 from pathlib import Path
 
 
+def contains(parent: Path, child: Path) -> bool:
+    """Check if the child path is within the parent path."""
+
+    for a, b in zip(parent.resolve().parts, child.resolve().parts):
+        if a is None:
+            return True
+        if a != b:
+            return False
+    return True
+
+
 def relative(root: Path, path: Path):
     """Left-truncate the path by the root."""
 
@@ -31,13 +42,14 @@ def copy_file(source: Path, destination: Path):
     shutil.copy(str(source), str(destination))
 
 
-def copy_directory(source: Path, destination: Path, merge: bool = True):
+def copy_directory(source: Path, destination: Path, merge: bool = False):
     """Copy all files recursively."""
 
     if merge:
         distutils.dir_util.copy_tree(str(source), str(destination))
     else:
-        delete(destination)
+        if destination.exists():
+            delete(destination)
         shutil.copytree(str(source), str(destination))
 
 
