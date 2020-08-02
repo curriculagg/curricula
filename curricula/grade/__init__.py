@@ -21,7 +21,7 @@ root = Path(__file__).absolute().parent
 include = root.joinpath("include")
 
 
-def run(assignment: GradingAssignment, submission_path: Path, **options) -> AssignmentReport:
+def run(assignment: GradingAssignment, submission_path: Path, options: dict) -> AssignmentReport:
     """Run all tests on a submission and return a dict of results."""
 
     log.info(f"running {submission_path}")
@@ -43,14 +43,14 @@ def run(assignment: GradingAssignment, submission_path: Path, **options) -> Assi
     return reports
 
 
-def run_batch(self, target_paths: Iterable[Path], **options) -> Iterator[Tuple[Path, AssignmentReport]]:
+def run_batch(self, target_paths: Iterable[Path], options: dict) -> Iterator[Tuple[Path, AssignmentReport]]:
     """Run multiple reports, map directory to report."""
 
     # Start timer
     start = timeit.default_timer()
 
     for target_path in target_paths:
-        yield target_path, self.run_single(target_path, **options)
+        yield target_path, self.run_single(target_path, options=options)
 
     elapsed = timeit.default_timer() - start
     log.info(f"finished batch in {round(elapsed, 5)} seconds")

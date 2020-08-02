@@ -28,7 +28,7 @@ class GradeWorkflow(Workflow):
         formatted_report_path = self.configuration.artifacts_path.joinpath("solution.report.md")
 
         assignment = GradingAssignment.read(grading_path)
-        report = run(assignment, solution_path, **self.configuration.options)
+        report = run(assignment, solution_path, options=self.configuration.options)
 
         with report_path.open("w") as file:
             json.dump(report.dump(), file, indent=2)

@@ -7,7 +7,7 @@ from .compilation import CurriculaTarget, Configuration
 
 
 @timed("compile", printer=log.info)
-def compile(assignment_path: Path, artifacts_path: Path, custom_template_path: Path = None, **options):
+def compile(assignment_path: Path, artifacts_path: Path, custom_template_path: Path = None, options: dict = None):
     """Build the assignment at a given path."""
 
     configuration = Configuration(
