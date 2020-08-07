@@ -13,15 +13,19 @@ from .shared import *
 TZ = datetime.timezone(offset=datetime.timedelta(seconds=time.timezone))
 
 
-def deserialize_datetime(s: str) -> datetime.datetime:
+def deserialize_datetime(s: str) -> Optional[datetime.datetime]:
     """Deserialize our standard format."""
 
+    if s is None:
+        return None
     return datetime.datetime.strptime(s, "%Y-%m-%d %H:%M:%S").replace(tzinfo=TZ)
 
 
-def serialize_datetime(d: datetime) -> str:
+def serialize_datetime(d: datetime) -> Optional[str]:
     """Serialize back."""
 
+    if d is None:
+        return None
     return d.strftime("%Y-%m-%d %H:%M:%S")
 
 
@@ -249,6 +253,7 @@ class AssignmentDates(Model):
 
     assigned: datetime.datetime
     due: datetime.datetime
+    deadline: datetime.datetime
 
     @classmethod
     def load(cls, data: dict) -> "AssignmentDates":
@@ -256,14 +261,16 @@ class AssignmentDates(Model):
 
         return cls(
             assigned=deserialize_datetime(data["assigned"]),
-            due=deserialize_datetime(data["due"]),)
+            due=deserialize_datetime(data["due"]),
+            deadline=deserialize_datetime(data["deadline"]))
 
     def dump(self) -> dict:
         """Specifically serialize the datetime."""
 
         return dict(
             assigned=serialize_datetime(self.assigned),
-            due=serialize_datetime(self.due),)
+            due=serialize_datetime(self.due),
+            deadline=serialize_datetime(self.deadline))
 
 
 @dataclass(eq=False)
@@ -328,6 +335,7 @@ class Assignment(Model):
 
     notes: Optional[str] = None
     meta: AssignmentMeta = AssignmentMeta()
+    extra: Optional[dict] = None
 
     @classmethod
     def load(cls, data: dict, problems: List[Problem] = None) -> "Assignment":
@@ -343,6 +351,7 @@ class Assignment(Model):
             dates=AssignmentDates.load(data["dates"]),
             problems=problems,
             grading=AssignmentGrading.load(data["grading"]),
+            extra=data.get("extra"),
             notes=data.get("notes"),
             meta=AssignmentMeta.load(data["meta"]) if "meta" in data else AssignmentMeta())
 
@@ -362,5 +371,6 @@ class Assignment(Model):
             dates=self.dates.dump(),
             problems=[problem.dump() for problem in self.problems],
             grading=self.grading.dump(),
+            extra=self.extra,
             notes=self.notes,
             meta=self.meta.dump())

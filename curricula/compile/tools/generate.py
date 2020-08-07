@@ -25,6 +25,12 @@ def validate_datetime(string: str) -> bool:
     return True
 
 
+def validate_datetime_nullable(string: str) -> bool:
+    if len(string) == 0:
+        return True
+    return validate_datetime(string)
+
+
 def validate_integral(string: str) -> bool:
     if not string.isnumeric():
         print("Must be a positive integer!")
@@ -86,14 +92,19 @@ def input_assignment_json() -> dict:
                 }
             ],
             "dates": {
-                "assigned": validated_input("Date assigned (YYYY-MM-DD HH:MM:SS): ", validate_datetime),
-                "due": validated_input("Date due (YYYY-MM-DD HH:MM:SS): ", validate_datetime)
+                "assigned": validated_input("Assigned (YYYY-MM-DD HH:MM:SS or empty): ", validate_datetime_nullable),
+                "due": validated_input("Due (YYYY-MM-DD HH:MM:SS or empty): ", validate_datetime_nullable),
+                "deadline": validated_input("Deadline (YYYY-MM-DD HH:MM:SS or empty): ", validate_datetime_nullable),
             },
             "problems": [],
             "grading": {
                 "points": int(validated_input("Total points: ", validate_integral))
             }
         }
+
+        for field in "assigned", "due", "deadline":
+            if len(assignment_json["dates"][field]) == 0:
+                assignment_json["dates"][field] = None
 
         try:
             assignment_validator.validate(assignment_json)

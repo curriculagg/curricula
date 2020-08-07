@@ -22,11 +22,10 @@ class SiteWorkflow(Workflow):
         site_path = Path(self.configuration.options["site"])
         if not site_path.exists():
             site_path.mkdir(exist_ok=True, parents=True)
-        destination_path = site_path.joinpath(assignment.path.parts[-1])
-        log.info(f"pipelining instructions to site {destination_path}")
+        log.info(f"pipelining instructions to site {site_path}")
 
         copy_directory(
             source=self.configuration.artifacts_path.joinpath(Paths.INSTRUCTIONS),
-            destination=destination_path,
+            destination=site_path,
             merge=False)
-        move(destination_path.joinpath(Files.README), destination_path.joinpath("index.md"))
+        move(site_path.joinpath(Files.README), site_path.joinpath("index.md"))

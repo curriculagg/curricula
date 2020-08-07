@@ -18,9 +18,6 @@
         "$ref": "author.schema.json"
       }
     },
-    "dates": {
-      "$ref": "assignment_dates.schema.json"
-    },
     "problems": {
       "type": "array",
       "items": {
@@ -29,6 +26,9 @@
     },
     "grading": {
       "$ref": "assignment_grading.schema.json"
+    },
+    "environment": {
+      "type": "object"
     },
     "notes": {
       "type": "string",
