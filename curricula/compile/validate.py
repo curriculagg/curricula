@@ -1,6 +1,7 @@
 import json
 import jsonschema
 from pathlib import Path
+from typing import Any
 
 from ..shared import *
 from ..log import log
@@ -40,11 +41,24 @@ assignment_validator = create_validator(root / "schema" / "assignment.schema.jso
 problem_validator = create_validator(root / "schema" / "problem.schema.json")
 
 
+def json_load_file(path: Path) -> Any:
+    """Open a file and raise appropriate exceptions at on failure."""
+
+    try:
+        with path.open() as file:
+            return json.load(file)
+    except FileNotFoundError:
+        raise CompilationException(message=f"No such path {path}")
+    except (PermissionError, OSError):
+        raise CompilationException(message=f"Failed to read {path}")
+    except json.decoder.JSONDecodeError:
+        raise CompilationException(message=f"Failed to deserialize {path}")
+
+
 def validate_problem(problem_path: Path):
     """Validate with jsonschema."""
 
-    with problem_path.joinpath(Files.PROBLEM).open() as file:
-        data = json.load(file)
+    data = json_load_file(problem_path.joinpath(Files.PROBLEM))
 
     try:
         problem_validator.validate(data)
@@ -56,8 +70,7 @@ def validate_problem(problem_path: Path):
 def validate_assignment(assignment_path: Path):
     """Validators per assignment."""
 
-    with assignment_path.joinpath(Files.ASSIGNMENT).open() as file:
-        data = json.load(file)
+    data = json_load_file(assignment_path.joinpath(Files.ASSIGNMENT))
 
     try:
         assignment_validator.validate(data)

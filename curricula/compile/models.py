@@ -6,6 +6,7 @@ from dataclasses import field
 
 from ..models import Assignment, Problem
 from ..shared import Files
+from .exception import CompilationException
 
 
 class CompilationProblem(Problem):
@@ -31,8 +32,17 @@ class CompilationProblem(Problem):
         """Load a problem from the assignment path and reference."""
 
         path = root.joinpath(reference["path"])
-        with path.joinpath(Files.PROBLEM).open() as file:
-            data = json.load(file)
+        index_path = path.joinpath(Files.PROBLEM)
+
+        try:
+            with index_path.open() as file:
+                data = json.load(file)
+        except FileNotFoundError:
+            raise CompilationException(message=f"No such path {index_path} for assignment {assignment.path}")
+        except (PermissionError, OSError):
+            raise CompilationException(message=f"Failed to read {index_path} for assignment {assignment.path}")
+        except json.decoder.JSONDecodeError:
+            raise CompilationException(message=f"Failed to deserialize {index_path} for assignment {assignment.path}")
 
         data["short"] = reference.get("short", data.get("short", path.parts[-1]))
         data["relative_path"] = reference.get("relative_path", data["short"])
@@ -87,8 +97,17 @@ class CompilationAssignment(Assignment):
     def read(cls, path: Path) -> "CompilationAssignment":
         """Load an assignment from a containing directory."""
 
-        with path.joinpath(Files.ASSIGNMENT).open() as file:
-            data = json.load(file)
+        index_path = path.joinpath(Files.ASSIGNMENT)
+
+        try:
+            with index_path.open() as file:
+                data = json.load(file)
+        except FileNotFoundError:
+            raise CompilationException(message=f"No such path {index_path}")
+        except (PermissionError, OSError):
+            raise CompilationException(message=f"Failed to read {index_path}")
+        except json.decoder.JSONDecodeError:
+            raise CompilationException(message=f"Failed to deserialize {index_path}")
 
         data["short"] = data.get("short", path.parts[-1])
         self = cls.load(data, problems=[])
