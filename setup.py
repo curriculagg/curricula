@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name="curricula",
-    version="1.2.2",
+    version="1.2.3",
     description="A content manager and grading toolkit for evaluating student code",
     url="https://github.com/csci104/curricula",
     author="Noah Kim",
