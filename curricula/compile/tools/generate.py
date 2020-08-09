@@ -98,7 +98,7 @@ def input_assignment_json() -> dict:
             },
             "problems": [],
             "grading": {
-                "points": int(validated_input("Total points: ", validate_integral))
+                "points": validated_input("Total points: ", validate_integral)
             }
         }
 
@@ -144,7 +144,7 @@ def input_problem_json() -> dict:
                 *map(str.strip, input("Optional topics (separated by comma): ").split(","))
             ],
             "grading": {
-                "points": int(validated_input("Total points: ", validate_integral)),
+                "points": validated_input("Total points: ", validate_integral),
                 "automated": None,
                 "review": None,
                 "manual": None,

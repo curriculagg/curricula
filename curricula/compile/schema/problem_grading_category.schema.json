@@ -12,8 +12,8 @@
       "minLength": 1
     },
     "minutes": {
-      "type": "number",
-      "minimum": 0
+      "type": "string",
+      "pattern": "^(\\d*\\.)?\\d+$"
     },
     "weight": {
       "type": "string",

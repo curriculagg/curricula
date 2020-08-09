@@ -8,15 +8,15 @@
       "type": "boolean"
     },
     "weight": {
-      "type": "number",
-      "minimum": 0
+      "type": "string",
+      "pattern": "^(\\d*\\.)?\\d+$"
     },
     "points": {
       "type": [
-        "number",
+        "string",
         "null"
       ],
-      "minimum": 0
+      "pattern": "^(\\d*\\.)?\\d+$"
     }
   }
 }

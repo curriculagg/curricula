@@ -138,6 +138,8 @@ class ProblemGrading(Model):
     def percentage(self) -> Decimal:
         """Percentage weight of the problem in the assignment."""
 
+        if self.problem.assignment.grading.weight() == 0:
+            return Decimal(0)
         return self.weight / self.problem.assignment.grading.weight()
 
     @property

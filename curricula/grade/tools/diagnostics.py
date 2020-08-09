@@ -18,6 +18,9 @@ def get_diagnostics(assignment: GradingAssignment, assignment_report_path: Path)
 
     # Iterate problems
     for problem in assignment.problems:
+        if problem.short not in assignment_report:
+            continue
+
         problem_report = assignment_report[problem.short]
         results_passing_count = sum(1 for _ in filter(lambda p: p.passing, problem_report.results.values()))
 

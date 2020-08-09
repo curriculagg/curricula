@@ -8,8 +8,8 @@
       "type": "boolean"
     },
     "points": {
-      "type": "number",
-      "minimum": 1
+      "type": "string",
+      "pattern": "^(\\d*\\.)?\\d+$"
     },
     "automated": {
       "oneOf": [

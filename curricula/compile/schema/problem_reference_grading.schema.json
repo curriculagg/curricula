@@ -13,10 +13,10 @@
     },
     "points": {
       "type": [
-        "number",
+        "string",
         "null"
       ],
-      "minimum": 0
+      "pattern": "^(\\d*\\.)?\\d+$"
     },
     "automated": {
       "$ref": "problem_reference_grading_category.schema.json"

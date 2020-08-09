@@ -5,8 +5,8 @@
   "type": "object",
   "properties": {
     "points": {
-      "type": "number",
-      "minimum": 0
+      "type": "string",
+      "pattern": "^(\\d*\\.)?\\d+$"
     }
   },
   "required": [

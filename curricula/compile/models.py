@@ -1,7 +1,7 @@
 import json
 
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 from dataclasses import field
 
 from ..models import Assignment, Problem
@@ -11,14 +11,19 @@ from ..shared import Files
 class CompilationProblem(Problem):
     """Add additional fields only used for build."""
 
-    number: int
+    number: Optional[int]
     path: Path
     assignment: "CompilationAssignment"
 
     percentage: float = None
 
     @classmethod
-    def read(cls, assignment: "CompilationAssignment", reference: dict, root: Path, number: int) -> "CompilationProblem":
+    def read(
+            cls,
+            assignment: "CompilationAssignment",
+            reference: dict,
+            root: Path,
+            number: int = None) -> "CompilationProblem":
         """Load a problem from the assignment path and reference."""
 
         path = root.joinpath(reference["path"])
@@ -83,12 +88,11 @@ class CompilationAssignment(Assignment):
         counter = 1
         total_weight = 0
         for reference in data.pop("problems"):
-            number = None
-            if any(filter(None, reference["grading"])):
-                number = counter
+            problem = CompilationProblem.read(self, reference, path)
+            if problem.grading.is_automated or problem.grading.is_review or problem.grading.is_manual:
+                problem.number = counter
                 counter += 1
 
-            problem = CompilationProblem.read(self, reference, path, number)
             total_weight += problem.grading.weight
             self.problems.append(problem)
 

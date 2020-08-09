@@ -122,6 +122,9 @@ class AssignmentReport:
                 self.partial = True
                 break
 
+    def __contains__(self, item: str) -> bool:
+        return item in self.problems
+
     def __getitem__(self, item: str) -> ProblemReport:
         """Index problem reports by problem short."""
 
