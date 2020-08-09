@@ -4,6 +4,7 @@ from pathlib import Path
 
 from ..shared import *
 from ..log import log
+from .exception import CompilationException
 
 root = Path(__file__).absolute().parent
 
@@ -49,7 +50,7 @@ def validate_problem(problem_path: Path):
         problem_validator.validate(data)
     except jsonschema.ValidationError as exception:
         log.error(f"invalid schema in problem {problem_path}: {exception}")
-        raise
+        raise CompilationException(message=str(exception))
 
 
 def validate_assignment(assignment_path: Path):
@@ -62,7 +63,7 @@ def validate_assignment(assignment_path: Path):
         assignment_validator.validate(data)
     except jsonschema.ValidationError as exception:
         log.error(f"invalid schema in assignment {assignment_path}: {exception}")
-        raise
+        raise CompilationException(message=str(exception))
 
     for problem_reference in data["problems"]:
         validate_problem(assignment_path.joinpath(problem_reference["path"]))

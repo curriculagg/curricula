@@ -33,6 +33,7 @@ class Context:
     """Details generated at compile time."""
 
     environment: jinja2.Environment
+    indices_modified: bool = False
     paths_modified: Optional[Set[Path]] = None
 
 

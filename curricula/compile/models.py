@@ -17,6 +17,10 @@ class CompilationProblem(Problem):
 
     percentage: float = None
 
+    @property
+    def index_path(self) -> Path:
+        return self.path.joinpath(Files.PROBLEM)
+
     @classmethod
     def read(
             cls,
@@ -74,6 +78,10 @@ class CompilationAssignment(Assignment):
 
     problems: List[CompilationProblem]
     path: Path = field(init=False)
+
+    @property
+    def index_path(self) -> Path:
+        return self.path.joinpath(Files.ASSIGNMENT)
 
     @classmethod
     def read(cls, path: Path) -> "CompilationAssignment":

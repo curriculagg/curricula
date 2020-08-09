@@ -92,7 +92,7 @@ class ReadmeBuilder:
     def should_run(self, assignment: CompilationAssignment, context: Context):
         """Check if any paths are used by this builder."""
 
-        if context.paths_modified is None:
+        if context.paths_modified is None or context.indices_modified:
             return True
 
         # Check if a template has been modified
@@ -126,7 +126,7 @@ class DirectoryShouldRun:
     def should_run(self, assignment: CompilationAssignment, context: Context):
         """Check if any paths are used by this builder."""
 
-        if context.paths_modified is None:
+        if context.paths_modified is None or context.indices_modified:
             return True
 
         paths = [assignment.path.joinpath(self.contents_relative_path)]

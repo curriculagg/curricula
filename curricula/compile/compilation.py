@@ -315,6 +315,13 @@ class CurriculaTarget(Target):
         log.debug("setting context")
         context = Context(environment=environment, **context_options)
 
+        # Check if an index file was edited
+        if context.paths_modified:
+            for item in (assignment, *assignment.problems):
+                if item.index_path.resolve() in context.paths_modified:
+                    context.indices_modified = True
+                    break
+
         # Create output directory
         self.configuration.artifacts_path.mkdir(exist_ok=True, parents=True)
 
