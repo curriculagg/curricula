@@ -19,11 +19,12 @@ class SiteWorkflow(Workflow):
         if not result["instructions"].compiled:
             return
 
-        site_path = Path(self.configuration.options["site"]).joinpath(assignment.short)
-        if not site_path.exists():
-            site_path.mkdir(exist_ok=True, parents=True)
-        log.info(f"pipelining instructions to site {site_path}")
+        site_path = Path(self.configuration.options["site"])
+        if not site_path.parent.exists():
+            log.error("site parent path does not exist, cancelling pipeline")
+            return
 
+        log.info(f"pipelining instructions to site {site_path}")
         copy_directory(
             source=self.configuration.artifacts_path.joinpath(Paths.INSTRUCTIONS),
             destination=site_path,
