@@ -1,0 +1,3 @@
+recursive-include curricula/template *.md *.html
+recursive-include curricula/grade/include *.hpp
+recursive-include curricula/compile/schema *.json

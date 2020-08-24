@@ -32,7 +32,12 @@ class GraderStage:
         def decorator(runnable: Runnable) -> Runnable:
             """Put the function in a correctness object."""
 
-            name = details.pop("name", None) or runnable.__qualname__
+            name = details.pop("name", None)
+            if name is None:
+                name = getattr(runnable, "__qualname__", None)
+                if name is None:
+                    raise GraderException("No viable candidate for task name, please provide during registration")
+
             description = details.pop("description", None) or runnable.__doc__
             weight = Decimal(details.pop("weight", 1))
             dependencies = Dependencies.from_details(details)

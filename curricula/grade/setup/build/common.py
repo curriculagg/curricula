@@ -21,10 +21,11 @@ def build_gpp_executable(
 
     destination_path.parent.mkdir(parents=True, exist_ok=True)
     runtime = process.run(
-        "g++", *gpp_options,
-        "-o", str(destination_path),
+        "g++",
         str(source_path),
         *map(str, source_paths),
+        *gpp_options,
+        "-o", str(destination_path),
         timeout=timeout)
 
     error_description = None
