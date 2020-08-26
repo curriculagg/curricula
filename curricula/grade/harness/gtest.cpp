@@ -4,6 +4,9 @@
 #include <iostream>
 #include "gtest/gtest.h"
 
+using namespace std;
+
+
 int main(int argc, char** argv) {
     if (argc < 2) {
         cerr << "Expected test name!" << endl;

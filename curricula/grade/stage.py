@@ -41,7 +41,12 @@ class GraderStage:
             description = details.pop("description", None) or runnable.__doc__
             weight = Decimal(details.pop("weight", 1))
             dependencies = Dependencies.from_details(details)
-            tags = details.pop("tags", set())
+
+            tags = details.pop("tags", None)
+            if tags is None:
+                tags = set()
+            elif not isinstance(tags, set):
+                raise GraderException(f"Tags must be a set or None")
 
             for existing_task in self.tasks:
                 if existing_task.name == name:
