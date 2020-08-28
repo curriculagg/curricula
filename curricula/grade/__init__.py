@@ -21,7 +21,7 @@ root = Path(__file__).absolute().parent
 
 class Paths:
     INCLUDE = root.joinpath("include")
-    HARNESS = root.joinpath("harness")
+    GTEST = root.joinpath("gtest")
 
 
 def run(assignment: GradingAssignment, submission_path: Path, options: dict) -> AssignmentReport:
