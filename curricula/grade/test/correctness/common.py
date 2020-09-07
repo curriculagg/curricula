@@ -184,7 +184,7 @@ def test_runtime_succeeded(runtime: Runtime) -> CorrectnessResult:
     if runtime.timed_out:
         error = Error(
             description="timed out",
-            suggestion=f"expected maximum elapsed time of {runtime.timeout} seconds")
+            suggestion=f"exceeded maximum elapsed time of {runtime.timeout} seconds")
         raise CorrectnessResult(passing=False, runtime=runtime.dump(), error=error)
     if runtime.code != 0:
         error = Error(
@@ -318,7 +318,7 @@ class CompareExitCodeOutputTest(OutputTest, Configurable):
             return CorrectnessResult(
                 passing=False,
                 error=Error(
-                    description=f"received incorrect exit code f{code}",
+                    description=f"received incorrect exit code {code}",
                     suggestion=f"expected {expected_codes}"))
 
         self.test = test
@@ -339,7 +339,6 @@ def write_then_read(
             interactive.stdin.write(command)
             try:
                 interactive.stdout.read(
-                    block=True,
                     condition=read_condition,
                     timeout=read_condition_timeout)
             except TimeoutExpired:
