@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name="curricula",
-    version="1.2.4",
+    version="1.3.1",
     description="A content manager and grading toolkit for evaluating student code",
     url="https://github.com/csci104/curricula",
     author="Noah Kim",
@@ -24,7 +24,9 @@ setup(
         "compile/schema/*.json",
         "grade/include/*.hpp",
         "grade/include/**/*.hpp",
-        "template/**/*"]},
+        "grade/gtest/*.cpp",
+        "template/**/*.md",
+        "template/**/*.html"]},
     include_package_data=True,
     zip_safe=False,
     install_requires=["jinja2", "jsonschema"])

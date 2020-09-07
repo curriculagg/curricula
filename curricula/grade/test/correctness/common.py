@@ -7,7 +7,7 @@ from . import CorrectnessResult
 from .. import Test
 from ...task import Error
 from ....library.process import Runtime, Interactive, TimeoutExpired, Interaction
-from ....library.configurable import none, not_none, Configurable
+from ....library.configurable import none, Configurable
 
 __all__ = (
     "as_lines",
@@ -22,6 +22,7 @@ __all__ = (
     "ExecutableInputFileMixin",
     "ExecutableOutputFileMixin",
     "CompareExitCodeOutputTest",
+    "GoogleTest",
     "write_then_read")
 
 
@@ -322,6 +323,16 @@ class CompareExitCodeOutputTest(OutputTest, Configurable):
                     suggestion=f"expected {expected_codes}"))
 
         self.test = test
+
+
+class GoogleTest(ExecutableCodeMixin, CompareExitCodeOutputTest):
+    """Is set up for the gtest.hpp include."""
+
+    expected_code = 0
+
+    def __init__(self, test_name: str, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.args = (test_name,)
 
 
 def write_then_read(

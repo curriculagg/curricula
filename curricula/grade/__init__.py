@@ -16,9 +16,12 @@ from .models import GradingAssignment, GradingProblem
 from .report import AssignmentReport
 from .resource import Submission, Context
 
-
 root = Path(__file__).absolute().parent
-include = root.joinpath("include")
+
+
+class Paths:
+    INCLUDE = root.joinpath("include")
+    GTEST = root.joinpath("gtest")
 
 
 def run(assignment: GradingAssignment, submission_path: Path, options: dict) -> AssignmentReport:
