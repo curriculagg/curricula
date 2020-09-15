@@ -50,9 +50,13 @@ class CompilationProblem(Problem):
         if "title" in reference:
             data["title"] = reference["title"]
 
-        data["grading"]["enabled"] = reference["grading"].get("enabled", True)
-        data["grading"]["weight"] = reference["grading"].get("weight", "1")
-        data["grading"]["points"] = reference["grading"].get("points", "100")
+        # Override with data in reference or default
+        for name, default in ("enabled", True), ("weight", "1"), ("points", "100"):
+            if name in reference["grading"]:
+                data["grading"][name] = reference["grading"][name]
+            elif name not in data["grading"]:
+                data["grading"][name] = default
+
         for category in "automated", "review", "manual":
             category_data = data["grading"][category]
             if category_data is None:

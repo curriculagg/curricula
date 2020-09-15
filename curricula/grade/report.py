@@ -75,7 +75,7 @@ class ProblemReport:
         for task in problem.grader.tasks:
             result_data = data["results"].get(task.name)
             if result_data is not None:
-                results[task.name] = Result.load(result_data, task)
+                results[task.name] = task.Result.load(result_data, task)
             else:
                 partial = True
 

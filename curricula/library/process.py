@@ -2,6 +2,9 @@ import subprocess
 import timeit
 import time
 
+from ..log import log
+from .debug import get_source_location
+
 from typing import Optional, Tuple, Callable, IO, TypeVar, Any
 from dataclasses import dataclass, asdict, field
 from contextlib import contextmanager
@@ -110,6 +113,18 @@ class Runtime(ProcessStreams, ProcessCreation):
     # Exception preventing start
     raised_exception: bool = False
     exception: Optional[ProcessError] = None
+
+    def dump(self) -> dict:
+        """Make the runtime JSON serializable."""
+
+        dump = super().dump()
+        dump.update(elapsed=self.elapsed)
+        dump.update(code=self.code)
+        dump.update(timeout=self.timeout)
+        dump.update(timed_out=self.timed_out)
+        dump.update(raised_exception=self.raised_exception)
+        dump.update(exception=self.exception)
+        return dump
 
 
 @dataclass(eq=False)
@@ -294,6 +309,9 @@ def run(*args: str, stdin: bytes = None, timeout: float = None, cwd: Path = None
     The process_setup callable is invoked within the spawned process
     prior to the execution of the command.
     """
+
+    if timeout is None:
+        log.warning(f"process.run has been invoked without a timeout from {get_source_location()}")
 
     # Spawn the process, access stdout and stderr
     try:

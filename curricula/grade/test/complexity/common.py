@@ -1,7 +1,7 @@
 import math
 
 from dataclasses import dataclass
-from typing import Sequence, Callable, Iterable
+from typing import Sequence, Callable, Iterable, Tuple
 
 
 @dataclass()
@@ -29,6 +29,27 @@ class RuntimeData:
     def transform(self, profile: Callable[[RuntimeDataPoint], RuntimeDataPoint]) -> "RuntimeData":
         return RuntimeData(tuple(map(profile, self.points)))
 
+    def regression(self) -> Tuple[float, float, float]:
+        """Simply calculate the slope of the linear regression."""
+
+        sum_xy = sum_x = sum_y = sum_x_squared = sum_y_squared = 0
+        for point in self.points:
+            sum_xy += point.n * point.count
+            sum_x += point.n
+            sum_y += point.count
+            sum_x_squared += point.n * point.n
+            sum_y_squared += point.count * point.count
+
+        m = (len(self.points) * sum_xy - sum_x * sum_y) / (len(self.points) * sum_x_squared - sum_x * sum_x)
+        b = (sum_y - m * sum_x) / len(self.points)
+
+        return m, b, sum_y_squared
+
+    def constance(self) -> float:
+        """The slope of the regression, lol."""
+
+        return self.regression()[0]
+
     def linearity(self) -> float:
         """Calculate linear regression error.
 
@@ -48,16 +69,7 @@ class RuntimeData:
         > every case, the correlation factor doesn't change at all.
         """
 
-        sum_xy = sum_x = sum_y = sum_x_squared = sum_y_squared = 0
-        for point in self.points:
-            sum_xy += point.n * point.count
-            sum_x += point.n
-            sum_y += point.count
-            sum_x_squared += point.n * point.n
-            sum_y_squared += point.count * point.count
-
-        m = (len(self.points) * sum_xy - sum_x * sum_y) / (len(self.points) * sum_x_squared - sum_x * sum_x)
-        b = (sum_y - m * sum_x) / len(self.points)
+        m, b, sum_y_squared = self.regression()
 
         sum_error_squared = 0
         for point in self.points:

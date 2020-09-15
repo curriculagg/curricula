@@ -1,4 +1,4 @@
-from typing import List, Tuple, Iterator, Set, Optional, Callable
+from typing import List, Tuple, Iterator, Set, Optional, Callable, Dict, Iterable
 from dataclasses import dataclass, field
 
 from .report import ProblemReport
@@ -27,24 +27,47 @@ def fulfills_dependencies(task: Task, report: ProblemReport):
         all(report[dependency].complete for dependency in task.dependencies.complete)))
 
 
+def flatten_dependencies(task_name: str, task_lookup: Dict[str, Task]) -> Iterator[str]:
+    """Return a flattened iterable of dependencies task names."""
+
+    for related_task_name in task_lookup[task_name].dependencies.all():
+        yield related_task_name
+        yield from flatten_dependencies(related_task_name, task_lookup)
+
+
 @dataclass(eq=False, init=False)
 class TaskFilter:
     """Small helper to check whether a task should be run."""
 
     tags: Optional[Set[str]] = None
     task_names: Optional[Set[str]] = None
+    related_task_names: Optional[Set[str]] = None
 
-    def __init__(self, context: Context, problem_short: str):
+    def __init__(self, tasks: Iterator[Task], context: Context, problem_short: str):
         """Build from context."""
 
-        tags = context.options.get("tags")
-        if tags is not None:
-            self.tags = set(tags)
-            TaskFilter.filter_problem_specific(self.tags, problem_short)
-        task_names = context.options.get("tasks")
-        if task_names is not None:
-            self.task_names = set(task_names)
-            TaskFilter.filter_problem_specific(self.task_names, problem_short)
+        filtered_tags = context.options.get("tags")
+        if filtered_tags is not None:
+            self.tags = self.filter_problem_specific(filtered_tags, problem_short)
+
+        # Assemble all tasks and dependencies
+        filtered_task_names = context.options.get("tasks")
+        if filtered_task_names is not None:
+            self.task_names = self.filter_problem_specific(filtered_task_names, problem_short)
+
+            # We also need to pull all dependencies
+            self.related_task_names = set()
+            task_lookup = {task.name: task for task in tasks}
+            for filtered_task_name in self.task_names:
+                for related_task_name in flatten_dependencies(filtered_task_name, task_lookup):
+                    self.related_task_names.add(related_task_name)
+
+            all_task_names = self.task_names.union(self.related_task_names)
+
+            # Also grab all cleanup steps if they only require filtered tasks
+            for task in task_lookup.values():
+                if task.stage == TeardownStage.name and task.dependencies.all().issubset(all_task_names):
+                    self.related_task_names.add(task.name)
 
     def __call__(self, task: Task) -> bool:
         """Check if a task should be run."""
@@ -53,7 +76,7 @@ class TaskFilter:
             if self.tags.isdisjoint(task.tags):
                 return False
         if self.task_names is not None:
-            if task.name not in self.task_names:
+            if task.name not in self.task_names and task.name not in self.related_task_names:
                 return False
         return True
 
@@ -62,13 +85,17 @@ class TaskFilter:
         return self.tags is not None or self.task_names is not None
 
     @staticmethod
-    def filter_problem_specific(collection: Set[str], prefix: str):
+    def filter_problem_specific(collection: Iterable[str], prefix: str) -> Set[str]:
         """Filter in items prefaced by prefix:xyz as xyz."""
 
-        for item in filter(lambda i: ":" in i, collection):
-            collection.remove(item)
-            if item.startswith(f"{prefix}:"):
-                collection.add(item.split(":", maxsplit=1)[1])
+        result = set()
+        for item in collection:
+            if ":" in item:
+                if item.startswith(f"{prefix}:"):
+                    result.add(item.split(":", maxsplit=1)[1])
+            else:
+                result.add(item)
+        return result
 
 
 def _run(
@@ -142,11 +169,11 @@ class Grader:
         log.debug("setting up runtime")
 
         # Resources
-        resources = dict(context=context, submission=submission)
+        resources = dict(context=context, submission=submission, problem=self.problem)
         resources.update(resources=resources)
 
         # Create the filter
-        is_visible = TaskFilter(context, self.problem.short)
+        is_visible = TaskFilter(self.tasks, context, self.problem.short)
 
         # Final report
         report = ProblemReport.create(self.problem)

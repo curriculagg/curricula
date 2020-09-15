@@ -24,36 +24,42 @@ class Paths:
     GTEST = root.joinpath("gtest")
 
 
-def run(assignment: GradingAssignment, submission_path: Path, options: dict) -> AssignmentReport:
-    """Run all tests on a submission and return a dict of results."""
+def _run(assignment: GradingAssignment, submission_path: Path, options: dict) -> AssignmentReport:
+    """Actual runtime."""
 
-    log.info(f"running {submission_path}")
-    reports = AssignmentReport.create(assignment)
-
-    start = timeit.default_timer()
-
+    report = AssignmentReport.create(assignment)
     context = Context(options=options)
     for problem in filter(lambda p: p.grading.is_automated, assignment.problems):
         log.debug(f"running problem {problem.short}")
         submission = Submission(
             assignment_path=submission_path,
             problem_path=submission_path.joinpath(problem.relative_path))
-        reports[problem.short] = problem.grader.run(context=context, submission=submission)
+        report[problem.short] = problem.grader.run(context=context, submission=submission)
+    return report
 
+
+def run(assignment: GradingAssignment, submission_path: Path, options: dict) -> AssignmentReport:
+    """Run all tests on a submission and return a dict of results."""
+
+    log.info(f"running {submission_path}")
+    start = timeit.default_timer()
+    report = _run(assignment, submission_path, options)
     elapsed = timeit.default_timer() - start
     log.debug(f"finished in {round(elapsed, 5)} seconds")
+    return report
 
-    return reports
 
-
-def run_batch(self, target_paths: Iterable[Path], options: dict) -> Iterator[Tuple[Path, AssignmentReport]]:
+def run_batch(
+        assignment: GradingAssignment,
+        submission_paths: Iterable[Path],
+        options: dict) -> Iterator[Tuple[Path, AssignmentReport]]:
     """Run multiple reports, map directory to report."""
 
     # Start timer
     start = timeit.default_timer()
 
-    for target_path in target_paths:
-        yield target_path, self.run_single(target_path, options=options)
+    for submission_path in submission_paths:
+        yield submission_path, run(assignment, submission_path, options=options)
 
     elapsed = timeit.default_timer() - start
     log.info(f"finished batch in {round(elapsed, 5)} seconds")

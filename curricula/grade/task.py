@@ -112,6 +112,9 @@ class Dependencies:
     passing: Set[str]
     complete: Set[str]
 
+    def all(self) -> Set[str]:
+        return self.passing.union(self.complete)
+
     @classmethod
     def normalize_from_details(cls, name: str, details: dict) -> Set[str]:
         """Normalize a set of strings."""

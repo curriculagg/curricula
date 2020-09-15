@@ -17,7 +17,7 @@ __all__ = (
     "OutputTest",
     "CompareTest",
     "CompareBytesOutputTest",
-    "ExecutableMixin",
+    "ExecutableOutputMixin",
     "ExecutableCodeMixin",
     "ExecutableInputFileMixin",
     "ExecutableOutputFileMixin",
@@ -194,7 +194,7 @@ def test_runtime_succeeded(runtime: Runtime) -> CorrectnessResult:
         return CorrectnessResult(passing=False, runtime=runtime.dump(), error=error)
 
 
-class ExecutableMixin(OutputTest, Configurable):
+class ExecutableOutputMixin(Configurable):
     """Meant for reading and comparing stdout."""
 
     executable_name: str
@@ -221,7 +221,7 @@ class ExecutableMixin(OutputTest, Configurable):
         self.timeout = timeout
         self.cwd = cwd
 
-    def execute(self) -> Runtime:
+    def execute(self: Union["ExecutableOutputMixin", OutputTest]) -> Runtime:
         """Check that it ran correctly, then run the test."""
 
         executable = self.resources[self.executable_name]
@@ -241,7 +241,7 @@ class ExecutableMixin(OutputTest, Configurable):
         return runtime.stdout
 
 
-class ExecutableCodeMixin(ExecutableMixin):
+class ExecutableCodeMixin(ExecutableOutputMixin):
     """Output is exit code instead of stdout."""
 
     def get_output(self) -> Any:

@@ -5,11 +5,12 @@ from pathlib import Path
 from typing import List
 from dataclasses import field
 from decimal import Decimal
-from functools import lru_cache
 
-from ..models import Assignment, Problem, ProblemGrading, Author
+from ..models import Assignment, Problem, ProblemGrading
 from ..shared import Files
 from .grader import Grader
+
+__all__ = ("import_grader", "GradingProblemGrading", "GradingProblem", "GradingAssignment")
 
 
 def import_grader(grading_path: Path, problem: "GradingProblem", grader_name: str = "grader") -> Grader:
@@ -41,9 +42,8 @@ class GradingProblemGrading(ProblemGrading):
     problem: "GradingProblem"
 
     @property
-    @lru_cache(maxsize=1)
-    def point_ratio(self) -> Decimal:
-        return self.points / self.problem.grader.test.weight
+    def automated_point_ratio(self) -> Decimal:
+        return self.automated.points / self.problem.grader.test.weight
 
 
 class GradingProblem(Problem):

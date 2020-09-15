@@ -2,7 +2,7 @@
 
 ## [[ problem.title ]] ([[ problem.grading.percentage() | percentage ]])
 
-Total score: 
+Total score: ?/[[ problem.grading.points ]]
 
 [%- if problem.grading.is_automated %]
 
@@ -27,7 +27,7 @@ The followed tasks failed:
 The following tests did not pass:
 
 [%- for result in problem_summary.test_results_failing %]
-- -[[ (result.task.weight * problem.grading.point_ratio) | pretty ]] for test `[[ result.task.name ]]`
+- -[[ (result.task.weight * problem.grading.automated_point_ratio) | pretty ]] for test `[[ result.task.name ]]`
 [%- endfor -%]
 [%- endif -%]
 [%- endif -%]
