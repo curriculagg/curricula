@@ -190,21 +190,22 @@ class DirectoryAggregator(DirectoryShouldRun):
         log.debug(f"aggregating {self.contents_relative_path} to {self.destination_path}")
 
         files.replace_directory(self.destination_path)
+        copied_paths = []
 
         # First compile assignment-wide assets
         assignment_contents_path = assignment.path.joinpath(self.contents_relative_path)
         if assignment_contents_path.exists():
             files.copy_directory(assignment_contents_path, self.destination_path)
+            copied_paths.append(self.destination_path)
 
         directory_name = self.directory_name or (lambda p: p.relative_path)
 
         # Copy per problem, enable filtration
-        copied_paths = []
         for problem in filter(self.filter_problems, assignment.problems):
             problem_contents_path = problem.path.joinpath(self.contents_relative_path)
             if problem_contents_path.exists():
                 problem_destination_path = self.destination_path.joinpath(directory_name(problem))
-                copied_paths.append(problem_destination_path)
                 files.copy_directory(problem_contents_path, problem_destination_path)
+                copied_paths.append(problem_destination_path)
 
         return copied_paths

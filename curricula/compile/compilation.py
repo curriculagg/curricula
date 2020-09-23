@@ -191,8 +191,8 @@ class SolutionUnit(Unit):
 
         result = UnitResult()
         self.output_path.mkdir(exist_ok=True)
-        self.compile_readme(assignment, context, result)
         self.aggregate_contents(assignment, context, result)
+        self.compile_readme(assignment, context, result)
         return result
 
 
@@ -229,7 +229,7 @@ class GradingUnit(Unit):
         """Assemble rubric."""
 
         run, _ = self.readme_builder.run_if_should(assignment, context)
-        log.info(f"""solution: {"built" if run else "skipped"} readme""")
+        log.info(f"""grading: {"built" if run else "skipped"} readme""")
 
         if run:
             result.compiled = True
@@ -239,7 +239,7 @@ class GradingUnit(Unit):
         """Get all grading scripts."""
 
         run, copied_paths = self.content_aggregator.run_if_should(assignment, context)
-        log.info(f"""solution: {"merged" if run else "skipped"} contents""")
+        log.info(f"""grading: {"merged" if run else "skipped"} contents""")
 
         if run:
             # Delete extra READMEs
@@ -264,8 +264,8 @@ class GradingUnit(Unit):
 
         result = UnitResult()
         self.output_path.mkdir(exist_ok=True)
-        self.compile_readme(assignment, context, result)
         self.aggregate_contents(assignment, context, result)
+        self.compile_readme(assignment, context, result)
         self.dump_index(assignment, result)
         return result
 
