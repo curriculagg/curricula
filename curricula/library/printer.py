@@ -1,5 +1,6 @@
 import textwrap
 
+
 class Printer:
     """Helper class for conveniently printing."""
 

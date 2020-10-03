@@ -1,7 +1,7 @@
 import os
 import tempfile
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple
 
 from . import process
 from .files import delete_file
@@ -25,15 +25,24 @@ def read_last_line(path: Path) -> Optional[str]:
         return file.readlines()[-1].decode()
 
 
-def count(*args: str, stdin: bytes = None, timeout: float = None, cwd: Path = None) -> Optional[int]:
+def count(
+        *args: str,
+        stdin: bytes = None,
+        timeout: float = None,
+        cwd: Path = None,
+        function_name: str = None) -> Tuple[process.Runtime, Optional[int]]:
     """Run callgrind on the program and return IR count."""
 
-    _, out_path = tempfile.mkstemp(dir=Path().absolute())
-    out_path = Path(out_path)
-    process.run(
+    extra_valgrind_args = []
+    if function_name is not None:
+        extra_valgrind_args.append(f"--toggle-collect={function_name}")
+
+    out_path = Path(next(tempfile._get_candidate_names()))
+    runtime = process.run(
         "valgrind",
         "--tool=callgrind",
         f"--callgrind-out-file={out_path.parts[-1]}",
+        *extra_valgrind_args,
         *args,
         stdin=stdin,
         timeout=timeout,
@@ -41,8 +50,8 @@ def count(*args: str, stdin: bytes = None, timeout: float = None, cwd: Path = No
     if out_path.exists():
         last_line = read_last_line(out_path)
         if last_line is None:
-            return None
+            return runtime, None
         result = int(last_line.rsplit(maxsplit=1)[1])
         delete_file(out_path)
-        return result
-    return None
+        return runtime, result
+    return runtime, None

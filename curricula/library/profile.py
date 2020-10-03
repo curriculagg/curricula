@@ -7,8 +7,7 @@ def summarize(snapshot: tracemalloc.Snapshot, key_type: str, limit: int):
 
     snapshot = snapshot.filter_traces((
         tracemalloc.Filter(False, "<frozen importlib._bootstrap>"),
-        tracemalloc.Filter(False, "<unknown>"),
-    ))
+        tracemalloc.Filter(False, "<unknown>"),))
     top_statistics = snapshot.statistics(key_type)
 
     for i, statistic in enumerate(top_statistics[:limit], 1):

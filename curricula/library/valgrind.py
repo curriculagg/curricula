@@ -62,14 +62,15 @@ class ValgrindReport:
     """Include data about memory lost and errors."""
 
     runtime: process.Runtime
-    errors: Optional[List[ValgrindError]]
+    valgrind_errors: Optional[List[ValgrindError]]
+    error: str = None
 
     def memory_lost(self) -> (int, int):
         """Count up bytes and blocks lost."""
 
         leaked_blocks = 0
         leaked_bytes = 0
-        for error in self.errors:
+        for error in self.valgrind_errors:
             if error.kind in ("Leak_DefinitelyLost", "Leak_IndirectlyLost", "Leak_PossiblyLost"):
                 leaked_blocks += int(error.what.fields["leakedblocks"])
                 leaked_bytes += int(error.what.fields["leakedbytes"])
@@ -92,10 +93,10 @@ def run(*args: str, stdin: bytes = None, timeout: float = None, cwd: Path = None
             try:
                 root = parse(file).getroot()
             except ParseError:
-                return ValgrindReport(runtime, None)
+                return ValgrindReport(runtime, None, error="cannot parse valgrind xml")
             for child in root:
                 if child.tag == "error":
                     errors.append(ValgrindError.load(child))
         os.remove(VALGRIND_XML_FILE)
-        return ValgrindReport(runtime=runtime, errors=errors)
-    return ValgrindReport(runtime=runtime, errors=None)
+        return ValgrindReport(runtime=runtime, valgrind_errors=errors)
+    return ValgrindReport(runtime=runtime, valgrind_errors=None, error="valgrind did not write to output")

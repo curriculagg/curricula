@@ -42,13 +42,13 @@ class MemoryResult(Result):
 
         details.update(runtime=report.runtime.dump())
 
-        if report.errors is None:
+        if report.valgrind_errors is None:
             return cls(complete=False, passing=False, error=Error("failed to run valgrind"), details=details)
 
         leaked_blocks, leaked_bytes = report.memory_lost()
         return cls(
-            passing=leaked_bytes == 0 and len(report.errors) == 0,
-            error_count=len(report.errors),
+            passing=leaked_bytes == 0 and len(report.valgrind_errors) == 0,
+            error_count=len(report.valgrind_errors),
             leaked_blocks=leaked_blocks,
             leaked_bytes=leaked_bytes,
             details=details)

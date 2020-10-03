@@ -66,7 +66,8 @@ class Summary:
 
         self.problems = {}
         for problem in assignment.problems:
-            self.problems[problem.short] = ProblemSummary(problem.grader.tasks)
+            if problem.grading.is_automated:
+                self.problems[problem.short] = ProblemSummary(problem.grader.tasks)
         self.students = {}
         problem_shorts = tuple(self.problems.keys())
         for student_username, student in students.items():

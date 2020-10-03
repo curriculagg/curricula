@@ -18,7 +18,7 @@ __all__ = (
     "CompareTest",
     "CompareBytesOutputTest",
     "ExecutableOutputMixin",
-    "ExecutableCodeMixin",
+    "ExecutableExitCodeMixin",
     "ExecutableInputFileMixin",
     "ExecutableOutputFileMixin",
     "CompareExitCodeOutputTest",
@@ -197,11 +197,15 @@ def test_runtime_succeeded(runtime: Runtime) -> CorrectnessResult:
 class ExecutableOutputMixin(Configurable):
     """Meant for reading and comparing stdout."""
 
+    STDOUT = "stdout"
+    STDERR = "stderr"
+
     executable_name: str
     args: Iterable[str]
     stdin: Optional[bytes]
     timeout: Optional[float]
     cwd: Optional[Path]
+    stream: str
 
     def __init__(
             self,
@@ -211,6 +215,7 @@ class ExecutableOutputMixin(Configurable):
             stdin: bytes = none,
             timeout: float = none,
             cwd: Path = none,
+            stream: str = none,
             **kwargs):
         """Save container information, call super."""
 
@@ -220,6 +225,7 @@ class ExecutableOutputMixin(Configurable):
         self.stdin = stdin
         self.timeout = timeout
         self.cwd = cwd
+        self.stream = stream
 
     def execute(self: Union["ExecutableOutputMixin", OutputTest]) -> Runtime:
         """Check that it ran correctly, then run the test."""
@@ -238,10 +244,11 @@ class ExecutableOutputMixin(Configurable):
 
         runtime = self.execute()
         test_runtime_succeeded(runtime)
-        return runtime.stdout
+        stream = self.resolve("stream", default=self.STDOUT)
+        return getattr(runtime, stream)
 
 
-class ExecutableCodeMixin(ExecutableOutputMixin):
+class ExecutableExitCodeMixin(ExecutableOutputMixin):
     """Output is exit code instead of stdout."""
 
     def get_output(self) -> Any:
@@ -325,7 +332,7 @@ class CompareExitCodeOutputTest(OutputTest, Configurable):
         self.test = test
 
 
-class GoogleTest(ExecutableCodeMixin, CompareExitCodeOutputTest):
+class GoogleTest(ExecutableExitCodeMixin, CompareExitCodeOutputTest):
     """Is set up for the gtest.hpp include."""
 
     expected_code = 0

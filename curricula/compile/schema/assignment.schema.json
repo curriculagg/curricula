@@ -41,7 +41,6 @@
   "required": [
     "title",
     "authors",
-    "dates",
     "problems",
     "grading"
   ]

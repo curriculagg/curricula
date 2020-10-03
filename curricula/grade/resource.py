@@ -53,10 +53,22 @@ class Executable(Resource):
 
         return process.run(*self.args, *args, stdin=stdin, timeout=timeout, cwd=cwd)
 
-    def count(self, *args: str, stdin: bytes = None, timeout: float = None, cwd: Path = None) -> int:
+    def count(
+            self,
+            *args: str,
+            stdin: bytes = None,
+            timeout: float = None,
+            function_name: str = None,
+            cwd: Path = None) -> Tuple[process.Runtime, int]:
         """Count the instructions executed during runtime."""
 
-        return callgrind.count(*self.args, *args, stdin=stdin, timeout=timeout, cwd=cwd)
+        return callgrind.count(
+            *self.args,
+            *args,
+            stdin=stdin,
+            timeout=timeout,
+            function_name=function_name,
+            cwd=cwd)
 
 
 @dataclass(eq=False)
