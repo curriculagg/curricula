@@ -250,6 +250,32 @@ class Problem(Model):
 
 
 @dataclass(eq=False)
+class AssignmentDates(Model):
+    """Assignment dates."""
+
+    assigned: datetime.datetime
+    due: datetime.datetime
+    deadline: datetime.datetime
+
+    @classmethod
+    def load(cls, data: dict) -> "AssignmentDates":
+        """Convert to datetime."""
+
+        return cls(
+            assigned=deserialize_datetime(data["assigned"]),
+            due=deserialize_datetime(data["due"]),
+            deadline=deserialize_datetime(data["deadline"]))
+
+    def dump(self) -> dict:
+        """Specifically serialize the datetime."""
+
+        return dict(
+            assigned=serialize_datetime(self.assigned),
+            due=serialize_datetime(self.due),
+            deadline=serialize_datetime(self.deadline))
+
+
+@dataclass(eq=False)
 class AssignmentGrading(Model):
     """Weights and points."""
 
@@ -304,6 +330,7 @@ class Assignment(Model):
     short: str
     title: str
     authors: List[Author]
+    dates: AssignmentDates
 
     problems: List[Problem]
     grading: AssignmentGrading
@@ -323,6 +350,7 @@ class Assignment(Model):
             short=data["short"],
             title=data["title"],
             authors=list(map(Author.load, data["authors"])),
+            dates=AssignmentDates.load(data["dates"]),
             problems=problems,
             grading=AssignmentGrading.load(data["grading"]),
             extra=data.get("extra"),
@@ -342,6 +370,7 @@ class Assignment(Model):
             short=self.short,
             title=self.title,
             authors=[author.dump() for author in self.authors],
+            dates=self.dates.dump(),
             problems=[problem.dump() for problem in self.problems],
             grading=self.grading.dump(),
             extra=self.extra,
