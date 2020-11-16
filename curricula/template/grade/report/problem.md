@@ -6,7 +6,7 @@ Total score: ?/[[ problem.grading.points ]]
 
 [%- if problem.grading.is_automated %]
 
-Tests score ([[ problem.grading.percentage_automated | percentage ]]): [[ problem_summary.passing_fraction ]] tests, **[[ problem_summary.points_fraction ]] points ([[ problem_summary.points_percentage | percentage ]])**
+[[ problem.grading.automated.name ]] score ([[ problem.grading.percentage_automated | percentage ]]): [[ problem_summary.passing_fraction ]] tests, **[[ problem_summary.points_fraction ]] points ([[ problem_summary.points_percentage | percentage ]])**
 [%- if problem_summary.setup_results_errored %]
 
 The followed tasks failed:
@@ -34,7 +34,7 @@ The following tests did not pass:
 
 [%- if problem.grading.is_review %]
 
-Review score ([[ problem.grading.percentage_review | percentage ]]): **?/[[ problem.grading.review.points | pretty ]] points**
+[[ problem.grading.review.name ]] score ([[ problem.grading.percentage_review | percentage ]]): **?/[[ problem.grading.review.points | pretty ]] points**
 [%- if problem | has_snippet("review.md") %]
 
 [[ problem | get_snippet("review.md") ]]
@@ -43,7 +43,7 @@ Review score ([[ problem.grading.percentage_review | percentage ]]): **?/[[ prob
 
 [%- if problem.grading.is_manual %]
 
-Walkthrough score ([[ problem.grading.percentage_manual | percentage ]]): **?/[[ problem.grading.manual.points | pretty ]] points**
+[[ problem.grading.manual.name ]] score ([[ problem.grading.percentage_manual | percentage ]]): **?/[[ problem.grading.manual.points | pretty ]] points**
 [%- if problem | has_snippet("manual.md") %]
 
 [[ problem | get_snippet("manual.md") ]]
