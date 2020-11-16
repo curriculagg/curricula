@@ -10,6 +10,7 @@ from ..task import Result
 from ..models import GradingAssignment, GradingProblem
 from ..report import AssignmentReport, ProblemReport
 from ...library.template import jinja2_create_environment, DEFAULT_TEMPLATE_PATH, pretty
+from ...log import log
 
 
 def sum_weights(results: Iterable[Result]) -> Decimal:
@@ -123,12 +124,39 @@ def summarize(assignment: GradingAssignment, report: AssignmentReport) -> Report
     return summary
 
 
-def create_format_environment(custom_template_path: Path = None) -> jinja2.Environment:
+@jinja2.environmentfilter
+def get_snippet(environment: jinja2.Environment, problem: GradingProblem, name: str):
+    """Get report snippet from environment."""
+
+    path = f"problem/{problem.short}:{name}"
+    data = dict(assignment=problem.assignment, problem=problem)
+
+    try:
+        return environment.get_template(path).render(**data)
+    except jinja2.exceptions.TemplateNotFound:
+        log.error(f"error finding {path}")
+        return ""
+
+
+def has_snippet(problem: GradingProblem, name: str):
+    """Get report snippet from environment."""
+
+    return problem.path.joinpath("report", name).is_file()
+
+
+def create_format_environment(assignment: GradingAssignment, custom_template_path: Path = None) -> jinja2.Environment:
     """Create the requisite environment."""
 
     if custom_template_path is None:
         custom_template_path = DEFAULT_TEMPLATE_PATH
-    return jinja2_create_environment(custom_template_path=custom_template_path)
+
+    problem_paths = {f"problem/{problem.short}": problem.path.joinpath("report") for problem in assignment.problems}
+    environment = jinja2_create_environment(
+        custom_template_path=custom_template_path,
+        problem_paths=problem_paths)
+    environment.filters.update(get_snippet=get_snippet, has_snippet=has_snippet)
+
+    return environment
 
 
 def format_report_markdown(
@@ -145,7 +173,7 @@ def format_report_markdown(
 
     summary = summarize(assignment, report)
     if environment is None:
-        environment = create_format_environment()
+        environment = create_format_environment(assignment)
 
     environment.globals.update(assignment=assignment, summary=summary, options=options)
     report_template = environment.get_template("template:grade/report/assignment.md")

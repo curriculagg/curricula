@@ -25,6 +25,8 @@ class ProcessError:
 
         if error.errno == 8:
             description = "executable format error"
+        elif error.errno == 2:
+            description = "could not find the executable"
         else:
             description = "failed to run executable"
 
@@ -123,7 +125,7 @@ class Runtime(ProcessStreams, ProcessCreation):
         dump.update(timeout=self.timeout)
         dump.update(timed_out=self.timed_out)
         dump.update(raised_exception=self.raised_exception)
-        dump.update(exception=self.exception)
+        dump.update(exception=self.exception.dump() if self.exception is not None else None)
         return dump
 
 

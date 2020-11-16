@@ -35,9 +35,17 @@ The following tests did not pass:
 [%- if problem.grading.is_review %]
 
 Review score ([[ problem.grading.percentage_review | percentage ]]): **?/[[ problem.grading.review.points | pretty ]] points**
+[%- if problem | has_snippet("review.md") %]
+
+[[ problem | get_snippet("review.md") ]]
+[%- endif -%]
 [%- endif -%]
 
 [%- if problem.grading.is_manual %]
 
-Manual score ([[ problem.grading.percentage_manual | percentage ]]): **?/[[ problem.grading.manual.points | pretty ]] points**
+Walkthrough score ([[ problem.grading.percentage_manual | percentage ]]): **?/[[ problem.grading.manual.points | pretty ]] points**
+[%- if problem | has_snippet("manual.md") %]
+
+[[ problem | get_snippet("manual.md") ]]
+[%- endif -%]
 [%- endif -%]

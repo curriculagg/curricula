@@ -257,7 +257,7 @@ class ExecutableExitCodeMixin(ExecutableOutputMixin):
         return self.execute().code
 
 
-class ExecutableInputFileMixin(OutputTest, Configurable):
+class ExecutableInputFileMixin(Configurable):
     """Enables the use of an input file rather than stdin string."""
 
     stdin: bytes
@@ -271,7 +271,7 @@ class ExecutableInputFileMixin(OutputTest, Configurable):
         self.stdin = self.resolve("input_file_path").read_bytes()
 
 
-class ExecutableOutputFileMixin(OutputTest, Configurable):
+class ExecutableOutputFileMixin(Configurable):
     """Enables the use of an input file rather than stdin string."""
 
     output_file_path: Path
@@ -282,7 +282,7 @@ class ExecutableOutputFileMixin(OutputTest, Configurable):
         super().__init__(**kwargs)
         self.output_file_path = output_file_path
 
-    def get_output(self) -> Any:
+    def get_output(self: Union[OutputTest, "ExecutableOutputFileMixin"]) -> Any:
         """Call super because it might do something."""
 
         super().get_output()

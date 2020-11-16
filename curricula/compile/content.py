@@ -38,27 +38,27 @@ def get_readme(
     """Render a README with options for nested path."""
 
     readme_path = get_readme_path(relative_path).as_posix()
+    if isinstance(item, CompilationAssignment):
+        path = f"assignment:{readme_path}"
+        data = dict(assignment=item)
+    elif isinstance(item, CompilationProblem):
+        path = f"problem/{item.short}:{readme_path}"
+        data = dict(assignment=item.assignment, problem=item)
+    else:
+        raise ValueError("invalid item passed to get_readme")
 
     try:
-        if isinstance(item, CompilationAssignment):
-            path = f"assignment:{readme_path}"
-            data = dict(assignment=item)
-        elif isinstance(item, CompilationProblem):
-            path = f"problem/{item.short}:{readme_path}"
-            data = dict(assignment=item.assignment, problem=item)
-        else:
-            raise ValueError("invalid item passed to get_readme")
         return environment.get_template(path).render(**data)
 
     except jinja2.exceptions.TemplateNotFound:
-        log.error(f"error finding problem/{item.short}:{readme_path}")
+        log.error(f"error finding {path}")
         return ""
 
 
 def has_readme(item: Union[CompilationProblem, CompilationAssignment], relative_path: str = None) -> bool:
     """Check whether a problem has a solution README."""
 
-    return item.path.joinpath(relative_path or "", Files.README).exists()
+    return item.path.joinpath(relative_path or "", Files.README).is_file()
 
 
 T = TypeVar("T")
