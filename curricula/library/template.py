@@ -8,9 +8,6 @@ root = Path(__file__).absolute().parent
 log = logging.getLogger("curricula")
 
 
-DEFAULT_TEMPLATE_PATH = root.parent.joinpath("template")
-
-
 def pretty(decimal: Decimal) -> str:
     """Display a number nicely."""
 
@@ -38,10 +35,10 @@ JINJA2_FILTERS = {
 
 
 def jinja2_create_environment(
+        default_template_path: Path,
+        custom_template_path: Path = None,
         assignment_path: Path = None,
-        problem_paths: Dict[str, Path] = None,
-        default_template_path: Path = DEFAULT_TEMPLATE_PATH,
-        custom_template_path: Path = None) -> jinja2.Environment:
+        problem_paths: Dict[str, Path] = None) -> jinja2.Environment:
     """Configure a jinja2 environment."""
 
     log.debug("creating jinja2 environment")
