@@ -12,6 +12,7 @@ spec = importlib.util.spec_from_file_location("curricula", str(root.joinpath("cu
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 
+
 setup(
     name="curricula",
     version=module.__version__,
