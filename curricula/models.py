@@ -72,15 +72,15 @@ class Author(Model):
 class ProblemGradingCategory(Model):
     """Data about weight, points, etc."""
 
-    enabled: bool
-
-    # Intrinsic
-    name: Optional[str]
-    minutes: Optional[float]
-
-    # Overwrite
     weight: Decimal
     points: Decimal
+
+    # Whether it should be used
+    enabled: bool = True
+
+    # Intrinsic
+    name: Optional[str] = None
+    minutes: Optional[float] = None
 
     @classmethod
     def load(cls, data: dict) -> "ProblemGradingCategory":
@@ -104,44 +104,30 @@ class ProblemGradingCategory(Model):
             points=str(self.points),)
 
 
-class ProblemGradingAutomated(ProblemGradingCategory):
-    """Additional properties specific to automated grading."""
-
-    tasks: List
-
-
 @dataclass(eq=False)
 class ProblemGrading(Model):
     """Data for each grading method."""
 
-    problem: "Problem"
+    weight: Decimal = Decimal(0)
+    points: Decimal = Decimal(0)
 
-    enabled: bool
-    weight: Decimal
-    points: Decimal
+    enabled: bool = True
 
-    automated: ProblemGradingCategory
-    review: ProblemGradingCategory
-    manual: ProblemGradingCategory
+    automated: Optional[ProblemGradingCategory] = None
+    review: Optional[ProblemGradingCategory] = None
+    manual: Optional[ProblemGradingCategory] = None
 
     @property
     def is_automated(self) -> bool:
-        return self.automated is not None and self.automated.enabled and self.problem.grading.enabled
+        return self.enabled and self.automated is not None and self.automated.enabled
 
     @property
     def is_review(self) -> bool:
-        return self.review is not None and self.review.enabled and self.problem.grading.enabled
+        return self.enabled and self.review is not None and self.review.enabled
 
     @property
     def is_manual(self) -> bool:
-        return self.manual is not None and self.manual.enabled and self.problem.grading.enabled
-
-    def percentage(self) -> Decimal:
-        """Percentage weight of the problem in the assignment."""
-
-        if self.problem.assignment.grading.weight() == 0:
-            return Decimal(0)
-        return self.weight / self.problem.assignment.grading.weight()
+        return self.enabled and self.manual is not None and self.manual.enabled
 
     @property
     @lru_cache(maxsize=1)
@@ -164,7 +150,7 @@ class ProblemGrading(Model):
         return self.manual.weight / self.weight_total
 
     @classmethod
-    def load(cls, data: dict, problem: "Problem" = None) -> "ProblemGrading":
+    def load(cls, data: dict) -> "ProblemGrading":
         """Deserialize each method."""
 
         if data["automated"] is not None and data["automated"].get("name") is None:
@@ -175,7 +161,6 @@ class ProblemGrading(Model):
             data["manual"]["name"] = "Manual grading"
 
         return cls(
-            problem=problem,
             enabled=data.get("enabled", True),
             weight=Decimal(data["weight"]),
             points=Decimal(data["points"]),
@@ -202,33 +187,39 @@ class Problem(Model):
     # Overwrite
     short: str
     title: str
-    relative_path: Path  # Most specific directory containing relevant files relative to assignment root
 
     # Defined in assignment reference
-    grading: ProblemGrading
+    grading: ProblemGrading = field(default_factory=ProblemGrading)
+
+    # Most specific directory containing relevant files relative to assignment root
+    relative_path: Path = field(default_factory=Path)
 
     # Intrinsic
-    authors: List[Author]
-    topics: List[str]
+    authors: List[Author] = field(default_factory=list)
+    topics: List[str] = field(default_factory=list)
     notes: Optional[str] = None
     difficulty: Optional[str] = None
 
     # Backlink
-    assignment: "Assignment" = field(default=None)
+    assignment: "Assignment" = None
+
+    def weight(self) -> Decimal:
+        """Percentage weight of the problem in the assignment."""
+
+        if self.assignment.grading.weight() == 0:
+            return Decimal(0)
+        return self.grading.weight / self.assignment.grading.weight()
 
     @classmethod
     def load(cls, data: dict, assignment: "Assignment" = None) -> "Problem":
         """Load directly from a dictionary."""
-
-        # Get override types
-        problem_grading_type = cls.__annotations__.get("grading", ProblemGrading)
 
         self = cls(
             assignment=assignment,
             short=data["short"],
             title=data["title"],
             relative_path=Path(data["relative_path"]),
-            grading=problem_grading_type.load(data["grading"]),
+            grading=ProblemGrading.load(data["grading"]),
             authors=list(map(Author.load, data["authors"])),
             topics=data["topics"],
             notes=data.get("notes"),
