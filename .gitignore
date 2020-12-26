@@ -1,8 +1,5 @@
 # Local
 
-# Ignore
-.pyrc
-
 *.report.json
 artifacts/
 reports/
