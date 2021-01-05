@@ -8,7 +8,7 @@ from typing import Optional, List, Callable, TypeVar
 from abc import ABC, abstractmethod
 from functools import lru_cache
 
-from .structure import *
+from .version import version
 
 TZ = datetime.timezone(offset=datetime.timedelta(seconds=time.timezone))
 

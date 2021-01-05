@@ -2,7 +2,6 @@ from pathlib import Path
 from typing import Iterator
 
 __all__ = (
-    "version",
     "Paths",
     "Files",
     "InstructionsArtifact",
@@ -10,9 +9,6 @@ __all__ = (
     "SolutionArtifact",
     "GradingArtifact",
     "Artifacts")
-
-
-version = "1.4.1"
 
 
 class Paths:
