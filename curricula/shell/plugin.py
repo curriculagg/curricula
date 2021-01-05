@@ -24,12 +24,12 @@ class Plugin(abc.ABC):
         try:
             module = import_module(f"{module_name}.shell")
         except ImportError:
-            return UnavailablePlugin(name)
+            return UnavailablePlugin(name, module_name)
 
         for declaration in vars(module).values():
             if isinstance(declaration, type) and issubclass(declaration, Plugin) and declaration.name == name:
                 return declaration()
-        return UnavailablePlugin(name)
+        return UnavailablePlugin(name, module_name)
 
     @property
     @abc.abstractmethod
@@ -46,7 +46,7 @@ class Plugin(abc.ABC):
         """Create a sub-parser for the app."""
 
     @abc.abstractmethod
-    def main(self, parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
+    def main(self, parser: argparse.ArgumentParser, args: dict) -> int:
         """Run if the build app is chosen."""
 
 
@@ -55,15 +55,17 @@ class UnavailablePlugin(Plugin):
 
     name = "unavailable"
     help = "this plugin is not available"
+    module_name: str
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, module_name: str):
         self.name = name
+        self.module_name = module_name
 
     def setup(self, parser: argparse.ArgumentParser):
         pass
 
-    def main(self, parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
-        parser.error(f"the {self.name} plugin is unavailable")
+    def main(self, parser: argparse.ArgumentParser, args: dict) -> int:
+        parser.error(f"the {self.name} plugin is unavailable; please install {self.module_name}")
         return -1
 
 
@@ -88,11 +90,11 @@ class PluginDispatcher(Plugin, abc.ABC):
     def setup(self, parser: argparse.ArgumentParser):
         """Bind all plugins."""
 
-        subparsers = parser.add_subparsers(required=True, dest=self._key, help=self.help)
+        subparsers = parser.add_subparsers(required=True, dest=self._key, description=self.help)
         for plugin in self._plugins.values():
             plugin.setup(subparsers.add_parser(plugin.name, help=plugin.help))
 
-    def main(self, parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
+    def main(self, parser: argparse.ArgumentParser, args: dict) -> int:
         """Dispatch."""
 
         return self._plugins[args[self._key]].main(parser, args)

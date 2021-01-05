@@ -27,14 +27,14 @@ def main() -> int:
     curricula = Curricula()
     curricula.setup(parser)
 
-    args = parser.parse_args()
-    if args.verbose:
+    args = vars(parser.parse_args())
+    if args["verbose"]:
         log.setLevel(logging.DEBUG)
-    elif args.quiet:
+    elif args["quiet"]:
         log.setLevel(logging.WARNING)
 
-    if args.log:
-        handler_stream = logging.FileHandler(args.log)
+    if args["log"]:
+        handler_stream = logging.FileHandler(args["log"])
         log.addHandler(handler_stream)
 
     return curricula.main(parser, args)
