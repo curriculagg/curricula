@@ -1,5 +1,7 @@
 from typing import Any, Optional
 
+from .inject import inject
+
 
 class OrthogonalNone:
     """Custom none."""
@@ -61,7 +63,8 @@ class Configurable:
             field_name: str = None,
             field_getter_name: Optional[str] = none,
             local: Any = none,
-            default: Any = none) -> Any:
+            default: Any = none,
+            field_getter_resources: Optional[dict] = None) -> Any:
         """Check value, self.name, then self.get_name()."""
 
         if local is not none:
@@ -80,7 +83,10 @@ class Configurable:
         if field_getter_name is not None and hasattr(self, field_getter_name):
             getter = getattr(self, field_getter_name)
             if callable(getter):
-                value = getter()
+                if field_getter_resources is not None:
+                    value = inject(field_getter_resources, getter)
+                else:
+                    value = getter()
                 if value is not none:
                     return value
 
