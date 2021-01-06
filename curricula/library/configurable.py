@@ -33,9 +33,8 @@ class Configurable:
     def __setattr__(self, key, value):
         """Don't allow overwriting with none."""
 
-        if value is none:
-            return
-        super().__setattr__(key, value)
+        if value is not none:
+            super().__setattr__(key, value)
 
     def is_resolvable(
             self,
