@@ -12,7 +12,8 @@ class Curricula(PluginDispatcher):
     help = "the subcommand corresponding to the desired module"
     plugins = (
         Plugin.find("curricula_grade", "grade"),
-        Plugin.find("curricula_compile", "compile"))
+        Plugin.find("curricula_compile", "compile"),
+        Plugin.find("curricula_format", "format"))
 
 
 def main() -> int:

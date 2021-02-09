@@ -203,13 +203,6 @@ class Problem(Model):
     # Backlink
     assignment: "Assignment" = None
 
-    def weight(self) -> Decimal:
-        """Percentage weight of the problem in the assignment."""
-
-        if self.assignment.grading.weight() == 0:
-            return Decimal(0)
-        return self.grading.weight / self.assignment.grading.weight()
-
     @classmethod
     def load(cls, data: dict, assignment: "Assignment" = None) -> "Problem":
         """Load directly from a dictionary."""
