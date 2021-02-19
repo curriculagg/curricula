@@ -311,7 +311,7 @@ def run(*args: str, stdin: bytes = None, timeout: float = None, cwd: Path = None
     """
 
     if timeout is None:
-        log.warning(f"process.run has been invoked without a timeout from {get_source_location()}")
+        log.warning(f"process.run has been invoked without a timeout from {get_source_location(2)}")
 
     # Spawn the process, access stdout and stderr
     try:
