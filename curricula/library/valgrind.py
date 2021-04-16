@@ -36,6 +36,9 @@ class ValgrindWhat:
                     fields[child.tag] = child.text
             return ValgrindWhat(text, fields)
 
+    def dump(self) -> dict:
+        return dict(text=self.text, fields=self.fields)
+
 
 @dataclass
 class ValgrindError:
@@ -56,28 +59,41 @@ class ValgrindError:
         what = ValgrindWhat.load(element.find("what") or element.find("xwhat"))
         return cls(unique, tid, kind, what)
 
+    def dump(self) -> dict:
+        return dict(
+            unique=self.unique,
+            tid=self.tid,
+            kind=self.kind,
+            what=self.what.dump() if self.what is not None else None)
+
 
 @dataclass
 class ValgrindReport:
     """Include data about memory lost and errors."""
 
     runtime: process.Runtime
-    valgrind_errors: Optional[List[ValgrindError]]
-    error: str = None
+    errors: List[ValgrindError] = field(default_factory=list)
+    exception: str = field(default=None)
 
     def memory_lost(self) -> (int, int):
         """Count up bytes and blocks lost."""
 
         leaked_blocks = 0
         leaked_bytes = 0
-        for error in self.valgrind_errors:
+        for error in self.errors:
             if error.kind in ("Leak_DefinitelyLost", "Leak_IndirectlyLost", "Leak_PossiblyLost"):
                 leaked_blocks += int(error.what.fields["leakedblocks"])
                 leaked_bytes += int(error.what.fields["leakedbytes"])
         return leaked_blocks, leaked_bytes
 
+    def dump(self) -> dict:
+        return dict(
+            runtime=self.runtime.dump(),
+            errors=[error.dump() for error in self.errors],
+            exception=self.exception)
 
-def run(*args: str, stdin: bytes = None, timeout: float = None, cwd: Path = None) -> Optional[ValgrindReport]:
+
+def run(*args: str, stdin: bytes = None, timeout: float = None, cwd: Path = None) -> ValgrindReport:
     """Run valgrind on the program and return IR count."""
 
     runtime = process.run(
@@ -93,10 +109,10 @@ def run(*args: str, stdin: bytes = None, timeout: float = None, cwd: Path = None
             try:
                 root = parse(file).getroot()
             except ParseError:
-                return ValgrindReport(runtime, None, error="cannot parse valgrind xml")
+                return ValgrindReport(runtime, exception="cannot parse valgrind xml")
             for child in root:
                 if child.tag == "error":
                     errors.append(ValgrindError.load(child))
         os.remove(VALGRIND_XML_FILE)
-        return ValgrindReport(runtime=runtime, valgrind_errors=errors)
-    return ValgrindReport(runtime=runtime, valgrind_errors=None, error="valgrind did not write to output")
+        return ValgrindReport(runtime=runtime, errors=errors)
+    return ValgrindReport(runtime=runtime, exception="valgrind did not write to output")
