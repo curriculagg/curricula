@@ -24,7 +24,6 @@ class Plugin(abc.ABC):
         try:
             module = import_module(f"{module_name}.shell")
         except ImportError as e:
-            print(e)
             return UnavailablePlugin(name, module_name)
 
         for declaration in vars(module).values():
