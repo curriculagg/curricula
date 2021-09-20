@@ -283,6 +283,32 @@ class AssignmentMeta(Model):
 
 
 @dataclass(eq=False)
+class AssignmentDates(Model):
+    """Assignment dates."""
+
+    assigned: datetime.datetime
+    due: Optional[datetime.datetime]
+    deadline: Optional[datetime.datetime]
+
+    @classmethod
+    def load(cls, data: dict) -> "AssignmentDates":
+        """Convert to datetime."""
+
+        return cls(
+            assigned=deserialize_datetime(data["assigned"]),
+            due=deserialize_datetime(data.get("due")),
+            deadline=deserialize_datetime(data.get("deadline")))
+
+    def dump(self) -> dict:
+        """Specifically serialize the datetime."""
+
+        return dict(
+            assigned=serialize_datetime(self.assigned),
+            due=serialize_datetime(self.due),
+            deadline=serialize_datetime(self.deadline))
+
+
+@dataclass(eq=False)
 class Assignment(Model):
     """Contains assignment metadata."""
 
@@ -292,6 +318,8 @@ class Assignment(Model):
 
     problems: List[Problem]
     grading: AssignmentGrading
+
+    dates: Optional[AssignmentDates] = None
 
     notes: Optional[str] = None
     meta: AssignmentMeta = AssignmentMeta()
@@ -310,6 +338,7 @@ class Assignment(Model):
             authors=list(map(Author.load, data["authors"])),
             problems=problems,
             grading=AssignmentGrading.load(data["grading"]),
+            dates=AssignmentDates.load(data["dates"]),
             extra=data.get("extra"),
             notes=data.get("notes"),
             meta=AssignmentMeta.load(data["meta"]) if "meta" in data else AssignmentMeta())
@@ -329,6 +358,7 @@ class Assignment(Model):
             authors=[author.dump() for author in self.authors],
             problems=[problem.dump() for problem in self.problems],
             grading=self.grading.dump(),
+            dates=self.dates.dump() if self.dates is not None else None,
             extra=self.extra,
             notes=self.notes,
             meta=self.meta.dump())
